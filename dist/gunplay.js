@@ -1,4 +1,4 @@
-import {viewDirection} from './fps.js?v=4.1.3';
+import {viewDirection} from './fps.js?v=4.2.0';
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export function settleWeapon(p,dt){
  if(!Number.isFinite(dt)||dt<0)return;
@@ -13,7 +13,7 @@ export function shotDirection(p,yaw,pitch,random=Math.random){
 }
 export function applyRecoil(p){
  p.bloom=clamp((p.bloom||0)+.28,0,1);
- p.pitch=clamp((p.pitch||0)+(p.aiming?.007:.014),-1.35,1.35);
- // Alternating lateral kick is small enough to correct with deliberate aim.
- p.recoilShot=(p.recoilShot||0)+1;p.yaw=(p.yaw||0)+(p.recoilShot%2?1:-1)*(p.aiming?.0013:.0028);
+ p.pitch=clamp((p.pitch||0)+(p.aiming?.0055:.012),-1.35,1.35);
+ // A small consistent drift avoids the old alternating left/right vibration.
+ p.recoilShot=(p.recoilShot||0)+1;p.yaw=(p.yaw||0)+(p.aiming?.00035:.0008);
 }

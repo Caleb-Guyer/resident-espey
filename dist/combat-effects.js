@@ -22,10 +22,10 @@ export class CombatEffects{
   this.casings=new T.InstancedMesh(new T.CylinderGeometry(.005,.005,.023,8),new T.MeshStandardMaterial({color:0xb79851,roughness:.29,metalness:.76}),this.casingCapacity);this.casings.instanceMatrix.setUsage(T.DynamicDrawUsage);this.casings.count=0;this.casings.frustumCulled=false;root.add(this.casings);this.casingTransform=new T.Object3D();
  }
  get active(){return this.particleCount+this.tracerCount+this.casingCount;}
- eject(origin,yaw){
+ eject(origin,yaw,atPort=false){
   if(![origin.x,origin.y,origin.z,yaw].every(Number.isFinite)||this.casingCount===this.casingCapacity)return;
   const c=this.casingData[this.casingCount++],rightX=Math.cos(yaw),rightZ=-Math.sin(yaw);
-  Object.assign(c,{x:origin.x+rightX*.16-Math.sin(yaw)*.35,y:origin.y-.19,z:origin.z+rightZ*.16-Math.cos(yaw)*.35,vx:rightX*1.8,vz:rightZ*1.8,vy:1.4,spin:Math.random()*6,life:3.2,bounces:0});
+  Object.assign(c,{x:origin.x+(atPort?0:rightX*.16-Math.sin(yaw)*.35),y:origin.y-(atPort?0:.19),z:origin.z+(atPort?0:rightZ*.16-Math.cos(yaw)*.35),vx:rightX*1.8,vz:rightZ*1.8,vy:1.4,spin:Math.random()*6,life:3.2,bounces:0});
  }
  burst(x,z,color=0xe6b25e,count=8,y=1.1){
   if(![x,y,z,count].every(Number.isFinite))return;

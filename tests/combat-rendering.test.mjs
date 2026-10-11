@@ -50,8 +50,9 @@ test('Knife animation keeps the weapon light count stable so shaders are not inv
 test('Weapon and effect warmup restores render targets and visibility even if rendering fails',()=>{
  for(const fail of [false,true]){
   const w=weaponWorld();w.combatEffects=new CombatEffects(w.scene);const target={original:true};let selected=target,renders=0;
-  w.renderer={autoClear:false,getRenderTarget:()=>selected,setRenderTarget:t=>selected=t,render(){renders++;assert.notEqual(selected,target);assert.equal(w.combatEffects.particles.count,1);if(renders===2){assert.ok(w.view.visible&&w.knife.visible&&w.muzzle.visible);if(fail)throw Error('GPU test failure');}}};
+  const magazine=new T.Group(),hand=new T.Mesh(new T.SphereGeometry(.1),new T.MeshStandardMaterial());magazine.visible=false;magazine.add(hand);w.view.add(magazine);
+  w.renderer={autoClear:false,getRenderTarget:()=>selected,setRenderTarget:t=>selected=t,render(){renders++;assert.notEqual(selected,target);assert.equal(w.combatEffects.particles.count,1);if(renders===2){assert.ok(w.view.visible&&w.knife.visible&&w.muzzle.visible);assert.equal(magazine.visible,true);assert.equal(hand.frustumCulled,false);if(fail)throw Error('GPU test failure');}}};
   if(fail)assert.throws(()=>w.prepareCombat(),/GPU test failure/);else w.prepareCombat();
-  assert.equal(renders,2);assert.equal(selected,target);assert.equal(w.renderer.autoClear,false);assert.equal(w.view.visible,true);assert.equal(w.knife.visible,false);assert.equal(w.muzzle.visible,false);assert.equal(w.combatEffects.particles.count,0);assert.equal(w.combatEffects.tracers.geometry.drawRange.count,0);w.combatEffects.dispose();
+  assert.equal(renders,2);assert.equal(selected,target);assert.equal(w.renderer.autoClear,false);assert.equal(w.view.visible,true);assert.equal(w.knife.visible,false);assert.equal(w.muzzle.visible,false);assert.equal(magazine.visible,false);assert.equal(hand.frustumCulled,true);assert.equal(w.combatEffects.particles.count,0);assert.equal(w.combatEffects.tracers.geometry.drawRange.count,0);w.combatEffects.dispose();
  }
 });

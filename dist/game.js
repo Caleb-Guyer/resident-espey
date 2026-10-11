@@ -1,14 +1,14 @@
-import {settleWeapon,shotDirection,applyRecoil} from './gunplay.js?v=4.1.3';
-import {CAMPAIGN_REVISION,roomAt,stageFor} from './levels.js?v=4.1.3';
-import {beginReload,advanceReload,cancelReload,reloadProgress} from './reload.js?v=4.1.3';
-import {World} from './world.js?v=4.1.3';
-import {EYE_HEIGHT,viewDirection,relativeMove,traceShot} from './fps.js?v=4.1.3';
-import {Sound} from './audio.js?v=4.1.3';
-import {CHAPTERS,ENEMY_STATS,TILE,SAVE_KEY,DIFFICULTIES,makeGrid,solid,sight,findPath,distance,validSave,endingFor} from './data.js?v=4.1.3';
-import {Cinematics} from './cinematics.js?v=4.1.3';
-import {MEMORY_LABELS} from './story.js?v=4.1.3';
-import {Voice} from './voice.js?v=4.1.3';
-import {RADIO,characterId} from './dialogue.js?v=4.1.3';
+import {settleWeapon,shotDirection,applyRecoil} from './gunplay.js?v=4.2.0';
+import {CAMPAIGN_REVISION,roomAt,stageFor} from './levels.js?v=4.2.0';
+import {beginReload,advanceReload,cancelReload,reloadProgress} from './reload.js?v=4.2.0';
+import {World} from './world.js?v=4.2.0';
+import {EYE_HEIGHT,viewDirection,relativeMove,traceShot} from './fps.js?v=4.2.0';
+import {Sound} from './audio.js?v=4.2.0';
+import {CHAPTERS,ENEMY_STATS,TILE,SAVE_KEY,DIFFICULTIES,makeGrid,solid,sight,findPath,distance,validSave,endingFor} from './data.js?v=4.2.0';
+import {Cinematics} from './cinematics.js?v=4.2.0';
+import {MEMORY_LABELS} from './story.js?v=4.2.0';
+import {Voice} from './voice.js?v=4.2.0';
+import {RADIO,characterId} from './dialogue.js?v=4.2.0';
 const $=s=>document.querySelector(s);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export class Game{
@@ -107,10 +107,10 @@ export class Game{
  shoot(){
   const p=this.player;if(p.cooldown>0||p.reloading>0||p.dash>0||p.melee>0)return;
   if(p.ammo<=0){p.cooldown=.3;this.sound.play('empty');if(p.reserve)this.reload();else this.toast('No rounds. Use F / KNIFE, then dodge.');return;}
-  p.ammo--;p.cooldown=.28;this.stats.shots++;this.sound.play('shot');this.shake=.18;this.world.fireWeapon?.(p.aiming);
+  p.ammo--;p.cooldown=.28;this.stats.shots++;this.sound.play('shot');this.shake=.035;this.world.fireWeapon?.(p.aiming);
   const yaw=Number.isFinite(p.yaw)?p.yaw:Math.atan2(p.x-this.aim.x,p.z-this.aim.z),direction=shotDirection(p,yaw,p.pitch||0);
   const origin={x:p.x,y:p.crouching?1.14:EYE_HEIGHT,z:p.z};const hit=traceShot(this.grid,origin,this.enemies,direction,this.world.obstacles||[]);
-  const tracerStart={x:origin.x-Math.sin(yaw)*.45+Math.cos(yaw)*(p.aiming?0:.16),y:origin.y-(p.aiming?.10:.2),z:origin.z-Math.cos(yaw)*.45-Math.sin(yaw)*(p.aiming?0:.16)};this.world.tracer(tracerStart,hit.end);this.world.ejectCasing?.(origin,yaw);applyRecoil(p);
+  const tracerStart=this.world.muzzleOrigin?.(p)||{x:origin.x-Math.sin(yaw)*.45+Math.cos(yaw)*(p.aiming?0:.16),y:origin.y-(p.aiming?.10:.2),z:origin.z-Math.cos(yaw)*.45-Math.sin(yaw)*(p.aiming?0:.16)};this.world.tracer(tracerStart,hit.end);this.world.ejectCasing?.(origin,yaw,p);applyRecoil(p);
   if(hit.enemy){this.hurtEnemy(hit.enemy,(hit.headshot?68:34)*this.diff.power,direction.x,direction.z,hit.headshot);this.stats.hits++;this.world.effect(hit.end.x,hit.end.z,0x81392b,8,hit.end.y);this.hitUntil=this.time+.18;this.headshot=hit.headshot;}
   else this.world.effect(hit.end.x,hit.end.z,0xc2b59c,4,hit.end.y);
   this.enemies.forEach(e=>{if(!e.dead&&!e.dormant&&distance(e,p)<17)e.alert=true;});
@@ -193,5 +193,5 @@ export class Game{
    this.world.update(dt,this.time,p,this.aim,this.settings.motion?0:this.shake);this.setHUD();
   }requestAnimationFrame(this.frame);
  }
- snapshot(){return{fps:Math.round(1000/(this.frameMs||16)),drawCalls:this.world?.worldCalls,perspective:'first-person',version:'4.1.3',voice:this.voice?.status,props:this.world?.obstacles?.length,pointerLocked:this.pointerLocked,running:this.running,paused:this.paused,chapter:this.chapter,player:this.player?{x:this.player.x,z:this.player.z,yaw:this.player.yaw,pitch:this.player.pitch,hp:this.player.hp,ammo:this.player.ammo,reserve:this.player.reserve,meds:this.player.meds}:null,objectives:this.objectives,pages:this.pages.size,allies:this.allies.size,scenes:[...(this.seenScenes||[])],bossDead:this.bossDead,enemies:this.enemies?.filter(e=>!e.dead&&!e.dormant).length,nearest:this.nearest?.kind||this.nearest?.name,route:this.level?.tasks?.[this.objectives],room:this.level?roomAt(this.level,this.player.x,this.player.z)?.name:null,gates:this.world?.gates?.filter(g=>g.obstacle.active).length,reloading:this.player?.reloading,beats:[...(this.beats||[])],stats:{...this.stats}};}
+ snapshot(){return{fps:Math.round(1000/(this.frameMs||16)),drawCalls:this.world?.worldCalls,perspective:'first-person',version:'4.2.0',voice:this.voice?.status,props:this.world?.obstacles?.length,pointerLocked:this.pointerLocked,running:this.running,paused:this.paused,chapter:this.chapter,player:this.player?{x:this.player.x,z:this.player.z,yaw:this.player.yaw,pitch:this.player.pitch,hp:this.player.hp,ammo:this.player.ammo,reserve:this.player.reserve,meds:this.player.meds}:null,objectives:this.objectives,pages:this.pages.size,allies:this.allies.size,scenes:[...(this.seenScenes||[])],bossDead:this.bossDead,enemies:this.enemies?.filter(e=>!e.dead&&!e.dormant).length,nearest:this.nearest?.kind||this.nearest?.name,route:this.level?.tasks?.[this.objectives],room:this.level?roomAt(this.level,this.player.x,this.player.z)?.name:null,gates:this.world?.gates?.filter(g=>g.obstacle.active).length,reloading:this.player?.reloading,beats:[...(this.beats||[])],stats:{...this.stats}};}
 }
