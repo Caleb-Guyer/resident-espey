@@ -1,10 +1,10 @@
-import {createAnatomy,animateCollapse} from './anatomy.js?v=4.1.2';
-import {reloadProgress} from './reload.js?v=4.1.2';
+import {createAnatomy,animateCollapse} from './anatomy.js?v=4.1.3';
+import {reloadProgress} from './reload.js?v=4.1.3';
 import * as T from './vendor/three.module.js';
-import {TILE,seeded,solid,findPath} from './data.js?v=4.1.2';
-import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock} from './fps.js?v=4.1.2';
-import {CombatEffects} from './combat-effects.js?v=4.1.2';
-import {WallPlacement} from './wall-placement.js?v=4.1.2';
+import {TILE,seeded,solid,findPath} from './data.js?v=4.1.3';
+import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock} from './fps.js?v=4.1.3';
+import {CombatEffects} from './combat-effects.js?v=4.1.3';
+import {WallPlacement} from './wall-placement.js?v=4.1.3';
 
 const BOX=bevelBox(1,1,1,.014),WALLBOX=new T.BoxGeometry(1,1,1),SPHERE=new T.SphereGeometry(1,20,14),CYL=new T.CylinderGeometry(1,1,1,16);
 const SHARED=new Set([BOX,WALLBOX,SPHERE,CYL]);

@@ -1,8 +1,8 @@
-import {sceneContext,MEMORY_LEAD_IN} from './scene-context.js?v=4.1.2';
-import {dialogueFrame,speakingActor,speechMotion} from './cinematic-direction.js?v=4.1.2';
+import {sceneContext,MEMORY_LEAD_IN} from './scene-context.js?v=4.1.3';
+import {dialogueFrame,speakingActor,speechMotion} from './cinematic-direction.js?v=4.1.3';
 import * as T from './vendor/three.module.js';
-import {SCENES,StoryClock} from './story.js?v=4.1.2';
-import {voicedScene} from './voice-timeline.js?v=4.1.2';
+import {SCENES,StoryClock} from './story.js?v=4.1.3';
+import {voicedScene} from './voice-timeline.js?v=4.1.3';
 const $=s=>document.querySelector(s);
 
 // A separate, lit stage prevents cinematic actors from touching combat or save state.

@@ -4,6 +4,8 @@
 
 Some places remember you. Some refuse to let you go.
 
+Version **4.1.3** fixes firing while holding right-click aim. Mouse buttons work independently in either press or release order, including drag-look fallback. Touch controls also preserve a held fire button when another finger releases aim. Reloading and shot cooldowns still apply.
+
 Version **4.1.2** fixes floating wall props and decorations crossing exits. Boards and signs choose continuous, supported wall sections; fixtures reserve space and keep all room thresholds clear. Trophy shelves have brackets, service pipes follow supported straight runs, and laboratory vials sit on actual desks. Regression checks inspect the rendered geometry at every room entrance in all three chapters.
 
 Version **4.1** improves character anatomy, surfaces, combat handling and cinematic framing. Humanoids use continuous skinned meshes with articulated elbows and knees, clothing folds, curled hair, facial motion, hit reactions and timed falls. Rooms have textured flooring, beveled furniture, worn wood, cracked window panes, radiators, exposed wiring and damaged ceiling panels. Deliberate iron-sight aim settles to an exact shot; moving and rapid fire widen spread. Recoil remains controllable, and brass uses a fixed reusable pool. Dialogue closeups and subtle speaking gestures supplement the existing action shots and voiced flashbacks. The three directed routes and 4.0 save progress remain compatible.

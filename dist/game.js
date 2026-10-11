@@ -1,14 +1,14 @@
-import {settleWeapon,shotDirection,applyRecoil} from './gunplay.js?v=4.1.2';
-import {CAMPAIGN_REVISION,roomAt,stageFor} from './levels.js?v=4.1.2';
-import {beginReload,advanceReload,cancelReload,reloadProgress} from './reload.js?v=4.1.2';
-import {World} from './world.js?v=4.1.2';
-import {EYE_HEIGHT,viewDirection,relativeMove,traceShot} from './fps.js?v=4.1.2';
-import {Sound} from './audio.js?v=4.1.2';
-import {CHAPTERS,ENEMY_STATS,TILE,SAVE_KEY,DIFFICULTIES,makeGrid,solid,sight,findPath,distance,validSave,endingFor} from './data.js?v=4.1.2';
-import {Cinematics} from './cinematics.js?v=4.1.2';
-import {MEMORY_LABELS} from './story.js?v=4.1.2';
-import {Voice} from './voice.js?v=4.1.2';
-import {RADIO,characterId} from './dialogue.js?v=4.1.2';
+import {settleWeapon,shotDirection,applyRecoil} from './gunplay.js?v=4.1.3';
+import {CAMPAIGN_REVISION,roomAt,stageFor} from './levels.js?v=4.1.3';
+import {beginReload,advanceReload,cancelReload,reloadProgress} from './reload.js?v=4.1.3';
+import {World} from './world.js?v=4.1.3';
+import {EYE_HEIGHT,viewDirection,relativeMove,traceShot} from './fps.js?v=4.1.3';
+import {Sound} from './audio.js?v=4.1.3';
+import {CHAPTERS,ENEMY_STATS,TILE,SAVE_KEY,DIFFICULTIES,makeGrid,solid,sight,findPath,distance,validSave,endingFor} from './data.js?v=4.1.3';
+import {Cinematics} from './cinematics.js?v=4.1.3';
+import {MEMORY_LABELS} from './story.js?v=4.1.3';
+import {Voice} from './voice.js?v=4.1.3';
+import {RADIO,characterId} from './dialogue.js?v=4.1.3';
 const $=s=>document.querySelector(s);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export class Game{
@@ -47,13 +47,18 @@ export class Game{
    else if(this.mouse.drag)look(e.clientX-this.mouse.x,e.clientY-this.mouse.y);
    this.mouse.x=e.clientX;this.mouse.y=e.clientY;
   });
-  canvas.addEventListener('pointerdown',e=>{
-   if(e.pointerType!=='mouse'||!this.running||this.paused)return;
-   this.sound.init();this.mouse.x=e.clientX;this.mouse.y=e.clientY;
-   if(e.button===0){this.mouse.down=true;this.mouse.drag=!this.pointerLocked;this.capturePointer();this.shoot();}
-   if(e.button===2){this.mouse.aiming=true;this.mouse.drag=!this.pointerLocked;this.capturePointer();}
+  const mouseButtons=buttons=>{
+   this.mouse.down=!!(buttons&1);this.mouse.aiming=!!(buttons&2);this.mouse.drag=!this.pointerLocked&&(this.mouse.down||this.mouse.aiming);
+   if(this.player)this.player.aiming=this.mouse.aiming||!!this.touch.aiming;
+  };
+  // Unlike pointerdown, mousedown fires when a second mouse button is pressed.
+  canvas.addEventListener('mousedown',e=>{
+   if(e.sourceCapabilities?.firesTouchEvents||!this.running||this.paused||e.button!==0&&e.button!==2)return;
+   this.sound.init();this.mouse.x=e.clientX;this.mouse.y=e.clientY;mouseButtons(e.buttons);this.capturePointer();
+   if(e.button===0)this.shoot();
   });
-  addEventListener('pointerup',e=>{if(e.button===0)this.mouse.down=this.mouse.drag=false;if(e.button===2)this.mouse.aiming=this.mouse.drag=false;});
+  addEventListener('mouseup',e=>{if(!e.sourceCapabilities?.firesTouchEvents)mouseButtons(e.buttons);});
+  addEventListener('pointercancel',e=>{if(e.pointerType==='mouse')mouseButtons(0);});
   canvas.addEventListener('contextmenu',e=>e.preventDefault());
   const joy=$('#joystick'),knob=joy.querySelector('i');
   const move=e=>{const b=joy.getBoundingClientRect(),dx=e.clientX-(b.x+b.width/2),dz=e.clientY-(b.y+b.height/2),len=Math.hypot(dx,dz),scale=Math.min(1,len/35);this.touch.x=len?dx/len*scale:0;this.touch.z=len?dz/len*scale:0;knob.style.transform='translate('+this.touch.x*32+'px,'+this.touch.z*32+'px)';};
@@ -67,9 +72,9 @@ export class Game{
   document.querySelectorAll('[data-action]').forEach(b=>{
    b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);const action=b.dataset.action;
     if(action==='fire'){this.touch.fire=true;if(this.running&&!this.paused)this.shoot();}
-    else if(action==='aim')this.touch.aiming=!this.touch.aiming;else this.action(action);
+    else if(action==='aim'){this.touch.aiming=!this.touch.aiming;if(this.player)this.player.aiming=this.mouse.aiming||this.touch.aiming;}else this.action(action);
    });
-   const end=()=>this.touch.fire=false;b.addEventListener('pointerup',end);b.addEventListener('pointercancel',end);
+   const end=()=>{if(b.dataset.action==='fire')this.touch.fire=false;};b.addEventListener('pointerup',end);b.addEventListener('pointercancel',end);
   });
  }
  capturePointer(){
@@ -188,5 +193,5 @@ export class Game{
    this.world.update(dt,this.time,p,this.aim,this.settings.motion?0:this.shake);this.setHUD();
   }requestAnimationFrame(this.frame);
  }
- snapshot(){return{fps:Math.round(1000/(this.frameMs||16)),drawCalls:this.world?.worldCalls,perspective:'first-person',version:'4.1.2',voice:this.voice?.status,props:this.world?.obstacles?.length,pointerLocked:this.pointerLocked,running:this.running,paused:this.paused,chapter:this.chapter,player:this.player?{x:this.player.x,z:this.player.z,yaw:this.player.yaw,pitch:this.player.pitch,hp:this.player.hp,ammo:this.player.ammo,reserve:this.player.reserve,meds:this.player.meds}:null,objectives:this.objectives,pages:this.pages.size,allies:this.allies.size,scenes:[...(this.seenScenes||[])],bossDead:this.bossDead,enemies:this.enemies?.filter(e=>!e.dead&&!e.dormant).length,nearest:this.nearest?.kind||this.nearest?.name,route:this.level?.tasks?.[this.objectives],room:this.level?roomAt(this.level,this.player.x,this.player.z)?.name:null,gates:this.world?.gates?.filter(g=>g.obstacle.active).length,reloading:this.player?.reloading,beats:[...(this.beats||[])],stats:{...this.stats}};}
+ snapshot(){return{fps:Math.round(1000/(this.frameMs||16)),drawCalls:this.world?.worldCalls,perspective:'first-person',version:'4.1.3',voice:this.voice?.status,props:this.world?.obstacles?.length,pointerLocked:this.pointerLocked,running:this.running,paused:this.paused,chapter:this.chapter,player:this.player?{x:this.player.x,z:this.player.z,yaw:this.player.yaw,pitch:this.player.pitch,hp:this.player.hp,ammo:this.player.ammo,reserve:this.player.reserve,meds:this.player.meds}:null,objectives:this.objectives,pages:this.pages.size,allies:this.allies.size,scenes:[...(this.seenScenes||[])],bossDead:this.bossDead,enemies:this.enemies?.filter(e=>!e.dead&&!e.dormant).length,nearest:this.nearest?.kind||this.nearest?.name,route:this.level?.tasks?.[this.objectives],room:this.level?roomAt(this.level,this.player.x,this.player.z)?.name:null,gates:this.world?.gates?.filter(g=>g.obstacle.active).length,reloading:this.player?.reloading,beats:[...(this.beats||[])],stats:{...this.stats}};}
 }

@@ -1,6 +1,6 @@
-import {Game} from './game.js?v=4.1.2';
-import {CHAPTERS,PAGES,TILE} from './data.js?v=4.1.2';
-import {MEMORY_IDS,SCENES} from './story.js?v=4.1.2';
+import {Game} from './game.js?v=4.1.3';
+import {CHAPTERS,PAGES,TILE} from './data.js?v=4.1.3';
+import {MEMORY_IDS,SCENES} from './story.js?v=4.1.3';
 const $=s=>document.querySelector(s);
 let settings={volume:.6,dialogueVolume:1,quality:'high',sensitivity:1,fov:76,subtitles:true,motion:matchMedia('(prefers-reduced-motion: reduce)').matches};
 try{const s=JSON.parse(localStorage.getItem('resident-espey-settings'));if(s){settings={...settings,...s};settings.volume=Math.max(0,Math.min(1,Number(settings.volume)||0));settings.dialogueVolume=Math.max(0,Math.min(1,Number(settings.dialogueVolume??1)));settings.sensitivity=Math.max(.3,Math.min(2.5,Number(settings.sensitivity)||1));settings.fov=Math.max(60,Math.min(95,Number(settings.fov)||76));}}catch{}
