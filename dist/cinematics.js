@@ -1,6 +1,6 @@
 import * as T from './vendor/three.module.js';
-import {SCENES,StoryClock} from './story.js?v=3.1.0';
-import {voicedScene} from './voice-timeline.js?v=3.1.0';
+import {SCENES,StoryClock} from './story.js?v=3.1.1';
+import {voicedScene} from './voice-timeline.js?v=3.1.1';
 const $=s=>document.querySelector(s);
 
 // A separate, lit stage prevents cinematic actors from touching combat or save state.

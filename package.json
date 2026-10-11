@@ -1,12 +1,12 @@
 {
   "name": "resident-espey",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "private": true,
   "type": "module",
   "description": "Resident Espey: The Last Bell — a first-person browser survival-horror campaign",
   "scripts": {
     "dev": "node server.mjs",
     "test": "node --test tests/*.test.mjs",
-    "check": "node --check dist/game.js && node --check dist/main.js && node --check dist/world.js && node --check dist/fps.js && node --check dist/cinematics.js && node --check dist/story.js && node --check dist/voice.js && node --check dist/voice-timeline.js && node --check dist/dialogue.js && node --check dist/voice-assets.js"
+    "check": "node --check dist/game.js && node --check dist/main.js && node --check dist/world.js && node --check dist/fps.js && node --check dist/cinematics.js && node --check dist/story.js && node --check dist/voice.js && node --check dist/voice-timeline.js && node --check dist/dialogue.js && node --check dist/voice-assets.js && node --check dist/combat-effects.js"
   }
 }

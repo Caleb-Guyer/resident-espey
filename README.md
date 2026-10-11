@@ -18,6 +18,8 @@ Three difficulties. Three endings. Six discoverable memories. Three allies intro
 
 Version 3.1 adds 77 packaged, AI-generated dialogue recordings across all 13 story scenes, survivor conversations and gameplay dialogue. Ethan, Joel, Hall, Landon and the rest of the cast have individual voices; radio transmissions and the Backrooms mimics have dedicated treatments. Dialogue lowers the effects mix while someone speaks. Master volume and dialogue volume are separate, and subtitles are optional in both gameplay and cutscenes. Pausing resumes speech from the same position; skipping or leaving a scene stops its recordings. [Audio production and voice credits](AUDIO_PRODUCTION.md).
 
+Version 3.1.1 fixes brief combat stalls by preparing both weapons and their effects during chapter loading, keeping weapon lighting stable when switching to the knife, and reusing two bounded graphics batches for particles and bullet tracers.
+
 The story unfolds through real-time scenes and object-triggered flashbacks, with an optional notebook. Moving and dodging follow your view direction; bullets use a three-dimensional ray with headshots and furniture occlusion. Existing browser checkpoints remain compatible. If a saved position conflicts with a new wall or prop, Ethan returns to the chapter's starting sanctuary with his discoveries intact.
 
 ## Controls

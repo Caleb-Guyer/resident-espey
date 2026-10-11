@@ -1,6 +1,7 @@
 import * as T from './vendor/three.module.js';
-import {TILE,seeded,solid} from './data.js?v=3.1.0';
-import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock} from './fps.js?v=3.1.0';
+import {TILE,seeded,solid} from './data.js?v=3.1.1';
+import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock} from './fps.js?v=3.1.1';
+import {CombatEffects} from './combat-effects.js?v=3.1.1';
 
 const BOX=new T.BoxGeometry(1,1,1),SPHERE=new T.SphereGeometry(1,20,14),CYL=new T.CylinderGeometry(1,1,1,16);
 const SHARED=new Set([BOX,SPHERE,CYL]);
@@ -36,7 +37,7 @@ export class World{
   this.renderer.setPixelRatio(Math.min(devicePixelRatio,settings.quality==='high'?1.65:1));this.renderer.shadowMap.enabled=settings.quality==='high';this.renderer.shadowMap.type=T.PCFSoftShadowMap;
   this.renderer.toneMapping=T.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.45;
   this.scene=new T.Scene();this.camera=new T.PerspectiveCamera(settings.fov||76,1,.06,85);this.camera.rotation.order='YXZ';
-  this.effects=[];this.lamps=[];this.obstacles=[];this.recoil=0;this.ads=0;this.walk=0;this.assets={};
+  this.lamps=[];this.obstacles=[];this.recoil=0;this.ads=0;this.walk=0;this.assets={};
   const loader=new T.TextureLoader();this.ready=Promise.all([['floor','floor'],['wall','plaster'],['skin','infected-skin'],['face','infected-face'],['ethan','ethan-face'],['survivor','survivor-face']].map(([name,file])=>new Promise((resolve,reject)=>{
    const t=loader.load(new URL(`./assets/${file}.webp`,import.meta.url).href,resolve,undefined,reject);t.wrapS=t.wrapT=T.RepeatWrapping;t.colorSpace=T.SRGBColorSpace;t.anisotropy=8;this.assets[name]=t;
   })));this.ready.catch(()=>{});
@@ -62,6 +63,7 @@ export class World{
   for(const objects of buckets.values()){if(objects.length<3)continue;const first=objects[0],batch=new T.InstancedMesh(first.geometry,first.material,objects.length);objects.forEach((o,i)=>batch.setMatrixAt(i,o.matrixWorld));batch.castShadow=true;batch.receiveShadow=true;this.root.add(batch);for(const o of objects)o.parent.remove(o);}
  }
  disposeLevel(){
+  this.combatEffects?.dispose();this.combatEffects=null;
   if(!this.root)return;const geos=new Set(),mats=new Set(),textures=new Set(),keep=new Set(Object.values(this.assets));
   this.scene.traverse(o=>{if(o.geometry&&!SHARED.has(o.geometry))geos.add(o.geometry);if(o.material)for(const m of Array.isArray(o.material)?o.material:[o.material]){mats.add(m);for(const key of ['map','bumpMap','roughnessMap','alphaMap'])if(m[key]&&!keep.has(m[key]))textures.add(m[key]);}});
   for(const g of geos)g.dispose();for(const m of mats)m.dispose();for(const t of textures)t.dispose();this.flashlight?.shadow?.dispose();this.scene.clear();this.decalMaps={};
@@ -72,7 +74,7 @@ export class World{
   for(const g of geos)g.dispose();for(const m of mats)m.dispose();for(const t of textures)t.dispose();root.clear();
  }
  load(chapter,grid){
-  this.disposeLevel();this.grid=grid;this.config=chapter;this.theme=chapter.theme;this.effects=[];this.lamps=[];this.obstacles=[];this.portal=null;this.gent=null;this.mist=[];
+  this.disposeLevel();this.grid=grid;this.config=chapter;this.theme=chapter.theme;this.lamps=[];this.obstacles=[];this.portal=null;this.gent=null;this.mist=[];
   const yellow=this.theme==='backrooms',breach=this.theme==='breach';this.scene.background=new T.Color(yellow?0x1b1910:0x090e11);this.scene.fog=new T.FogExp2(yellow?0x25231a:0x0c1419,yellow?.026:.032);this.root=new T.Group();this.scene.add(this.root);
   this.scene.add(new T.HemisphereLight(yellow?0xd5cba0:0x9fbab7,0x1a201d,yellow?.58:.43));
   this.palette={metal:material(0x424c4a,.42,.66),black:material(0x151c1c,.65,.25),wood:material(yellow?0x766447:0x665b49),paper:material(0xc9bea5),rust:material(0x593b2d),glass:material(0x1a3839,.13,.5),bone:material(0xaaa18a),blood:material(0x36140e,.35)};
@@ -95,7 +97,7 @@ export class World{
   this.sign(breach?'P.A. / 204':'204',[this.exit.position.x,2.85,this.exit.position.z+.23],1.2,.3,'#cabaa0','#171d19');this.sign('EXIT',[this.exit.position.x,3.05,this.exit.position.z+.22],.7,.23,'#f4ceaa','#572c20');
   this.exitLight=new T.PointLight(0xbd5840,12,7,2);this.exitLight.position.set(this.exit.position.x,2.7,this.exit.position.z+.7);this.scene.add(this.exitLight);
   if(breach){this.portal=mesh(new T.TorusGeometry(1.65,.055,8,64),new T.MeshBasicMaterial({color:0xb6583c}),[1,1,1],[36,1.8,6],this.root);mesh(new T.CircleGeometry(1.63,48),new T.MeshBasicMaterial({color:0x010202}),[1,1,1],[36,1.8,5.98],this.root);this.gent=this.character('gentleman');this.gent.position.set(36,0,6.4);this.root.add(this.gent);}
-  this.optimizeStatic();this.view.visible=true;
+  this.optimizeStatic();this.view.visible=true;this.combatEffects=new CombatEffects(this.root);
  }
  blocked(x,z,r){return propsBlock(this.obstacles,x,z,r);}
  clearWalkPath(a,b){const len=Math.hypot(b.x-a.x,b.z-a.z);for(let t=.3;t<len;t+=.45)if(this.blocked(a.x+(b.x-a.x)*t/len,a.z+(b.z-a.z)*t/len,.38))return false;return true;}
@@ -383,7 +385,9 @@ export class World{
   tube(this.hands,skin,[[-.05,-.105,-.035],[-.04,-.08,-.027],[-.012,-.073,-.046]],.014);
   const flashMap=canvasTexture((ctx,s)=>{const d=ctx.createRadialGradient(s/2,s/2,0,s/2,s/2,s*.5);d.addColorStop(0,'#fffff0');d.addColorStop(.12,'#ffe9b8');d.addColorStop(.32,'#ffaa4433');d.addColorStop(1,'#ff991100');ctx.fillStyle=d;ctx.fillRect(0,0,s,s);},128);
   this.muzzle=mesh(new T.PlaneGeometry(.19,.19),new T.MeshBasicMaterial({map:flashMap,transparent:true,blending:T.AdditiveBlending,depthWrite:false}),[1,1,1],[0,.02,-.38],this.gun);this.muzzle.visible=false;
-  this.viewFlash=new T.PointLight(0xffc879,0,2,2);this.viewFlash.position.set(0,.06,-.4);this.view.add(this.viewFlash);
+  // Keep the light in the scene when the gun is hidden for a knife swing. A
+  // changing light count would invalidate every lit weapon material's shader.
+  this.viewFlash=new T.PointLight(0xffc879,0,2,2);this.viewFlash.position.set(0,.06,-.4);this.viewScene.add(this.viewFlash);
   this.knife=group(this.viewScene,.31,-.33,-.52);const blade=material(0x9ca9a2,.23,.84);
   mesh(BOX,rubber,[.042,.15,.033],[0,-.07,0],this.knife);mesh(BOX,steel,[.095,.013,.025],[0,.013,0],this.knife);mesh(BOX,blade,[.046,.20,.008],[0,.12,0],this.knife);mesh(new T.ConeGeometry(.024,.085,3),blade,[1,1,.18],[0,.26,0],this.knife);this.knife.visible=false;
   mergeParts(this.slide);mergeParts(grip);mergeParts(this.gun);mergeParts(this.hands);mergeParts(this.knife);
@@ -391,6 +395,25 @@ export class World{
  }
  fireWeapon(){this.recoil=1;this.flashTimer=.065;}
  swingKnife(){this.knifeTimer=.46;}
+ prepareCombat(){
+  // Upload and render both weapons, the muzzle flash and both effect batches
+  // offscreen during chapter loading, before the player can attack.
+  const target=this.renderer.getRenderTarget(),autoClear=this.renderer.autoClear;
+  const gun=this.view.visible,knife=this.knife.visible,muzzle=this.muzzle.visible;
+  const particles=this.combatEffects.particles.count,tracers=this.combatEffects.tracers.geometry.drawRange.count;
+  const warm=new T.WebGLRenderTarget(16,16);
+  try{
+   this.renderer.setRenderTarget(warm);this.renderer.autoClear=true;
+   this.combatEffects.particles.count=1;this.combatEffects.tracers.geometry.setDrawRange(0,2);
+   this.renderer.render(this.scene,this.camera);
+   this.view.visible=this.knife.visible=this.muzzle.visible=true;
+   this.renderer.render(this.viewScene,this.viewCamera);
+  }finally{
+   this.combatEffects.particles.count=particles;this.combatEffects.tracers.geometry.setDrawRange(0,tracers);
+   this.view.visible=gun;this.knife.visible=knife;this.muzzle.visible=muzzle;
+   this.renderer.setRenderTarget(target);this.renderer.autoClear=autoClear;warm.dispose();
+  }
+ }
  setView(p,yaw,pitch,t,ads=false){
   this.yaw=yaw;this.pitch=pitch;const bob=this.settings.motion?0:Math.sin(this.walk*8)*.021;
   const eye=p.crouching?1.14:EYE_HEIGHT;this.camera.position.set(p.x,eye+bob,p.z);
@@ -403,6 +426,7 @@ export class World{
   this.view.position.set(.255*(1-this.ads)*Math.min(1,this.camera.aspect/1.3),-.235+.142*this.ads+bob-reload*.17-(p.sprinting?.075:0),-.52+.1*this.ads+this.recoil*.075);
   this.view.rotation.set(this.recoil*.17-reload*.35,.18*(1-this.ads),-reload*.5+(this.settings.motion?0:Math.sin(this.walk*4)*.012)*(1-this.ads));
   this.slide.position.z=-.18+this.recoil*.032;this.muzzle.visible=this.flashTimer>0;this.muzzle.rotation.z=Math.random()*Math.PI;this.viewFlash.intensity=this.flashTimer>0?6:0;
+  this.view.updateMatrixWorld(true);this.viewFlash.position.set(0,.06,-.4).applyMatrix4(this.view.matrixWorld);
   this.knife.visible=this.knifeTimer>0;this.view.visible=this.knifeTimer<=0;this.knife.rotation.z=-1.25+Math.sin((.46-this.knifeTimer)/.46*Math.PI)*2;this.knife.rotation.x=-.4;
   const fov=(this.settings.fov||76)-this.ads*17+(p.sprinting&&!this.settings.motion?3:0);if(Math.abs(this.camera.fov-fov)>.01){this.camera.fov+=(fov-this.camera.fov)*blend;this.camera.updateProjectionMatrix();}
  }
@@ -446,9 +470,9 @@ export class World{
   mergeParts(g);return g;
  }
  effect(x,z,color=0xe6b25e,count=8,y=1.1){
-  for(let i=0;i<count;i++){const o=mesh(SPHERE,new T.MeshBasicMaterial({color,transparent:true}),[.016,.016,.016],[x,y,z],this.root);o.castShadow=false;this.effects.push({o,life:.3+Math.random()*.3,vx:(Math.random()-.5)*3,vz:(Math.random()-.5)*3,vy:Math.random()*2});}
+  this.combatEffects?.burst(x,z,color,count,y);
  }
- tracer(a,b){const o=new T.Line(new T.BufferGeometry().setFromPoints([new T.Vector3(a.x,a.y??EYE_HEIGHT,a.z),new T.Vector3(b.x,b.y??1.1,b.z)]),new T.LineBasicMaterial({color:0xffd6a3,transparent:true,opacity:.45}));this.root.add(o);this.effects.push({o,life:.055,vx:0,vz:0,vy:0});}
+ tracer(a,b){this.combatEffects?.tracer(a,b);}
  warning(x,z,r){const o=mesh(new T.RingGeometry(r-.12,r,48),new T.MeshBasicMaterial({color:0xd87748,transparent:true,opacity:.5,side:T.DoubleSide,depthWrite:false}),[1,1,1],[x,.04,z],this.root);o.rotation.x=-Math.PI/2;o.castShadow=false;return o;}
  update(dt,t,p,aim,shake){
   this.setView(p,p.yaw||0,p.pitch||0,t,p.aiming);if(p.moving)this.walk+=dt*(p.sprinting?1.45:1);
@@ -459,7 +483,7 @@ export class World{
   this.lightPool.forEach((l,i)=>{const v=lamps[i];if(!v)return;l.position.set(v.x,CEILING-.33,v.z);l.color.set(v.color);l.intensity=v.base*(Math.sin(t*1.3+v.offset)>-.995?1:.12);});
   if(this.dust)this.dust.position.y=Math.sin(t*.13)*.08;if(this.portal){this.portal.rotation.z=t*.14;this.portal.material.color.setHSL(.025,.6,.36+Math.sin(t)*.06);}
   for(const o of this.mist){o.quaternion.copy(this.camera.quaternion);o.material.opacity=.13+Math.sin(t+o.position.y)*.06;}
-  for(let i=this.effects.length-1;i>=0;i--){const e=this.effects[i];e.life-=dt;if(e.life<=0){this.root.remove(e.o);if(!SHARED.has(e.o.geometry))e.o.geometry.dispose();e.o.material.dispose();this.effects.splice(i,1);}else{e.o.position.x+=e.vx*dt;e.o.position.z+=e.vz*dt;e.o.position.y+=e.vy*dt;e.vy-=dt*5;e.o.material.opacity=Math.min(1,e.life*4);}}
+  this.combatEffects?.update(dt);
   this.updateWeapon(dt,t,p);this.renderer.autoClear=true;this.renderer.render(this.scene,this.camera);this.worldCalls=this.renderer.info.render.calls;
   this.renderer.autoClear=false;this.renderer.clearDepth();this.renderer.render(this.viewScene,this.viewCamera);this.worldCalls+=this.renderer.info.render.calls;
  }

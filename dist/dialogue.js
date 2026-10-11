@@ -1,5 +1,5 @@
-import {SCENES} from './story.js?v=3.1.0';
-import {CHAPTERS} from './data.js?v=3.1.0';
+import {SCENES} from './story.js?v=3.1.1';
+import {CHAPTERS} from './data.js?v=3.1.1';
 
 // The same script drives production audio and gameplay; keys survive timing edits.
 export const RADIO={
