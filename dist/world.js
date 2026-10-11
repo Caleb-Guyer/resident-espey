@@ -1,6 +1,6 @@
 import * as T from './vendor/three.module.js';
-import {TILE,seeded,solid} from './data.js?v=3.0.0';
-import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock} from './fps.js?v=3.0.0';
+import {TILE,seeded,solid} from './data.js?v=3.1.0';
+import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock} from './fps.js?v=3.1.0';
 
 const BOX=new T.BoxGeometry(1,1,1),SPHERE=new T.SphereGeometry(1,20,14),CYL=new T.CylinderGeometry(1,1,1,16);
 const SHARED=new Set([BOX,SPHERE,CYL]);

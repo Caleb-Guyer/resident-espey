@@ -11,3 +11,7 @@
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.grain{display:none}}
 
 .scene-controls button{min-height:40px;padding:10px 5px}
+#scene-loading{position:absolute;inset:0;display:grid;place-content:center;text-align:center;background:#080d0ef0;z-index:7;color:#d1d5cd;padding:24px;font-size:14px;letter-spacing:.04em}
+#scene-audio-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+#scene-audio-actions button{padding:12px 16px;border:1px solid #66716b;background:#111918;color:#dce2d7}
+.scene-controls{z-index:8}
