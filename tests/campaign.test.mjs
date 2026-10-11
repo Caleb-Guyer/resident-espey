@@ -38,7 +38,7 @@ test('Furniture blocks movement and low shots while a high shot clears a desk',(
 
 test('The complete campaign still reaches the best ending through real progression actions',()=>{
  const g=fixture(),model=()=>({position:{set(){}},rotation:{},scale:{multiplyScalar(){}},traverse(){},visible:true});
- g.world={load(){},character:model,object:model,setView(){},blocked(){return false;},root:{add(){},remove(){}},effect(){},tracer(){}};
+ g.world={load(){},character:model,object:model,memoryObject:model,setView(){},blocked(){return false;},root:{add(){},remove(){}},effect(){},tracer(){}};
  g.settings={subtitles:true};g.keys=new Set();g.mouse={};g.touch={};g.time=0;g.sound.pause=()=>{};g.capturePointer=()=>{};
  g.ui.showGame=()=>{};g.ui.intro=()=>{};g.ui.updateContinue=()=>{};g.save=()=>{};let ending=null,puzzles=0,finales=0;
  g.ui.puzzle=()=>puzzles++;g.ui.finale=()=>finales++;g.ui.ending=e=>ending=e;

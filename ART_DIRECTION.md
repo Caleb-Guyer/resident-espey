@@ -22,3 +22,5 @@ The following assets were generated from text with no reference images, then res
 Tile and plaster materials use bump detail. Infected faces are mapped to curved patches on articulated three-dimensional heads; the skull, limbs, clothing, wounds, ribs and boss growths are geometry. Zsiga's elongated grey silhouette, Jakob's stretched limbs and fused second head, Birdy's red skeletal presence, and Zebene's swollen body and mist keep their source-inspired identities.
 
 The first-person sidearm uses original beveled geometry, serrations, a trigger guard, sights, separate slide, hands, and sleeves. A separate weapon render avoids clipping against nearby walls. Rooms use ceilings, exposed conduits, lockers, computer desks, notes, stained surfaces, windows, and navigation-aware furniture placement. Static scenery and rigid body details are batched to reduce draw calls.
+
+Cinematic edition asset prompts and implementation notes: [CINEMATIC_ART.md](CINEMATIC_ART.md).

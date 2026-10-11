@@ -14,9 +14,9 @@ A complete, original **first-person** browser survival-horror campaign starring 
 2. **The people the maze remembers.** Follow Landon's chalk through the Backrooms, face Caleb Zsiga and Lil Birdy, confront Jakob, and align the Geographer's Seal.
 3. **Remember everyone.** Return to Room 204, learn the truth about Coach Hall's serum, face Stage IV Zebene Martine, and choose what the last page says.
 
-Three difficulties. Three endings. Six notebook pages. Three allies whose names can be anchored. Enclosed classrooms, worn tiles and plaster, stained Backrooms wallpaper, furnished rooms, detailed infected faces, articulated creature rigs, flashlight shadows, fog, particles, directional growls, and a visible sidearm with recoil, iron sights and reload animation. No runtime CDN, accounts, purchases, or API keys are needed to play.
+Three difficulties. Three endings. Six discoverable memories. Three allies introduced through staged scenes. Enclosed classrooms, worn tiles and plaster, stained Backrooms wallpaper, furnished rooms, detailed faces, articulated creature rigs, flashlight shadows, fog, particles, directional growls, and a visible sidearm with recoil, iron sights and reload animation. No runtime CDN, accounts, purchases, or API keys are needed to play.
 
-Version 2.0 replaces the original overhead perspective. Four high-resolution generated textures add surface and face detail; moving and dodging follow your view direction, and bullets use a three-dimensional ray with headshots and furniture occlusion. Existing browser checkpoints remain compatible. If a saved position conflicts with a new wall or prop, Ethan returns to the chapter's starting sanctuary with his discoveries intact.
+Version 3.0 moves the story into real-time scenes and object-triggered flashbacks, with an optional notebook. Moving and dodging follow your view direction; bullets use a three-dimensional ray with headshots and furniture occlusion. Existing browser checkpoints remain compatible. If a saved position conflicts with a new wall or prop, Ethan returns to the chapter's starting sanctuary with his discoveries intact.
 
 ## Controls
 
@@ -42,7 +42,7 @@ Click the scene to capture your mouse. Escape releases it and pauses the game. I
 
 Blue checkpoint terminals restore vitals and save the game. Major discoveries and chapter changes also save. Saves and preferences stay in the current browser. Browser storage restrictions may limit saves to the current session. The infinite knife prevents an ammunition softlock.
 
-For the strongest ending, talk to each ally, recover at least four notebook pages, and choose to read the names over the PA. The seal sequence is hinted in Landon's dialogue and Aldo's margin.
+For the strongest ending, meet all three allies in the chapter scenes, recover at least four memories, and call everyone home over the PA. The seal sequence is shown in a flashback and repeated in Landon's dialogue. Reading notebook entries is optional.
 
 ## Run locally
 
@@ -72,3 +72,13 @@ GitHub Actions tests the campaign and publishes the `dist/` directory to GitHub 
 - `tests/campaign.test.mjs`: reachability, collision, combat, resource, save and ending checks.
 
 The source PDF is not distributed in this repository. This is a fictional, original adaptation; its dialogue and endings were written for the game. Not affiliated with Capcom. Three.js is MIT licensed; see `dist/vendor/THREE-LICENSE.txt`. See [art direction](ART_DIRECTION.md) for generated asset provenance and prompts.
+
+## Cinematic edition (3.0)
+
+The three-chapter story now unfolds through thirteen real-time 3D sequences: the outbreak opening, two chapter arrivals, six object-triggered memories, a final choice scene, and three distinct endings. Scenes use staged characters, camera cuts and dolly moves, lighting, concise dialogue captions, and local sound design. They are pausable and skippable. There is no recorded voice cast.
+
+Open the survivor closet, inspect Joel’s chair, touch the running shoes, examine the seal, find Hall’s whistle, and open the unwritten notebook to see the flashbacks. Each discovery keeps a name and a practical clue. The optional notebook supports scene replay and expanded prose. Four memories and all three allies unlock the full rescue ending. Allies are now introduced through the chapter scenes; separate conversations add context. Existing browser saves remain compatible.
+
+The title menu and HUD have been rebuilt around a restrained survival-horror presentation. Objectives fade after a few seconds, ammunition and health stay legible, and encounters remain first person. Ethan retains blonde curly hair and blue eyes, with new facial textures and articulated survivor arms.
+
+Verification: Node campaign, combat, cinematic timing, pause/skip lifecycle, camera isolation, and story content tests; browser previews of all 13 scenes, object-triggered discovery, route reachability with furniture, and responsive UI.

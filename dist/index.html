@@ -1,36 +1,40 @@
 <!doctype html>
-<html lang="en" data-version="2.0.0">
+<html lang="en" data-version="3.0.0">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b1011">
 <title>Resident Espey — The Last Bell</title>
 <meta name="description" content="Become Ethan Espey. Survive the infected halls, descend into the Backrooms, and rewrite the last page. A free first-person survival-horror game.">
 <meta property="og:title" content="Resident Espey — The Last Bell"><meta property="og:description" content="Some places remember you. Some refuse to let you go."><meta property="og:type" content="website">
-<link rel="icon" type="image/svg+xml" href="assets/icon.svg"><link rel="stylesheet" href="style.css?v=2.0.0">
+<link rel="icon" type="image/svg+xml" href="assets/icon.svg"><link rel="stylesheet" href="style.css?v=3.0.0">
 </head>
 <body>
 <canvas id="world" aria-label="Resident Espey 3D game world"></canvas>
 <div class="vignette" aria-hidden="true"></div><div id="damage" aria-hidden="true"></div><div class="grain" aria-hidden="true"></div>
 <main id="title" class="screen title-screen">
  <div class="cover" aria-hidden="true"></div><div class="title-shade"></div>
- <header class="title-top"><a class="brand" href="#" aria-label="Resident Espey home">RE<span> / </span>THE LAST BELL</a><span class="edition">A CHAPA TRILOGY STORY</span></header>
- <div class="title-content"><div class="eyebrow"><span class="live-dot"></span> SMITHSON VALLEY • 03:04 AM</div>
- <h1>RESIDENT<br><span>ESPEY</span><i></i></h1><div class="subtitle">THE LAST BELL</div>
- <p class="tagline">Some places remember you.<br>Some refuse to let you go.</p>
- <div class="menu"><button id="new-game" class="primary">ENTER THE NIGHT <span>→</span></button><button id="continue-game" class="secondary" hidden>CONTINUE STORY <span>↗</span></button><div class="menu-small"><button id="how-to">FIELD GUIDE</button><button id="settings">SETTINGS</button><button id="credits">THE STORY</button></div></div>
- <p class="experience">FIRST-PERSON SURVIVAL HORROR <span>/</span> THREE CHAPTERS <span>/</span> YOUR ENDING</p></div>
- <footer class="title-bottom"><span><i class="sound-icon">◖</i> HEADPHONES RECOMMENDED</span><span>ETHAN ESPEY WILL REMEMBER THIS.</span><span class="version">VOL. 02 / FIRST PERSON</span></footer>
+ <div class="title-content">
+ <h1>RESIDENT<br><span>ESPEY</span></h1><div class="subtitle">THE LAST BELL</div>
+ <nav class="menu" aria-label="Main menu"><button id="continue-game" hidden>Continue<small id="save-label"></small></button><button id="new-game">New game</button><button id="settings">Settings</button><button id="how-to">Controls</button><button id="credits">Credits</button></nav>
+ </div>
+ <footer class="title-bottom"><span>Headphones recommended</span><span class="version">3.0</span></footer>
 </main>
 <section id="hud" hidden aria-label="Game status">
- <div class="hud-top"><div><div id="chapter-label" class="eyebrow"></div><h2 id="location-label"></h2><p id="objective"></p></div><div class="hud-actions"><button id="map-button" title="Map (M)">MAP <kbd>M</kbd></button><button id="journal-button" title="Journal (J)">JOURNAL <kbd>J</kbd></button><button id="pause-button" title="Pause (Escape)">Ⅱ</button></div></div>
+ <div class="hud-top"><div class="objective-panel"><div id="chapter-label" class="eyebrow"></div><h2 id="location-label"></h2><p id="objective"></p></div><div class="hud-actions"><button id="map-button" title="Map (M)">Map <kbd>M</kbd></button><button id="journal-button" title="Notebook (J)">Notebook <kbd>J</kbd></button><button id="pause-button" aria-label="Pause game" title="Pause (Escape)">Ⅱ</button></div></div>
  <div id="boss-hud" hidden><div id="boss-name"></div><div class="boss-track"><i id="boss-fill"></i></div></div>
  <div class="hud-bottom"><div class="vitals"><div class="status-label"><span>ETHAN ESPEY</span><span id="health-state">FINE</span></div><div class="health-track"><i id="health-fill"></i></div><div class="stamina-track"><i id="stamina-fill"></i></div><span class="small-label">VITALS / STAMINA</span></div><div class="equipment"><div><strong id="ammo">12</strong><span id="reserve"> / 60</span><small>M9 SIDEARM <kbd>R</kbd></small></div><div class="medkit"><strong id="meds">3</strong><small>FIRST AID <kbd>Q</kbd></small></div></div></div>
  <div id="interaction" hidden><kbd>E</kbd><span></span></div><div id="radio" role="status" aria-live="polite"><span id="speaker"></span><p id="radio-text"></p></div><div id="toast" role="status"></div><div id="reload-progress" hidden>RELOADING <span>•••</span></div>
  <div id="crosshair" aria-hidden="true"><i></i></div><div id="tutorial"></div><div id="look-hint">CLICK TO CAPTURE MOUSE · RIGHT-DRAG OR ARROWS TO LOOK</div><div id="flashlight-state">LIGHT ON</div>
 </section>
+<section id="cinematic" hidden aria-label="Story scene">
+ <div class="letterbox top"></div><div class="letterbox bottom"></div><div id="scene-fade"></div>
+ <div class="scene-heading"><p id="scene-location"></p><p id="scene-time"></p></div>
+ <div id="scene-captions" role="status" aria-live="polite"><span id="scene-speaker"></span><p id="scene-subtitle"></p></div>
+ <div class="scene-controls"><button id="pause-scene">Pause</button><button id="skip-scene">Skip scene</button></div><div class="scene-track"><i id="scene-progress"></i></div>
+</section>
 <section id="overlay" class="screen overlay" hidden aria-modal="true" role="dialog" aria-labelledby="overlay-title"><div class="dialog"><div id="overlay-eyebrow" class="eyebrow"></div><h2 id="overlay-title"></h2><div id="overlay-body"></div><div id="overlay-actions"></div></div></section>
 <div id="chapter-card" hidden><span class="eyebrow"></span><h2></h2><p></p></div>
 <div id="touch-controls" hidden aria-label="Touch game controls"><div id="look-pad" aria-label="Drag to look"><span>LOOK</span></div><div id="joystick"><i></i></div><div class="touch-actions"><button data-action="fire">FIRE</button><button data-action="melee">KNIFE</button><button data-action="interact">USE</button><button data-action="dash">DODGE</button><button data-action="reload">LOAD</button><button data-action="heal">HEAL</button><button data-action="aim">AIM</button></div></div>
 <div id="fatal" hidden><h2>The signal was lost.</h2><p>A browser with WebGL 2 is needed to enter the school. Try a current version of Chrome, Edge, Firefox, or Safari with hardware acceleration enabled.</p><button onclick="location.reload()">TRY AGAIN</button></div>
-<script type="module" src="main.js?v=2.0.0"></script>
+<script type="module" src="main.js?v=3.0.0"></script>
 </body></html>
