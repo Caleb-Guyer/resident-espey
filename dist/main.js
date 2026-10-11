@@ -7,7 +7,7 @@ let game;let current='';
 const ui={
  isOpen(){return !$('#overlay').hidden;},
  open(eyebrow,title,body,actions,type=''){if(game?.running)game.setPaused(true);current=type;$('#overlay-eyebrow').textContent=eyebrow;$('#overlay-title').textContent=title;$('#overlay-body').innerHTML=body;const container=$('#overlay-actions');container.replaceChildren();for(const a of actions){const b=document.createElement('button');b.textContent=a.label;if(a.primary)b.className='primary';if(a.disabled)b.disabled=true;b.onclick=a.action;container.append(b);}$('#overlay').hidden=false;requestAnimationFrame(()=>container.querySelector('button:not(:disabled)')?.focus({preventScroll:true}));},
- close(){if(current==='death'||current==='ending'){this.home();return;}$('#overlay').hidden=true;current='';if(game?.running)game.setPaused(false);},
+ close(){if(current==='death'||current==='ending'||!game?.running&&$('#title').hidden){this.home();return;}if(current==='settings')game.sound.setVolume(settings.volume);$('#overlay').hidden=true;current='';if(game?.running)game.setPaused(false);},
  updateContinue(){$('#continue-game').hidden=!game?.readSave();},
  showGame(){$('#title').hidden=true;$('#hud').hidden=false;$('#touch-controls').hidden=!matchMedia('(pointer: coarse)').matches;},
  home(){game.running=false;game.setPaused(true);$('#overlay').hidden=true;$('#hud').hidden=true;$('#touch-controls').hidden=true;$('#chapter-card').hidden=true;$('#title').hidden=false;$('#damage').style.opacity=0;current='';this.updateContinue();},

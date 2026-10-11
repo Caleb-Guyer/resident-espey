@@ -20,12 +20,12 @@ export class World{
    for(const z of[17,9,2])for(const x of[2,21]){const g=groupAt(x,z);for(let i=0;i<3;i++){const dx=i*1.5;mesh(BOX,wood,[1.25,.1,.7],[dx,.78,0],g);for(const side of[-1,1])mesh(BOX,metal,[.065,.76,.62],[dx+side*.52,.38,0],g);mesh(BOX,dark,[.48,.35,.07],[dx,1.08,-.2],g);mesh(BOX,new T.MeshBasicMaterial({color:i===1?0x9a5436:0x619581}),[.4,.26,.011],[dx,1.08,-.156],g);mesh(BOX,metal,[.35,.015,.16],[dx,.84,.05],g);mesh(BOX,paper,[.25,.009,.33],[dx+.32,.843,.05],g);chair(g,dx,.83);}}
    for(const z of[17,18,19,20,21,9,10,11,12,13,2,3,4,5]){const g=groupAt(1.25,z);for(let i=0;i<2;i++){mesh(BOX,metal,[.48,1.7,.75],[0,.85,i*.8],g);mesh(BOX,dark,[.04,1.55,.7],[.26,.86,i*.8],g);mesh(BOX,mat(0x919b82,.4,.6),[.04,.1,.03],[.29,.91,i*.8+.2],g);for(let j=0;j<3;j++)mesh(BOX,metal,[.045,.018,.21],[.29,1.27+j*.06,i*.8],g);}}
    const rug=mesh(BOX,mat(0x253f39),[6,.008,7],[10.8,.006,46.8],this.root);rug.receiveShadow=true;
-   this.label('CS / SANCTUARY',[9,2.22,15.95*TILE],3.7,'#c1c8b4');
+   this.label('CS / SANCTUARY',[9,1.45,16.02*TILE],3.7,'#c1c8b4');
    this.label('SMITHSON VALLEY',[56,2.1,2.42],5,'#9baea1');
   }else{
    for(const[x,z]of[[2,17],[20,9],[2,2],[20,17]]){const g=groupAt(x,z);mesh(BOX,wood,[2.5,.7,.7],[1,.35,0],g);for(const dx of[0,1.25,2.4])chair(g,dx,.7,.4);mesh(BOX,mat(0x96866a),[.3,.38,.3],[2,.9,-.1],g);}
    for(const[x,z]of[[3,5],[24,19],[4,13]]){const p=mesh(new T.CircleGeometry(2.1,24),new T.MeshStandardMaterial({color:0x162923,roughness:.19,metalness:.3,transparent:true,opacity:.7}),[1,1,1],[x*TILE,.025,z*TILE],this.root);p.rotation.x=-Math.PI/2;}
-   this.label('FOLLOW THE CHALK',[10,2.2,15.95*TILE],4.2,'#d2bd82');
+   this.label('FOLLOW THE CHALK',[10,1.45,16.02*TILE],4.2,'#d2bd82');
    this.label('DO NOT ANSWER IT',[54,2.2,2.42],4.4,'#9e7951');
   }
   for(const[x,z]of[[27.5,18],[27.5,10],[10.5,5]]){const g=groupAt(x,z);mesh(CYL,dark,[.33,.6,.33],[0,.3,0],g);mesh(CYL,metal,[.37,.05,.37],[0,.62,0],g);for(let i=0;i<4;i++)mesh(BOX,paper,[.18,.1,.12],[(rnd()-.5)*.35,.62+rnd()*.1,(rnd()-.5)*.35],g);}
