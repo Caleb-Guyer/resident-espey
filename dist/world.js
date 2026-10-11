@@ -1,12 +1,15 @@
-import {createAnatomy,animateCollapse} from './anatomy.js?v=4.1.1';
-import {reloadProgress} from './reload.js?v=4.1.1';
+import {createAnatomy,animateCollapse} from './anatomy.js?v=4.1.2';
+import {reloadProgress} from './reload.js?v=4.1.2';
 import * as T from './vendor/three.module.js';
-import {TILE,seeded,solid,findPath} from './data.js?v=4.1.1';
-import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock} from './fps.js?v=4.1.1';
-import {CombatEffects} from './combat-effects.js?v=4.1.1';
+import {TILE,seeded,solid,findPath} from './data.js?v=4.1.2';
+import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock} from './fps.js?v=4.1.2';
+import {CombatEffects} from './combat-effects.js?v=4.1.2';
+import {WallPlacement} from './wall-placement.js?v=4.1.2';
 
 const BOX=bevelBox(1,1,1,.014),WALLBOX=new T.BoxGeometry(1,1,1),SPHERE=new T.SphereGeometry(1,20,14),CYL=new T.CylinderGeometry(1,1,1,16);
 const SHARED=new Set([BOX,WALLBOX,SPHERE,CYL]);
+// Keep beveled furniture inside the dimensions used by placement and collision.
+{BOX.computeBoundingBox();const size=BOX.boundingBox.getSize(new T.Vector3());BOX.scale(1/size.x,1/size.y,1/size.z);}
 // Extrusion UVs are in model units; furniture faces need a complete texture.
 {const a=BOX.attributes.position,n=BOX.attributes.normal,u=BOX.attributes.uv;for(let i=0;i<a.count;i++){const x=a.getX(i),y=a.getY(i),z=a.getZ(i),nx=Math.abs(n.getX(i)),ny=Math.abs(n.getY(i)),nz=Math.abs(n.getZ(i));u.setXY(i,nz>nx&&nz>ny?x+.5:nx>ny?z+.5:x+.5,ny>nx&&ny>nz?z+.5:y+.5);}}
 const material=(color,roughness=.82,metalness=0)=>new T.MeshStandardMaterial({color,roughness,metalness});
@@ -99,6 +102,7 @@ export class World{
   for(const [a,b]of this.level.corridors){this.addLamp(((a[0]+b[0])/2+.5)*TILE,((a[1]+b[1])/2+.5)*TILE,breach?0xdb7455:yellow?0xf7d789:0xc5dcd8);}
   this.flashlight=new T.SpotLight(0xffead2,115,27,.48,.72,2);this.flashlight.castShadow=true;this.flashlight.shadow.mapSize.set(1024,1024);this.flashlight.shadow.camera.near=.08;this.flashlight.shadow.camera.far=28;this.flashlight.shadow.bias=-.00035;this.flashlight.shadow.normalBias=.035;this.scene.add(this.flashlight,this.flashlight.target);
   this.playerLight=new T.PointLight(0xd6e2d2,2.8,3.4,2);this.scene.add(this.playerLight);this.shotLight=new T.PointLight(0xffbf65,0,5,2);this.scene.add(this.shotLight);
+  this.wallPlacement=new WallPlacement(grid,TILE,this.level.rooms);this.wallMounts=this.wallPlacement.mounts;
   this.dressDirectedRooms(chapter);this.dressArchitecture();const rnd=seeded(52+chapter.number.length),cells=[];grid.forEach((row,z)=>row.forEach((v,x)=>{if(!v)cells.push([x,z]);}));
   for(let i=0;i<180;i++){const [x,z]=cells[Math.floor(rnd()*cells.length)],px=(x+.1+rnd()*.8)*TILE,pz=(z+.1+rnd()*.8)*TILE;if(i%3===0){const p=mesh(BOX,this.palette.paper,[.22+rnd()*.15,.003,.3+rnd()*.13],[px,.013,pz],this.root);p.rotation.y=rnd()*6;}else if(i%3===1)this.decal('stain',[px,.015,pz],.4+rnd()*1.3,true);}
   const pos=new Float32Array(500*3);for(let i=0;i<pos.length;i+=3){pos[i]=rnd()*72;pos[i+1]=rnd()*CEILING;pos[i+2]=rnd()*57.6;}const geo=new T.BufferGeometry();geo.setAttribute('position',new T.BufferAttribute(pos,3));this.dust=new T.Points(geo,new T.PointsMaterial({color:0xc6cfad,size:.022,transparent:true,opacity:.3,depthWrite:false}));this.root.add(this.dust);
@@ -141,6 +145,15 @@ export class World{
   }
  }
  syncGates(stage,immediate=false){for(const g of this.gates){const open=stage>=g.requires;g.obstacle.active=!open;g.target=open?3.18:0;g.lampMaterial.color.setHex(open?0x77ad94:0xbc5038);if(immediate)g.shutter.position.y=g.target;}}
+ wallLabel(m,text,y,w,h,color,background=null,dx=0,depth=.018){return this.sign(text,[m.x+m.nz*dx+m.nx*depth,y,m.z-m.nx*dx+m.nz*depth],w,h,color,background,m.yaw);}
+ wallSign(room,text,y,width,height,color,background=null,options={}){
+  const m=this.wallPlacement.place(room.bounds,{kind:'sign',room:room.name,width,height,y,depth:.02,...options});
+  if(m)this.wallLabel(m,text,y,m.width,height,color,background);return m;
+ }
+ wallGroup(room,options,build){
+  const m=this.wallPlacement.place(room.bounds,{room:room.name,...options});if(!m)return;
+  const g=group(this.root,m.x,0,m.z);g.rotation.y=m.yaw;build(g,m);return g;
+ }
  dressDirectedRooms(chapter){
   const p=this.palette,yellow=this.theme==='backrooms',rnd=seeded(970+chapter.number.length);
   const fabric=material(yellow?0x746449:0x40544c);fabric.map=this.procedural('fabric');
@@ -153,35 +166,41 @@ export class World{
   for(const r of this.level.rooms){
    const [a,b,c,d]=r.bounds,x=(a+c+1)*TILE/2,z=(b+d+1)*TILE/2,w=(c-a+1)*TILE,depth=(d-b+1)*TILE;
    const north=b*TILE+.015,south=(d+1)*TILE-.015,left=(a+.5)*TILE,right=(c+.5)*TILE;
-   this.sign(r.name.toUpperCase(),[x,2.8,north+.02],Math.min(5,w-1),.4,yellow?'#9d865d':'#bac7b6','#16231e');
+   this.wallSign(r,r.name.toUpperCase(),2.8,Math.min(5,w-1),.4,yellow?'#9d865d':'#bac7b6','#16231e');
    const industrial=['utility','switchgear','relay','catwalk'].includes(r.kind),patch=yellow?material(0xc5b88e,.97):this.surface('floor',industrial?0x758380:['closet','storage'].includes(r.kind)?0xb7ad98:0xb8c3b8,[w/3,depth/3],.023,industrial?.52:.38);
    if(yellow){patch.map=this.procedural('carpet');patch.map.repeat.set(w/2,depth/2);patch.bumpMap=patch.map;patch.bumpScale=.012;}
    const plane=mesh(new T.PlaneGeometry(w-.05,depth-.05),patch,[1,1,1],[x,.004,z],this.root);plane.rotation.x=-Math.PI/2;
    if(['computers','science'].includes(r.kind)){
-    for(const px of[left+.6,right-.6])for(let pz=b+1;pz<d;pz+=2)terminal(px,(pz+.5)*TILE);
-    mesh(BOX,p.wood,[w*.56,1.36,.07],[x,1.9,north+.04],this.root);mesh(BOX,chalk,[w*.55,1.3,.025],[x,1.9,north+.09],this.root);this.sign('EVACUATION →',[x+1.7,2.65,north+.09],1.3,.17,'#bac2ad');
-    if(r.kind==='science')for(let i=0;i<6;i++){const vial=group(this.root,right-.4,.9,(b+1.3)*TILE+i*.2);mesh(CYL,p.glass,[.06,.25,.06],[0,0,0],vial);mesh(CYL,p.metal,[.063,.025,.063],[0,.14,0],vial);}
+    const desks=[];for(const px of[left+.6,right-.6])for(let pz=b+1;pz<d;pz+=2){const desk=terminal(px,(pz+.5)*TILE);if(desk)desks.push(desk);}
+    this.wallGroup(r,{kind:'chalkboard',width:w*.56,minWidth:4,height:1.72,y:1.9,depth:.09},(g,m)=>{
+     mesh(BOX,p.wood,[m.width,1.36,.07],[0,1.9,.035],g);mesh(BOX,chalk,[m.width-.08,1.3,.025],[0,1.9,.075],g);
+     this.wallLabel(m,'EVACUATION / NORTH HALL',2.67,Math.min(3,m.width-.2),.17,'#bac2ad',null,0,.078);
+    });
+    if(r.kind==='science'&&desks.length)for(let i=0;i<6;i++){const vial=group(desks[0],-.45+i*.18,.96,.12);mesh(CYL,p.glass,[.06,.25,.06],[0,0,0],vial);mesh(CYL,p.metal,[.063,.025,.063],[0,.14,0],vial);}
    }
    if(['closet','storage','refuge'].includes(r.kind)){
     for(let pz=b+1;pz<d;pz+=2){shelf(left+.3,(pz+.5)*TILE);shelf(right-.3,(pz+.5)*TILE);}
     for(let i=0;i<3;i++)mesh(BOX,fabric,[.7,.08,1.8],[left+2+i*.85,.04,south-1.3],this.root);
-    this.sign(r.kind==='closet'?'JOEL · EARL · ANTHONY\nKEEP THE DOOR CLOSED':r.kind==='storage'?'NORTH\nTHE NEEDLE STILL KNOWS':'LANDON · LUKE\nDO NOT ANSWER THE WALLS',[x,1.5,north+.09],Math.min(3,w-1),.65,'#c2b69b');
+    this.wallSign(r,r.kind==='closet'?'JOEL · EARL · ANTHONY\nKEEP THE DOOR CLOSED':r.kind==='storage'?'NORTH\nTHE NEEDLE STILL KNOWS':'LANDON · LUKE\nDO NOT ANSWER THE WALLS',1.5,Math.min(3,w-1),.65,'#c2b69b');
    }
    if(['utility','switchgear','relay'].includes(r.kind)){
     for(let px=a+1;px<c;px+=2)this.prop((px+.5)*TILE,north+.65,1.2,.8,2.45,g=>{mesh(BOX,p.metal,[1.15,2.45,.65],[0,1.23,0],g);for(let j=0;j<4;j++){mesh(BOX,p.black,[.8,.13,.025],[0,.75+j*.4,.34],g);mesh(BOX,new T.MeshBasicMaterial({color:j%2?0x746844:0x759988}),[.055,.055,.026],[.35,.76+j*.4,.36],g);}for(let j=0;j<5;j++)link(g,p.black,[-.5+j*.23,2.4,0],[-.5+j*.23,3.2,0],.028);});
-    for(const px of[left,right])tube(this.root,p.rust,[[px,.3,south-.5],[px,2.8,south-.5],[px,2.8,north+.2],[x,2.8,north+.2]],.07);
-    if(r.kind==='relay')this.sign('ANCHOR / 03\nDO NOT LEAVE HIM BEHIND',[x,1.7,north+.09],3,.8,'#bd9180');
+    for(const side of['west','east'])this.wallGroup(r,{kind:'service pipe',width:2,height:3.12,y:1.56,depth:.2,preferred:[side,'south','north',side==='west'?'east':'west']},g=>{
+     link(g,p.rust,[-.7,.07,.1],[-.7,2.88,.1],.07);link(g,p.rust,[-.7,2.88,.1],[.7,2.88,.1],.07);mesh(SPHERE,p.rust,[.075,.075,.075],[-.7,2.88,.1],g);
+     for(const y of[.4,1.4,2.5]){mesh(BOX,p.metal,[.22,.05,.035],[-.7,y,.018],g);link(g,p.metal,[-.7,y,.025],[-.7,y,.13],.02);}link(g,p.metal,[.65,2.88,.025],[.65,2.88,.13],.02);
+    });
+    if(r.kind==='relay')this.wallSign(r,'ANCHOR / 03\nDO NOT LEAVE HIM BEHIND',1.7,3,.8,'#bd9180');
    }
    if(['flood','current'].includes(r.kind)){
     const flood=mesh(new T.PlaneGeometry(w-.15,depth*.72),water,[1,1,1],[x,.016,z],this.root);flood.rotation.x=-Math.PI/2;
     for(const px of[left+.25,right-.25])for(let pz=b+1;pz<d;pz+=2)this.prop(px,(pz+.5)*TILE,.6,.6,2.25,g=>{mesh(BOX,p.metal,[.55,2.2,.5],[0,1.1,0],g);mesh(BOX,p.wood,[.48,2.1,.025],[0,1.1,.27],g);for(let i=0;i<4;i++)mesh(BOX,p.black,[.3,.02,.02],[0,1.9-i*.1,.285],g);mesh(BOX,p.metal,[.025,.12,.03],[.17,1.1,.3],g);});
-    this.sign(r.kind==='current'?'CURRENT → NORTH → HOME':'HIGH WATER / KEEP RIGHT',[x,2.2,north+.09],3,.45,'#bbba91');
-    for(let i=0;i<12;i++)this.decal('hand',[i%2?left-1.1:right+1.1,1+i%3*.15,north+1+i*.4],.6,false,i%2?-Math.PI/2:Math.PI/2);
+    this.wallSign(r,r.kind==='current'?'CURRENT → NORTH → HOME':'HIGH WATER / KEEP RIGHT',2.2,3,.45,'#bbba91');
+    for(let i=0;i<12;i++){const m=this.wallPlacement.place(r.bounds,{kind:'handprint',room:r.name,width:.6,height:.6,y:1+i%3*.15,depth:.004,preferred:i%2?['west','east','north','south']:['east','west','north','south']});if(m)this.decal('hand',[m.x+m.nx*.004,m.y,m.z+m.nz*.004],.6,false,m.yaw);}
    }
    if(['triage','infirmary'].includes(r.kind)){
     for(const px of[left+.6,right-.6])for(let pz=b+1;pz<d;pz+=2)bed(px,(pz+.5)*TILE);
-    for(let i=0;i<4;i++)this.sign(['ZEBENE MARTINE','EARL BRITT','CALEN / BENNY','JOEL HONEYCUTT'][i],[left-.98,2,(b+1+i)*TILE],1.6,.2,'#c2b99d',null,Math.PI/2);
-    this.sign('SERUM MASKS THE SIGNAL\nIT DOES NOT CURE THE PATIENT',[x,1.7,north+.09],3,.75,'#bd9180');
+    for(let i=0;i<4;i++)this.wallSign(r,['ZEBENE MARTINE','EARL BRITT','CALEN / BENNY','JOEL HONEYCUTT'][i],2,1.6,.2,'#c2b99d',null,{preferred:['west','east','north','south']});
+    this.wallSign(r,'SERUM MASKS THE SIGNAL\nIT DOES NOT CURE THE PATIENT',1.7,3,.75,'#bd9180');
    }
    if(r.kind==='catwalk'){
     const pit=mesh(new T.PlaneGeometry(w-.1,depth-.1),new T.MeshBasicMaterial({color:0x010505}),[1,1,1],[x,.009,z],this.root);pit.rotation.x=-Math.PI/2;
@@ -192,13 +211,13 @@ export class World{
     for(const [from,to]of[[b,12],[13,d+1]])for(const [left,right]of[[a,24.8],[26.2,c+1]])this.obstacles.push({x:(left+right)*TILE/2,z:(from+to)*TILE/2,w:(right-left)*TILE,d:(to-from)*TILE,h:.8});
    }
    if(r.kind==='mimic'){
-    this.sign('LUKE?', [x,1.8,north+.09],2,.5,'#693d30');for(let i=0;i<5;i++)this.prop(left+2+i*1.2,south-.8,.85,.75,1,g=>{mesh(BOX,fabric,[.75,.1,.65],[0,.5,0],g);mesh(BOX,fabric,[.75,.65,.07],[0,.82,-.27],g);for(const dx of[-.3,.3])for(const dz of[-.25,.25])link(g,p.wood,[dx,.5,dz],[dx,.03,dz],.03);});
+    this.wallSign(r,'LUKE?',1.8,2,.5,'#693d30');for(let i=0;i<5;i++)this.prop(left+2+i*1.2,south-.8,.85,.75,1,g=>{mesh(BOX,fabric,[.75,.1,.65],[0,.5,0],g);mesh(BOX,fabric,[.75,.65,.07],[0,.82,-.27],g);for(const dx of[-.3,.3])for(const dz of[-.25,.25])link(g,p.wood,[dx,.5,dz],[dx,.03,dz],.03);});
     this.decal('blood',[x,.016,z],2.5,true);
    }
    if(['assembly','seal','finale'].includes(r.kind)){
     for(let i=0;i<3;i++){const ring=mesh(new T.TorusGeometry(1.3+i*.55,.025,8,64),p.metal,[1,1,1],[x,.03+i*.005,z],this.root);ring.rotation.x=-Math.PI/2;}
-    if(r.kind==='assembly')for(let i=0;i<7;i++){const px=left-.65;mesh(BOX,p.wood,[.65,.12,.4],[px,1.1,north+1+i*.9],this.root);mesh(CYL,p.bone,[.09,.5,.09],[px,1.4,north+1+i*.9],this.root);mesh(SPHERE,p.bone,[.15,.12,.15],[px,1.66,north+1+i*.9],this.root);}
-    if(r.kind==='finale')for(const px of[left-1.1,right+1.1])for(let i=0;i<14;i++){tube(this.root,p.blood,[[px,.1,north+i*.8],[px+.15,1.4,north+i*.8+.3],[px-.1,2.8,north+i*.8+.5]],.04+i%3*.012);}
+    if(r.kind==='assembly')for(let i=0;i<7;i++)this.wallGroup(r,{kind:'trophy shelf',width:.72,height:.95,y:1.36,depth:.41,preferred:['west','east','north','south']},g=>{mesh(BOX,p.wood,[.65,.12,.4],[0,1.1,.2],g);for(const dx of[-.24,.24]){link(g,p.metal,[dx,.87,.02],[dx,1.09,.02],.018);link(g,p.metal,[dx,.87,.02],[dx,1.07,.34],.018);}mesh(CYL,p.bone,[.09,.5,.09],[0,1.4,.2],g);mesh(SPHERE,p.bone,[.15,.12,.15],[0,1.66,.2],g);});
+    if(r.kind==='finale')for(const side of['west','east'])for(let i=0;i<14;i++)this.wallGroup(r,{kind:'wall growth',width:.65,height:2.96,y:1.48,depth:.22,preferred:[side,...['north','south',side==='west'?'east':'west']]},g=>{tube(g,p.blood,[[-.2,.1,.065],[0,1.4,.14],[.2,2.8,.07]],.04+i%3*.012);});
    }
    // Distinct room thresholds and sparse damage tell the route without text panels.
    for(let i=0;i<5;i++)this.decal(i%2?'blood':'stain',[left+rnd()*(w-2),.014,north+rnd()*(depth-1)],.4+rnd()*.7,true);
@@ -213,19 +232,21 @@ export class World{
   const glass=new T.MeshStandardMaterial({map:windowMap,color:0x8eacba,roughness:.18,metalness:.48,emissive:0x273944,emissiveIntensity:.25}),chipped=this.surface('wall',yellow?0x766c49:0x768478,[1,.5],.03,.94);
   this.grid.forEach((row,z)=>row.forEach((v,x)=>{if(!v)return;for(const[nx,nz]of[[0,1],[1,0],[0,-1],[-1,0]]){
    if(this.grid[z+nz]?.[x+nx]!==0)continue;
-   const px=(x+.5)*TILE+nx*(TILE/2+.025),pz=(z+.5)*TILE+nz*(TILE/2+.025),rot=Math.atan2(nx,nz),k=Math.abs(x*37+z*19+nx*3+nz);
+   const px=(x+.5)*TILE+nx*TILE/2,pz=(z+.5)*TILE+nz*TILE/2,rot=Math.atan2(nx,nz),k=Math.abs(x*37+z*19+nx*3+nz);
    const at=(y,depth=0)=>[px+nx*depth,y,pz+nz*depth];
-   if(k%5===0){const o=mesh(new T.PlaneGeometry(TILE,.55),chipped,[1,1,1],at(.38,.002),this.root);o.rotation.y=rot;this.decal('stain',at(.8,.007),1.4,false,rot);}
-   if(k%13===0){const g=group(this.root,...at(0,.045));g.rotation.y=rot;
+   const reserve=(kind,width,height,y,depth=.12,dx=0)=>this.wallPlacement.reserve({x:px+nz*dx,z:pz-nx*dx,nx,nz},{kind,width,height,y,depth});
+   if(k%13===0&&reserve(yellow?'noticeboard':'window',yellow?.8:1.87,yellow?.9:1.56,yellow?1.65:1.93,.21)){const g=group(this.root,...at(0,yellow?.016:.021));g.rotation.y=rot;
     if(!yellow){mesh(BOX,p.black,[1.7,1.47,.04],[0,1.95,0],g);mesh(BOX,glass,[1.56,1.32,.025],[0,1.95,.03],g);for(const dx of[-.82,0,.82])mesh(BOX,p.metal,[.045,1.48,.09],[dx,1.95,.06],g);for(const y of[1.23,1.97,2.68])mesh(BOX,p.metal,[1.7,.04,.09],[0,y,.06],g);mesh(BOX,p.wood,[1.87,.065,.19],[0,1.19,.09],g);
      tube(g,p.black,[[-.35,2.59,.085],[-.12,2.28,.085],[-.18,2.09,.085],[.17,1.93,.085]],.003);tube(g,p.black,[[-.12,2.28,.086],[.17,2.4,.086],[.4,2.37,.086]],.002);
     }else{mesh(BOX,p.wood,[.8,.9,.03],[0,1.65,0],g);mesh(BOX,p.black,[.7,.8,.012],[0,1.65,.021],g);const paper=mesh(new T.PlaneGeometry(.55,.62),p.paper,[1,1,1],[0,1.65,.031],g);paper.rotation.z=.06;}
     mergeParts(g);
    }
-   if(k%11===0){const g=group(this.root,...at(0,.026));g.rotation.y=rot;link(g,p.metal,[.6,.15,0],[.6,2.95,0],.018);mesh(BOX,p.black,[.13,.19,.055],[.6,.89,.035],g);for(const dx of[.575,.625])mesh(BOX,p.bone,[.011,.035,.008],[dx,.9,.068],g);mergeParts(g);}
-   if(k%17===0&&!yellow){const g=group(this.root,...at(0,.04));g.rotation.y=rot;for(let i=0;i<10;i++)mesh(BOX,p.metal,[.055,.51,.12],[-.4+i*.085,.42,.08],g);for(const y of[.21,.63])link(g,p.rust,[-.52,y,.09],[.49,y,.09],.023);mergeParts(g);}
-   if(k%9===0)this.decal('hand',at(1.25,.011),.38,false,rot);
-   if(k%19===0){const g=group(this.root,...at(0));g.rotation.y=rot;tube(g,p.black,[[-.7,3.2,.18],[-.25,2.72,.22],[.3,2.9,.21],[.7,3.2,.18]],.01);mergeParts(g);}
+   if(k%11===0&&reserve('conduit',.15,2.84,1.55,.1,.6)){const g=group(this.root,...at(0,.019));g.rotation.y=rot;link(g,p.metal,[.6,.15,0],[.6,2.95,0],.018);mesh(BOX,p.black,[.13,.19,.055],[.6,.89,.035],g);for(const dx of[.575,.625])mesh(BOX,p.bone,[.011,.035,.008],[dx,.9,.068],g);mergeParts(g);}
+   if(k%17===0&&!yellow&&reserve('radiator',1.1,.54,.42,.18)){const g=group(this.root,...at(0,.005));g.rotation.y=rot;for(let i=0;i<10;i++)mesh(BOX,p.metal,[.055,.51,.12],[-.4+i*.085,.42,.08],g);for(const y of[.21,.63])link(g,p.rust,[-.52,y,.09],[.49,y,.09],.023);for(const dx of[-.32,.32])link(g,p.metal,[dx,.25,.007],[dx,.25,.12],.02);mergeParts(g);}
+   if(k%5===0&&reserve('plaster damage',TILE-.12,.55,.38,.003)){const o=mesh(new T.PlaneGeometry(TILE-.12,.55),chipped,[1,1,1],at(.38,.002),this.root);o.rotation.y=rot;}
+   if(k%5===0&&reserve('wall stain',1.4,1.4,.8,.004))this.decal('stain',at(.8,.003),1.4,false,rot);
+   if(k%9===0&&reserve('handprint',.38,.38,1.25,.004))this.decal('hand',at(1.25,.003),.38,false,rot);
+   if(k%19===0&&reserve('cable',1.43,.56,2.96,.24)){const g=group(this.root,...at(0));g.rotation.y=rot;tube(g,p.black,[[-.7,3.2,.01],[-.25,2.72,.22],[.3,2.9,.21],[.7,3.2,.01]],.01);mergeParts(g);}
   }}));
   // Exposed ceiling services and damaged acoustic panels break up the grid.
   for(const r of this.level.rooms){const[a,b,c,d]=r.bounds,x=(a+c+1)*TILE/2,z=(b+d+1)*TILE/2;
