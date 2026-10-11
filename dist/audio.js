@@ -7,5 +7,14 @@ export class Sound{
  tone(freq,duration,type='sine',volume=.3,end=0){if(!this.context||!this.active)return;const t=this.context.currentTime,o=this.context.createOscillator(),g=this.context.createGain();o.type=type;o.frequency.setValueAtTime(freq,t);if(end)o.frequency.exponentialRampToValueAtTime(end,t+duration);g.gain.setValueAtTime(volume,t);g.gain.exponentialRampToValueAtTime(.001,t+duration);o.connect(g);g.connect(this.master);o.start();o.stop(t+duration);o.onended=()=>{o.disconnect();g.disconnect();};}
  burst(duration=.12,volume=.6,cut=1300){if(!this.context||!this.active)return;const t=this.context.currentTime,n=this.context.createBufferSource(),g=this.context.createGain(),f=this.context.createBiquadFilter();n.buffer=this.noise;f.type='lowpass';f.frequency.value=cut;g.gain.setValueAtTime(volume,t);g.gain.exponentialRampToValueAtTime(.001,t+duration);n.connect(f);f.connect(g);g.connect(this.master);n.start();n.stop(t+duration);n.onended=()=>{n.disconnect();f.disconnect();g.disconnect();};}
  play(name){if(name==='shot'){this.burst(.16,1.5,3600);this.tone(120,.18,'triangle',.8,35);}if(name==='step')this.burst(.06,.08,180);if(name==='hit'){this.burst(.19,.7,650);this.tone(90,.3,'sawtooth',.3,35);}if(name==='pickup'){this.tone(440,.25,'sine',.25);this.tone(660,.5,'sine',.12);}if(name==='reload'){this.burst(.07,.4,2400);this.tone(220,.07,'square',.12);}if(name==='knife')this.burst(.16,.6,2000);if(name==='dash')this.burst(.18,.25,500);if(name==='bell'){this.tone(220,3,'sine',.4);this.tone(583,2.6,'sine',.2);this.tone(1193,1.8,'sine',.08);}if(name==='boss'){this.tone(65,1.5,'sawtooth',.5,29);this.burst(1,.5,350);}if(name==='heal')this.tone(330,.7,'sine',.3,660);if(name==='empty')this.burst(.05,.2,3500);}
+ growl(pan=0,intensity=1){
+  if(!this.context||!this.active)return;
+  const t=this.context.currentTime,o=this.context.createOscillator(),g=this.context.createGain(),filter=this.context.createBiquadFilter(),stereo=this.context.createStereoPanner(),mod=this.context.createOscillator(),depth=this.context.createGain();
+  o.type='sawtooth';o.frequency.setValueAtTime(68,t);o.frequency.exponentialRampToValueAtTime(34,t+.8);mod.frequency.value=21;depth.gain.value=11;mod.connect(depth);depth.connect(o.frequency);
+  filter.type='bandpass';filter.frequency.setValueAtTime(460,t);filter.frequency.exponentialRampToValueAtTime(160,t+.85);filter.Q.value=1.8;
+  stereo.pan.value=Math.max(-1,Math.min(1,pan));g.gain.setValueAtTime(.001,t);g.gain.linearRampToValueAtTime(.32*intensity,t+.15);g.gain.exponentialRampToValueAtTime(.001,t+.9);
+  o.connect(filter);filter.connect(g);g.connect(stereo);stereo.connect(this.master);o.start();mod.start();o.stop(t+.9);mod.stop(t+.9);
+  o.onended=()=>{o.disconnect();mod.disconnect();depth.disconnect();filter.disconnect();g.disconnect();stereo.disconnect();};
+ }
  pause(p){this.active=!p;if(this.ambient)this.ambient.gain.setTargetAtTime(p?.02:.13,this.context.currentTime,.5);}
 }

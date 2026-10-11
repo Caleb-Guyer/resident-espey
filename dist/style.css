@@ -3,4 +3,23 @@
 @media(max-height:680px) and (min-width:701px){h1{font-size:80px;margin:18px 0}.title-content{transform:translateY(-45%)}.tagline{margin-bottom:20px;font-size:16px}.subtitle{margin:12px 0}.experience{margin-top:14px}.title-bottom{bottom:18px}.primary,.secondary{padding:13px 20px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}.grain{display:none}}
 
+/* Keep first-person aiming feedback centered and the scene readable. */
+#world{touch-action:none;outline:none}.pointer-locked #world{cursor:none}
+.vignette{background:radial-gradient(ellipse at center,transparent 35%,rgba(0,3,5,.48))}
+#crosshair{left:50%!important;top:50%!important;width:17px;height:17px;border:0;border-radius:0;opacity:.7}
+#crosshair:before,#crosshair:after{content:'';position:absolute;background:#dadbd0;width:5px;height:1px;top:8px}
+#crosshair:before{left:0}#crosshair:after{right:0}#crosshair i{width:2px;height:2px;left:7.5px;top:7.5px;background:#edeee4}
+#crosshair.aiming:before,#crosshair.aiming:after{opacity:0}#crosshair.aiming i{opacity:.45}
+#crosshair.hit{transform:translate(-50%,-50%) rotate(45deg);opacity:1}
+#crosshair.hit:before,#crosshair.hit:after{width:15px;left:1px;right:auto;background:#e6dbc1}
+#crosshair.hit:after{transform:rotate(90deg)}#crosshair.hit.headshot:before,#crosshair.hit.headshot:after{background:#dc9566}
+#look-hint{position:absolute;top:18px;left:50%;transform:translateX(-50%);font-size:8px;letter-spacing:1.5px;color:#bdc3b4;background:#0e1614a8;padding:8px 12px;text-align:center;white-space:nowrap}
+#flashlight-state{position:absolute;bottom:108px;right:50px;font-size:8px;letter-spacing:1.5px;color:#a1ada6}
+#tutorial{white-space:pre-line;opacity:.75}#look-pad{position:absolute;right:0;top:165px;bottom:310px;width:48%;pointer-events:auto;touch-action:none}
+#look-pad span{position:absolute;right:20px;bottom:15px;font-size:8px;letter-spacing:2px;color:#c4cbb64d}
+#touch-controls .touch-actions button[data-action=aim]{border-radius:20px;grid-column:2/4;width:116px;height:34px}
+.hud-top h2{font-size:22px}.hud-top p{font-size:11px;max-width:380px}.hud-top .eyebrow{font-size:8px;letter-spacing:2px}
+@media(max-width:700px){#look-hint{top:100px;max-width:85%;white-space:normal;font-size:7px}.hud-top h2{font-size:18px}#flashlight-state{right:25px;bottom:92px}.hud-top p{max-width:220px}.touch-actions{bottom:104px}}
+@media(max-height:500px){#look-pad{top:110px;bottom:120px}.touch-actions{bottom:70px}.touch-actions button{width:40px;height:40px}#joystick{bottom:75px;width:85px;height:85px}#joystick i{left:25px;top:25px}.hud-top{top:12px;left:18px;right:18px}.hud-top h2{font-size:17px;margin:4px 0}.hud-top p{font-size:9px}#look-hint{top:76px}.hud-bottom{bottom:10px}#radio{bottom:100px;max-width:65%}#radio p{font-size:13px}#tutorial{display:none}#flashlight-state{bottom:80px}#boss-hud{top:95px}}
+
 @media(max-height:500px) and (min-width:700px){.title-content{display:grid;grid-template-columns:290px 280px;column-gap:36px;width:606px;max-width:85vw;left:8vw;transform:translateY(-43%)}.title-content>.eyebrow{grid-column:1/-1}h1{font-size:64px;margin:16px 0 8px;grid-column:1;letter-spacing:2px}h1 i{left:240px;width:30px}.subtitle{grid-column:1;margin:6px 0;font-size:9px;letter-spacing:6px}.tagline{grid-column:1;font-size:13px;margin:8px 0}.menu{grid-column:2;grid-row:2/span 3;align-self:center;width:280px}.menu-small{padding:8px 0}.experience{display:none}.title-top{top:14px}.title-bottom{bottom:12px;padding-top:10px}.primary,.secondary{padding:15px 20px}}

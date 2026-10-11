@@ -18,6 +18,10 @@ export const ENEMY_STATS={walker:{hp:88,speed:1.5,damage:12,range:1.5,color:0x77
 export function makeGrid(theme){const w=30,h=24,g=Array.from({length:h},(_,z)=>Array.from({length:w},(_,x)=>(x===0||z===0||x===w-1||z===h-1)?1:0));
  for(const x of [12,18])for(let z=1;z<h-1;z++)if(![3,4,10,11,19,20].includes(z))g[z][x]=1;
  for(const z of [7,15])for(let x=1;x<w-1;x++)if(x<12||x>18)if(![7,8,23,24].includes(x))g[z][x]=1;
+ if(theme!=='backrooms'){
+  const c=CHAPTERS.find(c=>c.theme===theme),keep=new Set([c.start,c.npc.at,c.exit,c.boss.at,...c.items.map(i=>i.at),...c.enemies.map(e=>e.slice(1))].map(a=>a.join(',')));
+  for(const x of[6,24])for(let z=1;z<h-1;z++)if(![3,4,10,11,19,20].includes(z)&&!keep.has([x,z].join(',')))g[z][x]=1;
+ }
  if(theme==='backrooms'){for(const [x,zs] of [[8,[9,10,11,12,13]],[22,[17,18,19]],[8,[2,3,4,5]]])for(const z of zs)g[z][x]=1;g[3][8]=0;g[11][8]=0;g[19][22]=0;}
  if(theme==='breach'){for(let x=13;x<18;x++)g[6][x]=x===15?0:1;}
  return g;
