@@ -4,6 +4,8 @@
 
 Some places remember you. Some refuse to let you go.
 
+Version **4.1** improves character anatomy, surfaces, combat handling and cinematic framing. Humanoids use continuous skinned meshes with articulated elbows and knees, clothing folds, curled hair, facial motion, hit reactions and timed falls. Rooms have textured flooring, beveled furniture, worn wood, cracked window panes, radiators, exposed wiring and damaged ceiling panels. Deliberate iron-sight aim settles to an exact shot; moving and rapid fire widen spread. Recoil remains controllable, and brass uses a fixed reusable pool. Dialogue closeups and subtle speaking gestures supplement the existing action shots and voiced flashbacks. The three directed routes and 4.0 save progress remain compatible.
+
 A complete, original **first-person** browser survival-horror campaign starring **Ethan Espey**, with blonde curly hair and blue eyes. Inspired by the supplied *Chapa Trilogy II*, especially the Backrooms serial and Ethan's outbreak notebook, and the exploration and resource tension of Resident Evil.
 
 ![Resident Espey cover](dist/assets/cover.webp)
@@ -78,6 +80,9 @@ GitHub Actions tests the campaign and publishes the `dist/` directory to GitHub 
 - `dist/game.js`: combat, AI, progression, checkpoints and game loop.
 - `dist/world.js`: Three.js environment, character rigs, materials, lighting and effects.
 - `dist/fps.js`: view-relative movement, first-person ballistics and prop collision.
+- `dist/anatomy.js`: cached continuous body surfaces, skinning and collapse poses.
+- `dist/gunplay.js`: aim settling, recoil and movement-dependent spread.
+- `dist/cinematic-direction.js`: dialogue framing and speaking motion.
 - `dist/main.js`: interface, journal, map, puzzle and ending scenes.
 - `dist/audio.js`: local Web Audio sound design.
 - `tests/campaign.test.mjs`: reachability, collision, combat, resource, save and ending checks.

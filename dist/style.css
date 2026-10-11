@@ -29,3 +29,5 @@
 #reload-progress span{display:block}
 #reload-progress i{display:block;height:2px;margin-top:8px;background:linear-gradient(90deg,#b3c3a2 var(--reload,0%),#50615444 var(--reload,0%))}
 .premonition-scene .grain{opacity:.08}
+
+#crosshair{transform:translate(-50%,-50%) scale(var(--spread,1));transition:transform .12s}#crosshair.aiming.hit{opacity:.7}

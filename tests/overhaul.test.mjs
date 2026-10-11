@@ -54,7 +54,7 @@ test('Flashback lead-in holds dialogue and scene time; the return card delays ga
  const nodes=new Map(),prior=globalThis.document;globalThis.document={querySelector(s){if(!nodes.has(s))nodes.set(s,{hidden:false,textContent:'',style:{},dataset:{}});return nodes.get(s);}};
  try{
   const c=Object.create(Cinematics.prototype),pauses=[],voice={scene:{ready:true,error:false},sceneTime:0,pause(v){pauses.push(v);}};
-  c.active=true;c.paused=false;c.leadIn=MEMORY_LEAD_IN;c.returnTime=null;c.context=sceneContext('closet');c.id='closet';c.actors=new Map();c.materials=[];c.scene=new T.Scene();c.key={intensity:180};c.story={sourceTime:t=>t,duration:2,stage:'closet'};
+  c.active=true;c.paused=false;c.leadIn=MEMORY_LEAD_IN;c.returnTime=null;c.context=sceneContext('closet');c.id='closet';c.actors=new Map();c.materials=[];c.scene=new T.Scene();c.key={intensity:180};c.faceLight=new T.SpotLight();c.story={sourceTime:t=>t,duration:2,stage:'closet',actors:[]};
   c.clock={time:0,tick(dt){this.time=Math.min(2,this.time+dt);return{events:[],done:this.time>=2,sample:{position:[0,1,3],look:[0,1,0],fov:76,fade:0,actors:[],line:null}};}};
   c.game={voice,settings:{subtitles:true,motion:true},sound:{play(){}},config:{place:'Smithson Valley / Quarantine'},snapshot:()=>({})};c.world={camera:new T.PerspectiveCamera(76,1.5),renderer:{render(){},info:{render:{calls:0}}}};
   let complete=0;c.finish=()=>{complete++;c.active=false;};

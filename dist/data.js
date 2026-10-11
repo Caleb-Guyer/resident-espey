@@ -1,4 +1,4 @@
-import {LEVELS,makeLevelGrid} from './levels.js?v=4.0.0';
+import {LEVELS,makeLevelGrid} from './levels.js?v=4.1.0';
 export const TILE=2.4;
 export const SAVE_KEY='resident-espey-v1';
 export const DIFFICULTIES={story:{label:'Story',damage:.65,power:1.35,enemySpeed:.85},survivor:{label:'Survivor',damage:1,power:1,enemySpeed:1},nightmare:{label:'Nightmare',damage:1.35,power:.9,enemySpeed:1.12}};

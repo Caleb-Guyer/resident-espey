@@ -52,4 +52,3 @@ export function makeLevelGrid(theme,stage=3){
 }
 export function roomAt(level,x,z,tile=2.4){const cx=x/tile,cz=z/tile;return level.rooms.find(r=>cx>=r.bounds[0]&&cx<r.bounds[2]+1&&cz>=r.bounds[1]&&cz<r.bounds[3]+1);}
 export function stageFor(collected){let n=0;while(n<3&&collected.includes(n))n++;return n;}
-

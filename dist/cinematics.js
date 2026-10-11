@@ -1,7 +1,8 @@
-import {sceneContext,MEMORY_LEAD_IN} from './scene-context.js?v=4.0.0';
+import {sceneContext,MEMORY_LEAD_IN} from './scene-context.js?v=4.1.0';
+import {dialogueFrame,speakingActor,speechMotion} from './cinematic-direction.js?v=4.1.0';
 import * as T from './vendor/three.module.js';
-import {SCENES,StoryClock} from './story.js?v=4.0.0';
-import {voicedScene} from './voice-timeline.js?v=4.0.0';
+import {SCENES,StoryClock} from './story.js?v=4.1.0';
+import {voicedScene} from './voice-timeline.js?v=4.1.0';
 const $=s=>document.querySelector(s);
 
 // A separate, lit stage prevents cinematic actors from touching combat or save state.
@@ -23,7 +24,7 @@ export class Cinematics{
  text(text,at,w=2,h=.35,color='#d4ceae',parent=this.stage){const prior=this.world.root;this.world.root=parent;const o=this.world.sign(text,at,w,h,color);this.world.root=prior;return o;}
  build(type){
   this.portal=this.endingMic=this.door=this.vial=this.crater=this.mazeStage=this.rings=null;this.doorTarget=undefined;this.footbeat=undefined;
-  this.scene=new T.Scene();this.stage=new T.Group();this.scene.add(this.stage);this.actors=new Map();this.geometry=[new T.BoxGeometry(1,1,1),new T.CylinderGeometry(1,1,1,16),new T.SphereGeometry(1,16,12)];
+  this.scene=new T.Scene();this.stage=new T.Group();this.scene.add(this.stage);this.actors=new Map();this.geometry=[this.world.stageBoxGeometry(),new T.CylinderGeometry(1,1,1,16),new T.SphereGeometry(1,16,12)];
   this.materials=[];const mat=(color,roughness=.8,metalness=0)=>{const m=new T.MeshStandardMaterial({color,roughness,metalness});this.materials.push(m);return m;};
   const box=(m,scale,at,parent=this.stage)=>{const o=new T.Mesh(this.geometry[0],m);o.scale.set(...scale);o.position.set(...at);o.castShadow=o.receiveShadow=true;parent.add(o);return o;};
   const cyl=(m,scale,at,parent=this.stage)=>{const o=new T.Mesh(this.geometry[1],m);o.scale.set(...scale);o.position.set(...at);o.castShadow=o.receiveShadow=true;parent.add(o);return o;};
@@ -32,7 +33,10 @@ export class Cinematics{
   this.scene.add(new T.HemisphereLight(type==='dawn'?0xffe0ac:yellow?0xf5dba4:0xb0c8d0,0x22261c,outside?1.3:.9));
   this.key=new T.SpotLight(type==='dawn'?0xffdca3:yellow?0xffe1a3:0xd9f0ee,180,24,.8,.6,2);this.key.position.set(-2,4,4);this.key.target.position.set(0,1,0);this.key.castShadow=true;this.key.shadow.mapSize.set(1024,1024);this.key.shadow.normalBias=.035;this.scene.add(this.key,this.key.target);
   const rim=new T.PointLight(breach?0xe87043:yellow?0xe1a245:0x6b98c1,35,14,2);rim.position.set(2,2.8,-4);this.scene.add(rim);
+  this.scene.environment=this.world.viewScene.environment;this.scene.environmentIntensity=.28;
+  this.faceLight=new T.SpotLight(0xf4d8b8,18,8,.65,.95,2);this.scene.add(this.faceLight,this.faceLight.target);
   const metal=mat(0x394845,.4,.65),dark=mat(0x17201f),wood=mat(0x514836),paper=mat(0xcac1a5),red=mat(0x782d23,.4),paint=mat(yellow?0xafa16b:0x758783);
+  wood.map=this.world.procedural('wood');wood.bumpMap=wood.map;wood.bumpScale=.005;metal.bumpMap=this.world.procedural('fabric');metal.bumpScale=.0015;paper.map=this.world.procedural('paper');
   const wall=this.world.surface('wall',yellow?0xc5af70:0x9ca9a0,[2,1],.032);this.materials.push(wall);if(yellow)wall.map=this.world.procedural('wallpaper');
   const floor=this.world.surface('floor',outside?0x4b5556:0xabb3ab,[6,8],.02,.48);this.materials.push(floor);
   box(floor,[outside?40:8,.12,outside?45:16],[0,-.08,0]);
@@ -105,17 +109,22 @@ export class Cinematics{
   $('#scene-loading').hidden=transition||!state||state.ready;$('#scene-loading-message').textContent=state?.error?'Dialogue could not load.':'Preparing audio…';$('#scene-audio-actions').hidden=!state?.error;
   for(const a of sample.actors){const g=this.actors.get(a.id);if(!g||this.mazeStage?.visible)continue;g.position.set(a.x,a.y,a.z);g.rotation.y=a.yaw;this.world.animateCharacter(g,t,a.moving);
    const d=g.userData;if(a.pose==='hurt'){d.body.rotation.z=.10;d.head.rotation.z=.15;d.arms[0].rotation.x=-.4;if(d.arms[0].userData.forearm)d.arms[0].userData.forearm.rotation.x=-1.5;}
-   if(a.pose==='kneel'||a.pose==='sit'){g.position.y-=.42;d.legs.forEach(l=>l.rotation.x=-1.3);d.body.rotation.x=.12;}
+   if(a.pose==='kneel'||a.pose==='sit'){g.position.y-=.42;d.legs.forEach(l=>{l.rotation.x=-1.1;if(l.userData.calf)l.userData.calf.rotation.x=1.6;});d.body.rotation.x=.10;}
    if(a.pose==='reach'||a.pose==='brace'){d.arms.forEach((arm,i)=>{arm.rotation.x=a.pose==='brace'?-.85:i===0?-.65:-.1;if(arm.userData.forearm)arm.userData.forearm.rotation.x=a.pose==='brace'?-.6:i===0?-.7:-.15;});d.head.rotation.x=-.1;}
   }
   if(this.door&&this.doorTarget!==undefined)this.door.rotation.y+=(this.doorTarget-this.door.rotation.y)*Math.min(1,dt*7);
-  const camera=this.world.camera;camera.position.fromArray(sample.position);if(camera.aspect<1.25){const target=new T.Vector3(...sample.look);camera.position.sub(target).multiplyScalar(1.22).add(target);}camera.lookAt(...sample.look);camera.fov=Math.min(100,T.MathUtils.radToDeg(2*Math.atan(Math.tan(T.MathUtils.degToRad(sample.fov)/2)*Math.max(1,1/camera.aspect))));camera.updateProjectionMatrix();
+  const frame=dialogueFrame(this.story,sample,t),camera=this.world.camera;camera.position.fromArray(frame.position);if(camera.aspect<1.25){const target=new T.Vector3(...frame.look);camera.position.sub(target).multiplyScalar(1.22).add(target);}camera.lookAt(...frame.look);camera.fov=Math.min(100,T.MathUtils.radToDeg(2*Math.atan(Math.tan(T.MathUtils.degToRad(frame.fov)/2)*Math.max(1,1/camera.aspect))));camera.updateProjectionMatrix();
+  this.faceLight.position.copy(camera.position);this.faceLight.position.y+=.45;this.faceLight.target.position.fromArray(frame.look);this.faceLight.intensity=frame.subject?16:4;
   const footbeat=Math.floor(t*2.5);if(!this.paused&&footbeat!==this.footbeat&&sample.actors.some(a=>a.moving)){this.game.sound.play('step');this.footbeat=footbeat;}
   if(this.endingMic)this.endingMic.visible=originalTime<12;
   if(!this.game.settings.motion&&this.story.stage==='road'&&originalTime>10&&originalTime<12)camera.position.y+=Math.sin(t*41)*.045;
   if(this.portal)this.portal.rotation.z=t*.09;this.key.intensity=180*(.98+Math.sin(t*2.1)*.02);
   $('#scene-speaker').textContent=sample.line?.speaker||'';$('#scene-subtitle').textContent=sample.line?.text||'';$('#scene-captions').hidden=transition||!sample.line||(!this.captionFallback&&this.game.settings.subtitles===false);
-  const speakerId=state&&sample.line?.key?.split('-')[0],speaker=this.actors.get(speakerId);if(speaker?.userData.head&&!this.paused){speaker.userData.head.rotation.x+=Math.sin(t*5)*.018;speaker.userData.head.rotation.z+=Math.sin(t*3.7)*.02;}
+  const speakerId=speakingActor(this.story,sample.line),speaker=this.actors.get(speakerId),mouth=speechMotion(sample.line,t);
+  for(const [id,g]of this.actors){const d=g.userData;if(d.face)d.face.morphTargetInfluences[0]=id===speakerId?mouth:0;if(!d.human)continue;
+   d.head.rotation.x+=Math.sin(t*2.8+(d.phase||0))*.012;d.body.rotation.y=Math.sin(t*.7+(d.phase||0))*.008;
+   if(id===speakerId){d.head.rotation.x+=Math.sin(t*4.1)*.02;d.head.rotation.z+=Math.sin(t*2.6)*.018;if(!sample.actors.find(a=>a.id===id)?.pose){d.arms[1].rotation.x-=mouth*.12;d.arms[1].userData.forearm.rotation.x-=mouth*.17;}}
+  }
   $('#scene-fade').style.opacity=transition?1:sample.fade;$('#scene-progress').style.width=t/this.story.duration*100+'%';$('#scene-location').style.opacity=t<5?1:0;$('#scene-time').style.opacity=t<5?1:0;
   this.world.renderer.autoClear=true;this.world.renderer.render(this.scene,camera);this.world.worldCalls=this.world.renderer.info.render.calls;
   $('#world').dataset.state=JSON.stringify({...this.game.snapshot(),cinematic:this.id,sceneTime:Math.round(t*10)/10,scenePaused:this.paused,voice:voice?.status});

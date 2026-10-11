@@ -4,7 +4,7 @@ import * as T from '../dist/vendor/three.module.js';
 import {CombatEffects} from '../dist/combat-effects.js';
 import {World} from '../dist/world.js';
 
-test('Hundreds of combat bursts reuse two batches and release every expired effect',()=>{
+test('Hundreds of combat bursts reuse their batches and release every expired effect',()=>{
  const root=new T.Group(),fx=new CombatEffects(root);
  const resources=[fx.particles.geometry,fx.particles.material,fx.particles.instanceMatrix.array,fx.particles.instanceColor.array,fx.tracers.geometry,fx.tracers.material,fx.tracers.geometry.attributes.position.array];
  let disposed=0;for(const r of resources.filter(r=>r.addEventListener))r.addEventListener('dispose',()=>disposed++);
@@ -14,7 +14,7 @@ test('Hundreds of combat bursts reuse two batches and release every expired effe
   fx.update(.65);assert.equal(fx.active,0);assert.equal(fx.particles.count,0);assert.equal(fx.tracers.geometry.drawRange.count,0);
  }
  assert.deepEqual([fx.particles.geometry,fx.particles.material,fx.particles.instanceMatrix.array,fx.particles.instanceColor.array,fx.tracers.geometry,fx.tracers.material,fx.tracers.geometry.attributes.position.array],resources);
- assert.equal(root.children.length,2);assert.equal(disposed,0,'No shader, geometry or material disposal during combat');
+ assert.equal(root.children.length,3);assert.equal(disposed,0,'No shader, geometry or material disposal during combat');
  fx.dispose();assert.equal(root.children.length,0);assert.equal(disposed,4);
 });
 

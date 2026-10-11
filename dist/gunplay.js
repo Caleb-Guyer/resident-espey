@@ -1,0 +1,19 @@
+import {viewDirection} from './fps.js?v=4.1.0';
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+export function settleWeapon(p,dt){
+ if(!Number.isFinite(dt)||dt<0)return;
+ p.bloom=Math.max(0,(p.bloom||0)-dt*1.9);
+ const target=p.aiming&&!p.sprinting?(p.moving?.58:1):0;
+ p.focus=(p.focus||0)+(target-(p.focus||0))*(1-Math.exp(-dt*8));
+}
+export function shotDirection(p,yaw,pitch,random=Math.random){
+ const focus=clamp(p.focus??(p.aiming?1:0),0,1),spread=(.0045*(1-focus)+(p.bloom||0)*.006+(p.moving?.004:0))*(p.crouching?.65:1);
+ const angle=random()*Math.PI*2,radius=Math.sqrt(random())*spread;
+ return viewDirection(yaw+Math.cos(angle)*radius,pitch+Math.sin(angle)*radius);
+}
+export function applyRecoil(p){
+ p.bloom=clamp((p.bloom||0)+.28,0,1);
+ p.pitch=clamp((p.pitch||0)+(p.aiming?.007:.014),-1.35,1.35);
+ // Alternating lateral kick is small enough to correct with deliberate aim.
+ p.recoilShot=(p.recoilShot||0)+1;p.yaw=(p.yaw||0)+(p.recoilShot%2?1:-1)*(p.aiming?.0013:.0028);
+}

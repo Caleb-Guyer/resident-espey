@@ -1,13 +1,14 @@
-import {CAMPAIGN_REVISION,roomAt,stageFor} from './levels.js?v=4.0.0';
-import {beginReload,advanceReload,cancelReload,reloadProgress} from './reload.js?v=4.0.0';
-import {World} from './world.js?v=4.0.0';
-import {EYE_HEIGHT,viewDirection,relativeMove,traceShot} from './fps.js?v=4.0.0';
-import {Sound} from './audio.js?v=4.0.0';
-import {CHAPTERS,ENEMY_STATS,TILE,SAVE_KEY,DIFFICULTIES,makeGrid,solid,sight,findPath,distance,validSave,endingFor} from './data.js?v=4.0.0';
-import {Cinematics} from './cinematics.js?v=4.0.0';
-import {MEMORY_LABELS} from './story.js?v=4.0.0';
-import {Voice} from './voice.js?v=4.0.0';
-import {RADIO,characterId} from './dialogue.js?v=4.0.0';
+import {settleWeapon,shotDirection,applyRecoil} from './gunplay.js?v=4.1.0';
+import {CAMPAIGN_REVISION,roomAt,stageFor} from './levels.js?v=4.1.0';
+import {beginReload,advanceReload,cancelReload,reloadProgress} from './reload.js?v=4.1.0';
+import {World} from './world.js?v=4.1.0';
+import {EYE_HEIGHT,viewDirection,relativeMove,traceShot} from './fps.js?v=4.1.0';
+import {Sound} from './audio.js?v=4.1.0';
+import {CHAPTERS,ENEMY_STATS,TILE,SAVE_KEY,DIFFICULTIES,makeGrid,solid,sight,findPath,distance,validSave,endingFor} from './data.js?v=4.1.0';
+import {Cinematics} from './cinematics.js?v=4.1.0';
+import {MEMORY_LABELS} from './story.js?v=4.1.0';
+import {Voice} from './voice.js?v=4.1.0';
+import {RADIO,characterId} from './dialogue.js?v=4.1.0';
 const $=s=>document.querySelector(s);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export class Game{
@@ -99,17 +100,17 @@ export class Game{
   for(let i=0;i<steps;i++){if(!blocked(o.x+dx/steps,o.z))o.x+=dx/steps;if(!blocked(o.x,o.z+dz/steps))o.z+=dz/steps;}
  }
  shoot(){
-  const p=this.player;if(p.cooldown>0||p.reloading>0||p.dash>0)return;
+  const p=this.player;if(p.cooldown>0||p.reloading>0||p.dash>0||p.melee>0)return;
   if(p.ammo<=0){p.cooldown=.3;this.sound.play('empty');if(p.reserve)this.reload();else this.toast('No rounds. Use F / KNIFE, then dodge.');return;}
-  p.ammo--;p.cooldown=.28;this.stats.shots++;this.sound.play('shot');this.shake=.18;this.world.fireWeapon?.();
-  const yaw=Number.isFinite(p.yaw)?p.yaw:Math.atan2(p.x-this.aim.x,p.z-this.aim.z),direction=viewDirection(yaw,p.pitch||0);
+  p.ammo--;p.cooldown=.28;this.stats.shots++;this.sound.play('shot');this.shake=.18;this.world.fireWeapon?.(p.aiming);
+  const yaw=Number.isFinite(p.yaw)?p.yaw:Math.atan2(p.x-this.aim.x,p.z-this.aim.z),direction=shotDirection(p,yaw,p.pitch||0);
   const origin={x:p.x,y:p.crouching?1.14:EYE_HEIGHT,z:p.z};const hit=traceShot(this.grid,origin,this.enemies,direction,this.world.obstacles||[]);
-  this.world.tracer(origin,hit.end);
-  if(hit.enemy){this.hurtEnemy(hit.enemy,(hit.headshot?68:34)*this.diff.power,direction.x,direction.z);this.stats.hits++;this.world.effect(hit.end.x,hit.end.z,0x81392b,8,hit.end.y);this.hitUntil=this.time+.18;this.headshot=hit.headshot;}
+  const tracerStart={x:origin.x-Math.sin(yaw)*.45+Math.cos(yaw)*(p.aiming?0:.16),y:origin.y-(p.aiming?.10:.2),z:origin.z-Math.cos(yaw)*.45-Math.sin(yaw)*(p.aiming?0:.16)};this.world.tracer(tracerStart,hit.end);this.world.ejectCasing?.(origin,yaw);applyRecoil(p);
+  if(hit.enemy){this.hurtEnemy(hit.enemy,(hit.headshot?68:34)*this.diff.power,direction.x,direction.z,hit.headshot);this.stats.hits++;this.world.effect(hit.end.x,hit.end.z,0x81392b,8,hit.end.y);this.hitUntil=this.time+.18;this.headshot=hit.headshot;}
   else this.world.effect(hit.end.x,hit.end.z,0xc2b59c,4,hit.end.y);
   this.enemies.forEach(e=>{if(!e.dead&&!e.dormant&&distance(e,p)<17)e.alert=true;});
  }
- hurtEnemy(e,damage,nx=0,nz=0){if(e.dead)return;e.hp-=damage;e.alert=true;e.stagger=e.boss?.1:.38;this.move(e,nx*(e.boss?.12:.5),nz*(e.boss?.12:.5),.38);e.model.traverse(o=>{if(o.material?.emissive)o.material.emissive.setHex(0x422412);});if(e.hp<=0){e.dead=true;this.stats.kills++;e.model.rotation.z=Math.PI/2;e.model.position.y=.18;e.model.scale.multiplyScalar(.75);this.world.effect(e.x,e.z,0xb79760,10);if(e.warning)this.world.root.remove(e.warning);this.player.reserve=clamp(this.player.reserve+(e.boss?30:4),0,999);if(e.boss){this.bossDead=true;this.sound.play('bell');this.toast('The way is open. +30 rounds');this.radio(...(this.chapter===2?RADIO.remembered:RADIO.fallen),5);this.save();}}}
+ hurtEnemy(e,damage,nx=0,nz=0,headshot=false){if(e.dead)return;e.hp-=damage;e.alert=true;e.stagger=e.boss?.1:headshot?.55:.38;e.hitSide=nx*Math.cos(e.model.rotation.y||0)-nz*Math.sin(e.model.rotation.y||0)||1;this.move(e,nx*(e.boss?.12:.5),nz*(e.boss?.12:.5),.38);e.model.traverse(o=>{if(o.material?.emissive)o.material.emissive.setHex(0x422412);});if(e.hp<=0){e.dead=true;this.stats.kills++;e.deathTime=0;this.world.effect(e.x,e.z,0xb79760,10);if(e.warning)this.world.root.remove(e.warning);this.player.reserve=clamp(this.player.reserve+(e.boss?30:4),0,999);if(e.boss){this.bossDead=true;this.sound.play('bell');this.toast('The way is open. +30 rounds');this.radio(...(this.chapter===2?RADIO.remembered:RADIO.fallen),5);this.save();}}}
  reload(){if(this.player.melee>0||this.player.dash>0)return;if(beginReload(this.player))this.sound.play('reload');}
  melee(){const p=this.player;if(p.melee>0||p.dash>0)return;cancelReload(p);p.melee=.6;p.cooldown=Math.max(p.cooldown,.18);this.sound.play('knife');this.world.swingKnife?.();p.inv=Math.max(p.inv,.2);this.shake=.08;this.world.effect(p.x,p.z,0xa8c5b0,6);const dx=this.aim.x-p.x,dz=this.aim.z-p.z,len=Math.hypot(dx,dz)||1;for(const e of this.enemies){if(e.dead||e.dormant||distance(e,p)>2.35||!this.canSee(p,e))continue;const ex=e.x-p.x,ez=e.z-p.z;if((ex*dx+ez*dz)/(Math.hypot(ex,ez)*len||1)>-.2)this.hurtEnemy(e,40*this.diff.power,ex/(Math.hypot(ex,ez)||1),ez/(Math.hypot(ex,ez)||1));}}
  dash(){
@@ -120,12 +121,12 @@ export class Game{
  }
  heal(){const p=this.player;if(!p.meds){this.toast('No first aid. Search for green supplies.');return;}if(p.hp>=100){this.toast('Your vitals are stable.');return;}p.meds--;p.hp=clamp(p.hp+65,0,100);p.inv=.6;this.sound.play('heal');this.toast('First aid applied. +65 vitals');}
  hurt(damage){const p=this.player;if(p.inv>0||this.paused)return;p.hp=Math.max(0,p.hp-damage);p.inv=.8;this.flash=1;this.shake=.6;this.sound.play('hit');if(p.hp<=0){this.setPaused(true);this.ui.death();}}
- updateEnemies(dt){const p=this.player;for(const e of this.enemies){if(e.dead||e.dormant)continue;const dist=distance(e,p);e.cool-=dt;e.stagger=Math.max(0,e.stagger-dt);if(dist<9&&this.canSee(e,p))e.alert=true;if(!e.alert||dist>32){this.world.animateCharacter(e.model,this.time,false);continue;}if(dist<13&&this.time>(e.nextGrowl||0)){e.nextGrowl=this.time+5+Math.random()*5;const side=Math.cos(p.yaw||0)*(e.x-p.x)-Math.sin(p.yaw||0)*(e.z-p.z);this.sound.growl?.(side/(dist||1),Math.max(.12,1-dist/16));}if(e.kind==='birdy'&&!this.birdySpoke){this.birdySpoke=true;this.radio(...RADIO.birdy,5);}
+ updateEnemies(dt){const p=this.player;for(const e of this.enemies){if(e.dead){if(e.model&&Number.isFinite(e.deathTime)){e.deathTime+=dt;this.world.animateCharacter(e.model,this.time,false,e);}continue;}if(e.dormant)continue;const dist=distance(e,p);e.cool-=dt;e.strike=Math.max(0,(e.strike||0)-dt);e.stagger=Math.max(0,e.stagger-dt);if(dist<9&&this.canSee(e,p))e.alert=true;if(!e.alert||dist>32){this.world.animateCharacter(e.model,this.time,false);continue;}if(dist<13&&this.time>(e.nextGrowl||0)){e.nextGrowl=this.time+5+Math.random()*5;const side=Math.cos(p.yaw||0)*(e.x-p.x)-Math.sin(p.yaw||0)*(e.z-p.z);this.sound.growl?.(side/(dist||1),Math.max(.12,1-dist/16));}if(e.kind==='birdy'&&!this.birdySpoke){this.birdySpoke=true;this.radio(...RADIO.birdy,5);}
  if(e.windup>0){this.world.animateCharacter(e.model,this.time,false,e);e.windup-=dt;e.model.rotation.y=Math.atan2(p.x-e.x,p.z-e.z);if(e.warning)e.warning.material.opacity=.13+Math.sin(this.time*20)*.08;if(e.windup<=0){if(e.warning){this.world.root.remove(e.warning);e.warning.geometry.dispose();e.warning.material.dispose();e.warning=null;}this.sound.play('boss');if(e.kind==='zeb'||e.kind==='birdy'){if(distance(e,p)<e.attackRadius&&this.canSee(e,p))this.hurt(e.damage*1.25);this.world.effect(e.x,e.z,0xa1b066,24);this.shake=.3;}else{const len=Math.hypot(e.targetX-e.x,e.targetZ-e.z)||1;e.chargeX=(e.targetX-e.x)/len;e.chargeZ=(e.targetZ-e.z)/len;e.charge=.7;}}continue;}
  if(e.charge>0){e.charge-=dt;this.move(e,e.chargeX*10*dt,e.chargeZ*10*dt,.45);if(distance(e,p)<e.range+.3)this.hurt(e.damage*1.4);}
  else if(e.stagger<=0){if((e.boss||e.kind==='birdy')&&e.cool<=0&&dist<10){e.cool=e.kind==='zeb'?4.5:3.8;e.windup=e.kind==='zeb'?1.1:.9;e.attackRadius=e.kind==='zeb'?5.3:e.kind==='birdy'?3.4:2.3;e.targetX=p.x;e.targetZ=p.z;e.warning=this.world.warning(e.x,e.z,e.attackRadius);this.sound.tone(160,.6,'sawtooth',.15,60);}
  else if(dist>e.range*.75){let target=p;e.pathTimer-=dt;if(!this.canSee(e,p)||this.world.clearWalkPath?.(e,p)===false){if(e.pathTimer<=0){e.path=findPath(this.navGrid||this.grid,e,p);e.pathTimer=.9;}while(e.path.length&&distance(e,e.path[0])<.45)e.path.shift();target=e.path[0]||p;}const dx=target.x-e.x,dz=target.z-e.z,len=Math.hypot(dx,dz)||1;this.move(e,dx/len*e.speed*dt,dz/len*e.speed*dt,.38);e.model.rotation.y=Math.atan2(dx,dz);}
- if(dist<e.range&&e.cool<=0&&this.canSee(e,p)){this.hurt(e.damage);e.cool=1.2;}}
+ if(dist<e.range&&e.cool<=0&&this.canSee(e,p)){this.hurt(e.damage);e.cool=1.2;e.strike=.34;}}
  if(e.kind==='zeb'&&e.hp<e.max*.5&&e.phase===0){e.phase=1;this.spawn('walker',14,5,false,101);this.spawn('walker',19,5,false,102);this.radio(...RADIO.bargain,5);this.player.reserve+=12;}
  e.model.position.x=e.x;e.model.position.z=e.z;this.world.animateCharacter(e.model,this.time,e.alert&&e.stagger<=0,e);e.model.traverse(o=>{if(o.material?.emissive)o.material.emissive.multiplyScalar(.88);});}}
  interact(){const n=this.nearest;if(!n||n.used)return;if(n===this.npc){const line=this.config.npc.lines[n.line%3];n.line++;this.allies.add(this.chapter);this.radio(n.name.toUpperCase(),line,8);this.toast('Name anchored: '+n.name);this.save();return;}
@@ -171,7 +172,7 @@ export class Game{
     if(p.sprinting&&len)p.stamina=Math.max(0,p.stamina-37*dt);
     if(p.dash>0){p.dash-=dt;dx=p.dashX;dz=p.dashZ;len=1;speed=15;}
     if(len)this.move(p,dx/len*speed*dt,dz/len*speed*dt,.32);p.moving=len>0;
-    const d=viewDirection(p.yaw,p.pitch);this.aim={x:p.x+d.x*12,z:p.z+d.z*12};this.world.setView(p,p.yaw,p.pitch,this.time,p.aiming);
+    settleWeapon(p,dt);const d=viewDirection(p.yaw,p.pitch);this.aim={x:p.x+d.x*12,z:p.z+d.z*12};this.world.setView(p,p.yaw,p.pitch,this.time,p.aiming);
     if(this.mouse.down||this.touch.fire)this.shoot();this.updateEnemies(dt);this.proximity();this.directRoute();
     if(len&&Math.floor(this.time*(p.sprinting?3.5:2.2))!==this.lastStep){this.lastStep=Math.floor(this.time*(p.sprinting?3.5:2.2));this.sound.play('step');}
     if(this.time>this.nextRadio&&!this.specialRadio&&this.chapter===1){this.specialRadio=true;this.radio(...RADIO.chalk,6);}
@@ -183,9 +184,9 @@ export class Game{
    $('#tutorial').hidden=this.time-this.chapterStart>10;const objectiveKey=this.chapter+':'+this.objectives+':'+this.bossDead;if(objectiveKey!==this.objectiveKey){this.objectiveKey=objectiveKey;this.objectiveUntil=this.time+8;}$('#hud').classList.toggle('quiet-hud',this.time>this.objectiveUntil);
    if(this.ui.updateStory)this.ui.updateStory(this.time);
    $('#crosshair').classList.toggle('hit',this.time<(this.hitUntil||0));$('#crosshair').classList.toggle('headshot',this.headshot);
-   $('#crosshair').classList.toggle('aiming',!!p.aiming);$('#flashlight-state').textContent=this.settings.flashlight===false?'LIGHT OFF':'LIGHT ON';
+   $('#crosshair').classList.toggle('aiming',!!p.aiming);$('#crosshair').style.setProperty('--spread',String(1+(p.bloom||0)*.75+(p.moving?.2:0))); $('#flashlight-state').textContent=this.settings.flashlight===false?'LIGHT OFF':'LIGHT ON';
    this.world.update(dt,this.time,p,this.aim,this.settings.motion?0:this.shake);this.setHUD();
   }requestAnimationFrame(this.frame);
  }
- snapshot(){return{fps:Math.round(1000/(this.frameMs||16)),drawCalls:this.world?.worldCalls,perspective:'first-person',version:'4.0.0',voice:this.voice?.status,props:this.world?.obstacles?.length,pointerLocked:this.pointerLocked,running:this.running,paused:this.paused,chapter:this.chapter,player:this.player?{x:this.player.x,z:this.player.z,yaw:this.player.yaw,pitch:this.player.pitch,hp:this.player.hp,ammo:this.player.ammo,reserve:this.player.reserve,meds:this.player.meds}:null,objectives:this.objectives,pages:this.pages.size,allies:this.allies.size,scenes:[...(this.seenScenes||[])],bossDead:this.bossDead,enemies:this.enemies?.filter(e=>!e.dead&&!e.dormant).length,nearest:this.nearest?.kind||this.nearest?.name,route:this.level?.tasks?.[this.objectives],room:this.level?roomAt(this.level,this.player.x,this.player.z)?.name:null,gates:this.world?.gates?.filter(g=>g.obstacle.active).length,reloading:this.player?.reloading,beats:[...(this.beats||[])],stats:{...this.stats}};}
+ snapshot(){return{fps:Math.round(1000/(this.frameMs||16)),drawCalls:this.world?.worldCalls,perspective:'first-person',version:'4.1.0',voice:this.voice?.status,props:this.world?.obstacles?.length,pointerLocked:this.pointerLocked,running:this.running,paused:this.paused,chapter:this.chapter,player:this.player?{x:this.player.x,z:this.player.z,yaw:this.player.yaw,pitch:this.player.pitch,hp:this.player.hp,ammo:this.player.ammo,reserve:this.player.reserve,meds:this.player.meds}:null,objectives:this.objectives,pages:this.pages.size,allies:this.allies.size,scenes:[...(this.seenScenes||[])],bossDead:this.bossDead,enemies:this.enemies?.filter(e=>!e.dead&&!e.dormant).length,nearest:this.nearest?.kind||this.nearest?.name,route:this.level?.tasks?.[this.objectives],room:this.level?roomAt(this.level,this.player.x,this.player.z)?.name:null,gates:this.world?.gates?.filter(g=>g.obstacle.active).length,reloading:this.player?.reloading,beats:[...(this.beats||[])],stats:{...this.stats}};}
 }
