@@ -1,9 +1,9 @@
-import {createAnatomy,animateCollapse} from './anatomy.js?v=4.1.0';
-import {reloadProgress} from './reload.js?v=4.1.0';
+import {createAnatomy,animateCollapse} from './anatomy.js?v=4.1.1';
+import {reloadProgress} from './reload.js?v=4.1.1';
 import * as T from './vendor/three.module.js';
-import {TILE,seeded,solid,findPath} from './data.js?v=4.1.0';
-import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock} from './fps.js?v=4.1.0';
-import {CombatEffects} from './combat-effects.js?v=4.1.0';
+import {TILE,seeded,solid,findPath} from './data.js?v=4.1.1';
+import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock} from './fps.js?v=4.1.1';
+import {CombatEffects} from './combat-effects.js?v=4.1.1';
 
 const BOX=bevelBox(1,1,1,.014),WALLBOX=new T.BoxGeometry(1,1,1),SPHERE=new T.SphereGeometry(1,20,14),CYL=new T.CylinderGeometry(1,1,1,16);
 const SHARED=new Set([BOX,WALLBOX,SPHERE,CYL]);
@@ -61,6 +61,7 @@ export class World{
    if(kind==='ceiling'){ctx.strokeStyle='#464c3b';ctx.lineWidth=3;for(let v=0;v<=s;v+=128){ctx.beginPath();ctx.moveTo(v,0);ctx.lineTo(v,s);ctx.moveTo(0,v);ctx.lineTo(s,v);ctx.stroke();}}
    if(kind==='paper'){ctx.fillStyle='#454b43';for(let y=65;y<s-50;y+=17)ctx.fillRect(35,y,Math.min(400,80+rnd()*370),2);}
    if(kind==='fabric'){ctx.strokeStyle='#71806425';ctx.lineWidth=.6;for(let i=0;i<s;i+=3){ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i,s);ctx.moveTo(0,i);ctx.lineTo(s,i);ctx.stroke();}}
+   if(kind==='infectedcloth'){for(let i=0;i<45;i++){const x=rnd()*s,y=rnd()*s,r=8+rnd()*70,d=ctx.createRadialGradient(x,y,0,x,y,r);d.addColorStop(0,i%3?'#171c18c0':'#361713bb');d.addColorStop(1,'#171c1800');ctx.fillStyle=d;ctx.fillRect(x-r,y-r,r*2,r*2);}ctx.strokeStyle='#ddd2bb33';ctx.lineWidth=1;for(let i=0;i<45;i++){const x=rnd()*s,y=rnd()*s;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+2,y+10+rnd()*30);ctx.stroke();}}
    if(kind==='wood'){ctx.fillStyle='#a29377';ctx.fillRect(0,0,s,s);for(let i=0;i<750;i++){const x=rnd()*s;ctx.strokeStyle=i%3?'#33261b25':'#cfbea82a';ctx.lineWidth=.3+rnd()*1.2;ctx.beginPath();ctx.moveTo(x,0);ctx.bezierCurveTo(x+Math.sin(i)*10,s*.3,x+Math.sin(i+1)*14,s*.7,x,s);ctx.stroke();}}
   });
  }
@@ -145,7 +146,7 @@ export class World{
   const fabric=material(yellow?0x746449:0x40544c);fabric.map=this.procedural('fabric');
   const screen=canvasTexture((ctx,n)=>{ctx.fillStyle='#071919';ctx.fillRect(0,0,n,n);ctx.fillStyle='#709b8a';ctx.font='24px monospace';['SMITHSON VALLEY','QUARANTINE / 03:04','NETWORK FAILURE','','ROOM 204: ONLINE','REMEMBER EVERY NAME'].forEach((t,i)=>ctx.fillText(t,20,55+i*48));for(let y=0;y<n;y+=4){ctx.fillStyle='#0005';ctx.fillRect(0,y,n,1);}});
   const glow=new T.MeshBasicMaterial({map:screen}),water=new T.MeshStandardMaterial({color:0x1a383e,roughness:.09,metalness:.7,transparent:true,opacity:.72});
-  const chalk=material(0xffffff,.98);chalk.map=canvasTexture((ctx,n)=>{ctx.fillStyle='#172721';ctx.fillRect(0,0,n,n);ctx.strokeStyle='#b4c6b155';ctx.lineWidth=2;ctx.font='18px Georgia';ctx.fillStyle='#c0c9b1aa';ctx.fillText('SMITHSON VALLEY  /  NIGHT SHIFT',25,43);ctx.fillText('NETWORK OFFLINE',25,93);ctx.fillText('HALL  -  03:04',25,390);for(let i=0;i<8;i++){ctx.beginPath();ctx.moveTo(25,125+i*25);ctx.lineTo(205+(i%3)*35,125+i*25);ctx.stroke();}ctx.strokeRect(320,120,115,140);ctx.strokeRect(350,260,70,70);ctx.beginPath();ctx.moveTo(375,135);ctx.lineTo(375,230);ctx.lineTo(435,230);ctx.stroke();ctx.fillText('204',350,185);ctx.fillText('KEEP DOOR CLOSED',275,435);});
+  const chalk=material(0xffffff,.98);chalk.map=canvasTexture((ctx,n)=>{ctx.canvas.width=n*4;ctx.fillStyle='#172721';ctx.fillRect(0,0,n*4,n);ctx.strokeStyle='#b4c6b155';ctx.lineWidth=2;ctx.font='28px cursive';ctx.fillStyle='#c0c9b1aa';ctx.fillText('SMITHSON VALLEY  /  NIGHT SHIFT',40,58);ctx.fillText('NETWORK OFFLINE',40,110);ctx.fillText('HALL  -  03:04',40,410);for(let i=0;i<8;i++){ctx.beginPath();ctx.moveTo(40,155+i*25);ctx.lineTo(720+(i%3)*65,155+i*25);ctx.stroke();}ctx.strokeRect(1260,120,400,155);ctx.strokeRect(1380,275,220,95);ctx.beginPath();ctx.moveTo(1460,135);ctx.lineTo(1460,240);ctx.lineTo(1650,240);ctx.stroke();ctx.fillText('204',1420,190);ctx.fillText('KEEP DOOR CLOSED',1250,435);});
   const bed=(x,z)=>this.prop(x,z,1.0,2.1,.85,g=>{mesh(BOX,p.metal,[.95,.12,2],[0,.58,0],g);mesh(BOX,fabric,[.84,.16,1.85],[0,.72,0],g);mesh(BOX,p.paper,[.7,.14,.4],[0,.88,-.68],g);for(const dx of[-.4,.4])for(const dz of[-.84,.84])link(g,p.metal,[dx,.62,dz],[dx,.05,dz],.03);for(const dz of[-.95,.95])link(g,p.metal,[-.45,1,dz],[.45,1,dz],.035);});
   const shelf=(x,z)=>this.prop(x,z,1.4,.6,2.3,g=>{for(const dx of[-.67,.67])mesh(BOX,p.metal,[.05,2.3,.6],[dx,1.15,0],g);for(let y=.2;y<2.3;y+=.5){mesh(BOX,p.metal,[1.4,.04,.6],[0,y,0],g);for(let i=0;i<4;i++)mesh(BOX,i%2?p.wood:p.paper,[.16,.26,.36],[-.45+i*.3,y+.15,0],g);}});
   const terminal=(x,z)=>this.prop(x,z,1.5,1.0,1.3,g=>{mesh(BOX,p.wood,[1.5,.09,.7],[0,.79,0],g);for(const dx of[-.65,.65])for(const dz of[-.27,.27])link(g,p.metal,[dx,.75,dz],[dx,.03,dz],.03);mesh(BOX,p.black,[.6,.42,.07],[0,1.1,-.18],g);mesh(new T.PlaneGeometry(.55,.35),glow,[1,1,1],[0,1.1,-.138],g);mesh(BOX,p.black,[.45,.025,.17],[0,.85,.16],g);mesh(BOX,fabric,[.48,.1,.5],[0,.47,.8],g);mesh(BOX,fabric,[.48,.45,.07],[0,.74,1],g);});
@@ -314,8 +315,8 @@ export class World{
  character(kind,color){
   const human=kind==='npc'||kind==='player',player=kind==='player',gent=kind==='gentleman',bare=['zsiga','jakob','zeb'].includes(kind);
   const skin=human?material(0xc2a68c,.78):this.surface('skin',kind==='zsiga'?0x899b94:kind==='zeb'?0x889173:0xadb3a0,[2,2],.006,.68);
-  const cloth=material(color??(player?0x495b43:0x46574f),.96);cloth.map=this.procedural('fabric');cloth.bumpMap=cloth.map;cloth.bumpScale=.0015;
-  const dark=material(0x272c29,.91),bone=material(0xaaa08a,.73),raw=material(0x542522,.38);dark.map=this.procedural('fabric');dark.bumpMap=dark.map;dark.bumpScale=.002;
+  const cloth=material(color??(player?0x495b43:0x46574f),.96);cloth.map=this.procedural(human?'fabric':'infectedcloth');cloth.bumpMap=cloth.map;cloth.bumpScale=.0015;
+  const dark=material(0x272c29,.91),bone=material(0xaaa08a,.73),raw=material(0x25110e,.53);dark.map=this.procedural('fabric');dark.bumpMap=dark.map;dark.bumpScale=.002;
   const g=createAnatomy(kind,[skin,cloth,dark]),{body,head,jaw,arms,legs}=g.userData;
   // Finger phalanges and tendons stay attached to the articulated wrists.
   for(const [i,arm]of arms.entries()){const side=i?1:-1,fore=arm.userData.forearm,long=kind==='jakob'?1.28:kind==='zsiga'?1.12:1,hand=-.36-(long-1)*.3;
