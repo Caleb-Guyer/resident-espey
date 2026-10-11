@@ -1,4 +1,4 @@
-import {solid} from './data.js?v=3.1.1';
+import {solid} from './data.js?v=4.0.0';
 
 export const EYE_HEIGHT=1.64;
 export const CEILING=3.35;
@@ -12,7 +12,7 @@ export function relativeMove(strafe,backward,yaw=0){
 export const BODY_SCALE={chris:[1.2,1.15],jakob:[1.18,1.65],zeb:[2.1,1.45],zsiga:[.76,1.16],birdy:[.8,1]};
 
 export function propsBlock(props,x,z,r=.32){
- return props.some(p=>x+r>p.x-p.w/2&&x-r<p.x+p.w/2&&z+r>p.z-p.d/2&&z-r<p.z+p.d/2);
+ return props.some(p=>p.active!==false&&x+r>p.x-p.w/2&&x-r<p.x+p.w/2&&z+r>p.z-p.d/2&&z-r<p.z+p.d/2);
 }
 function boxIntersection(origin,direction,min,max){
  let near=0,far=Infinity;
@@ -41,12 +41,13 @@ export function traceShot(grid,origin,enemies,direction,props=[]){
   if(y<=.03||y>=CEILING-.03||solid(grid,origin.x+direction.x*t,origin.z+direction.z*t,.025)){limit=t;break;}
  }
  for(const p of props){
+  if(p.active===false)continue;
   const t=boxIntersection(origin,direction,{x:p.x-p.w/2,y:0,z:p.z-p.d/2},{x:p.x+p.w/2,y:p.h,z:p.z+p.d/2});
   if(t<limit)limit=t;
  }
  let enemy=null,headshot=false;
  for(const e of enemies){
-  if(e.dead)continue;
+  if(e.dead||e.dormant)continue;
   const [wide,tall]=BODY_SCALE[e.kind]||[1,1];
   const head=sphereIntersection(origin,direction,{x:e.x,y:1.64*tall,z:e.z},.24*wide);
   const body=boxIntersection(origin,direction,{x:e.x-.34*wide,y:.25,z:e.z-.34*wide},{x:e.x+.34*wide,y:1.48*tall,z:e.z+.34*wide});

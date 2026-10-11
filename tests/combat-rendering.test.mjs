@@ -33,7 +33,7 @@ test('Overlapping bursts stay bounded, keep finite transforms, and compact live 
 function weaponWorld(){
  const w=Object.create(World.prototype);w.settings={fov:76,motion:true};w.camera=new T.PerspectiveCamera(76,1.5);w.viewCamera=new T.PerspectiveCamera(62,1.5);
  w.scene=new T.Scene();w.viewScene=new T.Scene();w.view=new T.Group();w.viewScene.add(w.view);w.knife=new T.Group();w.viewScene.add(w.knife);
- w.muzzle=new T.Object3D();w.view.add(w.muzzle);w.slide=new T.Object3D();w.view.add(w.slide);w.viewFlash=new T.PointLight(0xffc879,0);w.viewScene.add(w.viewFlash);
+ w.magazine=new T.Object3D();w.view.add(w.magazine);w.muzzle=new T.Object3D();w.view.add(w.muzzle);w.slide=new T.Object3D();w.view.add(w.slide);w.viewFlash=new T.PointLight(0xffc879,0);w.viewScene.add(w.viewFlash);
  w.ads=w.walk=w.recoil=w.flashTimer=w.knifeTimer=0;w.knife.visible=w.muzzle.visible=false;
  return w;
 }

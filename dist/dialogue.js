@@ -1,5 +1,6 @@
-import {SCENES} from './story.js?v=3.1.1';
-import {CHAPTERS} from './data.js?v=3.1.1';
+import {LEVELS} from './levels.js?v=4.0.0';
+import {SCENES} from './story.js?v=4.0.0';
+import {CHAPTERS} from './data.js?v=4.0.0';
 
 // The same script drives production audio and gameplay; keys survive timing edits.
 export const RADIO={
@@ -28,5 +29,6 @@ export function dialogueScript(){
  for(const [id,s]of Object.entries(SCENES))for(const l of s.lines)add(l.speaker,l.text,id);
  for(const c of CHAPTERS)for(const text of c.npc.lines)add(c.npc.name,text,'conversation');
  for(const [id,entry]of Object.entries(RADIO))for(const [speaker,text]of id==='bosses'?entry:[entry])add(speaker,text,'radio');
+ for(const level of Object.values(LEVELS))for(const [speaker,text]of [...level.cues,...level.beats.filter(b=>b.line).map(b=>b.line)])add(speaker,text,'route');
  return [...lines.values()];
 }

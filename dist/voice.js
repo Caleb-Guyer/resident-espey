@@ -1,5 +1,5 @@
-import {VOICE_ASSETS} from './voice-assets.js?v=3.1.1';
-import {voiceKey} from './dialogue.js?v=3.1.1';
+import {VOICE_ASSETS} from './voice-assets.js?v=4.0.0';
+import {voiceKey} from './dialogue.js?v=4.0.0';
 
 export class Voice{
  constructor(sound,settings,{fetcher=globalThis.fetch?.bind(globalThis)}={}){this.sound=sound;this.settings=settings;this.fetcher=fetcher;this.buffers=new Map();this.queue=[];this.epoch=0;this.paused=true;this.scene=null;this.current=null;}

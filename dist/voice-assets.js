@@ -615,5 +615,173 @@ export const VOICE_ASSETS={
   "text": "If you hear me twice, follow the chalk. Trust what you can see.",
   "character": "nathan",
   "bytes": 44972
+ },
+ "joel-ae0c8cc4": {
+  "file": "assets/voices/joel-ae0c8cc4.mp3",
+  "duration": 3.9813,
+  "speaker": "Joel",
+  "text": "North classroom first. The fuse will open the service shutter.",
+  "character": "joel",
+  "bytes": 48716
+ },
+ "ethan-61460ac9": {
+  "file": "assets/voices/ethan-61460ac9.mp3",
+  "duration": 3.247,
+  "speaker": "Ethan",
+  "text": "One fuse. The shutter is lifting. East utility next.",
+  "character": "ethan",
+  "bytes": 40076
+ },
+ "hall-b85e7c7a": {
+  "file": "assets/voices/hall-b85e7c7a.mp3",
+  "duration": 3.7893,
+  "speaker": "Coach Hall",
+  "text": "The east hall is open. One more fuse, then Room 204.",
+  "character": "hall",
+  "bytes": 46412
+ },
+ "ethan-0068eca2": {
+  "file": "assets/voices/ethan-0068eca2.mp3",
+  "duration": 2.81,
+  "speaker": "Ethan",
+  "text": "Room 204. I can hear him on the other side.",
+  "character": "ethan",
+  "bytes": 34892
+ },
+ "ethan-79935512": {
+  "file": "assets/voices/ethan-79935512.mp3",
+  "duration": 2.738,
+  "speaker": "Ethan",
+  "text": "The closet. This is where we hid on the first night.",
+  "character": "ethan",
+  "bytes": 34028
+ },
+ "hall-cf5b1f93": {
+  "file": "assets/voices/hall-cf5b1f93.mp3",
+  "duration": 3.896,
+  "speaker": "Coach Hall",
+  "text": "Keep moving, Ethan. The utility switch opens the east hall.",
+  "character": "hall",
+  "bytes": 47852
+ },
+ "ethan-3a440434": {
+  "file": "assets/voices/ethan-3a440434.mp3",
+  "duration": 3.0835,
+  "speaker": "Ethan",
+  "text": "Water on the floor. Something is moving at the far end.",
+  "character": "ethan",
+  "bytes": 38060
+ },
+ "landon-e1cebaa2": {
+  "file": "assets/voices/landon-e1cebaa2.mp3",
+  "duration": 4.1712,
+  "speaker": "Landon",
+  "text": "The water current first. That fragment opens the north passage.",
+  "character": "landon",
+  "bytes": 51020
+ },
+ "ethan-60b33603": {
+  "file": "assets/voices/ethan-60b33603.mp3",
+  "duration": 3.365,
+  "speaker": "Ethan",
+  "text": "Current. The north passage is open. Find the compass store.",
+  "character": "ethan",
+  "bytes": 41516
+ },
+ "nathan-7c2a9360": {
+  "file": "assets/voices/nathan-7c2a9360.mp3",
+  "duration": 3.4518,
+  "speaker": "Nathan Nunley",
+  "text": "North is marked. Keep to the chalk when the voices start.",
+  "character": "nathan",
+  "bytes": 42380
+ },
+ "ethan-b7f225a3": {
+  "file": "assets/voices/ethan-b7f225a3.mp3",
+  "duration": 3.1141,
+  "speaker": "Ethan",
+  "text": "Current. North. Home. The Geographer’s chamber is open.",
+  "character": "ethan",
+  "bytes": 38348
+ },
+ "landon-e45c60ca": {
+  "file": "assets/voices/landon-e45c60ca.mp3",
+  "duration": 3.9022,
+  "speaker": "Landon",
+  "text": "The carpet is wet here. Follow the current, just like Paul did.",
+  "character": "landon",
+  "bytes": 47852
+ },
+ "nathan-a1cc6757": {
+  "file": "assets/voices/nathan-a1cc6757.mp3",
+  "duration": 3.3483,
+  "speaker": "Nathan Nunley",
+  "text": "The lights can fail. The chalk does not. Keep north.",
+  "character": "nathan",
+  "bytes": 41228
+ },
+ "mimic-96f85a24": {
+  "file": "assets/voices/mimic-96f85a24.mp3",
+  "duration": 2.6665,
+  "speaker": "Luke’s voice",
+  "text": "Landon. This way. I have been waiting for you.",
+  "character": "mimic",
+  "bytes": 33164
+ },
+ "hall-fc8b3611": {
+  "file": "assets/voices/hall-fc8b3611.mp3",
+  "duration": 3.7467,
+  "speaker": "Coach Hall",
+  "text": "Infirmary. Switchgear. Relay. Restore the anchors in that order.",
+  "character": "hall",
+  "bytes": 46124
+ },
+ "ethan-c0e25c37": {
+  "file": "assets/voices/ethan-c0e25c37.mp3",
+  "duration": 3.11,
+  "speaker": "Ethan",
+  "text": "The infirmary anchor is alive. I can reach the switchgear.",
+  "character": "ethan",
+  "bytes": 38348
+ },
+ "hall-f982dfc3": {
+  "file": "assets/voices/hall-f982dfc3.mp3",
+  "duration": 3.0768,
+  "speaker": "Coach Hall",
+  "text": "Two anchors. Take the relay catwalk to the last one.",
+  "character": "hall",
+  "bytes": 38060
+ },
+ "ethan-5ac46b9e": {
+  "file": "assets/voices/ethan-5ac46b9e.mp3",
+  "duration": 3.425,
+  "speaker": "Ethan",
+  "text": "The anchors are holding. Get to the microphone. Say every name.",
+  "character": "ethan",
+  "bytes": 42092
+ },
+ "hall-b6eb95ae": {
+  "file": "assets/voices/hall-b6eb95ae.mp3",
+  "duration": 3.6811,
+  "speaker": "Coach Hall",
+  "text": "Their names are on the beds. I thought I could hide what happened here.",
+  "character": "hall",
+  "bytes": 45260
+ },
+ "ethan-bb38e98f": {
+  "file": "assets/voices/ethan-bb38e98f.mp3",
+  "duration": 3.4703,
+  "speaker": "Ethan",
+  "text": "The walls are moving with the wires. The school is one body.",
+  "character": "ethan",
+  "bytes": 42668
+ },
+ "hall-6929e111": {
+  "file": "assets/voices/hall-6929e111.mp3",
+  "duration": 3.512,
+  "speaker": "Coach Hall",
+  "text": "The last anchor is beyond the catwalk. I will hold the door.",
+  "character": "hall",
+  "bytes": 43244
  }
 };

@@ -1,3 +1,4 @@
+import {LEVELS,makeLevelGrid} from './levels.js?v=4.0.0';
 export const TILE=2.4;
 export const SAVE_KEY='resident-espey-v1';
 export const DIFFICULTIES={story:{label:'Story',damage:.65,power:1.35,enemySpeed:.85},survivor:{label:'Survivor',damage:1,power:1,enemySpeed:1},nightmare:{label:'Nightmare',damage:1.35,power:.9,enemySpeed:1.12}};
@@ -15,17 +16,14 @@ export const PAGES=[
  {title:'Entry 59 / The unwritten page',text:"In the other ending, I lose Joel. I know because the walls have been showing it to me. His hair moves without him. His hand stops knowing mine. But a story is only finished when nobody can add a sentence. Joel Honeycutt. Luke. Landon Chapa. Zebene Martine. Coach Hall. I am not done writing."},
 ];
 export const ENEMY_STATS={walker:{hp:88,speed:1.5,damage:12,range:1.5,color:0x778274},runner:{hp:72,speed:3.4,damage:13,range:1.5,color:0x646c55},zsiga:{hp:105,speed:2.5,damage:15,range:1.7,color:0x637979},birdy:{hp:95,speed:2.2,damage:12,range:1.7,color:0xbf4632},chris:{hp:350,speed:2.9,damage:20,range:1.9,color:0x726554},jakob:{hp:460,speed:2.5,damage:23,range:2.1,color:0x6b7761},zeb:{hp:660,speed:1.9,damage:26,range:2.7,color:0x677343}};
-export function makeGrid(theme){const w=30,h=24,g=Array.from({length:h},(_,z)=>Array.from({length:w},(_,x)=>(x===0||z===0||x===w-1||z===h-1)?1:0));
- for(const x of [12,18])for(let z=1;z<h-1;z++)if(![3,4,10,11,19,20].includes(z))g[z][x]=1;
- for(const z of [7,15])for(let x=1;x<w-1;x++)if(x<12||x>18)if(![7,8,23,24].includes(x))g[z][x]=1;
- if(theme!=='backrooms'){
-  const c=CHAPTERS.find(c=>c.theme===theme),keep=new Set([c.start,c.npc.at,c.exit,c.boss.at,...c.items.map(i=>i.at),...c.enemies.map(e=>e.slice(1))].map(a=>a.join(',')));
-  for(const x of[6,24])for(let z=1;z<h-1;z++)if(![3,4,10,11,19,20].includes(z)&&!keep.has([x,z].join(',')))g[z][x]=1;
- }
- if(theme==='backrooms'){for(const [x,zs] of [[8,[9,10,11,12,13]],[22,[17,18,19]],[8,[2,3,4,5]]])for(const z of zs)g[z][x]=1;g[3][8]=0;g[11][8]=0;g[19][22]=0;}
- if(theme==='breach'){for(let x=13;x<18;x++)g[6][x]=x===15?0:1;}
- return g;
+// Every chapter has a distinct authored route and ordered objective actions.
+for(const c of CHAPTERS){
+ const l=LEVELS[c.theme],kind=['fuse','seal','anchor'][CHAPTERS.indexOf(c)];
+ Object.assign(c,{level:l,start:l.start,exit:l.exit,objective:l.tasks[0]});c.npc.at=l.npc;c.boss.at=l.boss;
+ c.items=[...l.objectives.map((at,stage)=>({kind,at,stage,appearance:c.theme==='school'&&stage===1?'switch':kind,label:({school:['Recover classroom fuse','Restore utility power','Recover east hall fuse'],backrooms:['Recover the CURRENT fragment','Recover the NORTH fragment','Recover the HOME fragment'],breach:['Restore infirmary anchor','Restore switchgear anchor','Restore relay anchor']})[c.theme][stage]})),...l.pages.map((at,n)=>({kind:'page',at,page:CHAPTERS.indexOf(c)*2+n})),...l.ammo.map(at=>({kind:'ammo',at})),...l.meds.map(at=>({kind:'med',at})),...l.save.map(at=>({kind:'save',at}))];
+ c.enemies=l.enemies;
 }
+export function makeGrid(theme){return makeLevelGrid(theme);}
 export const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 export function solid(grid,x,z,r=.34){for(const dx of [-r,r])for(const dz of [-r,r]){const row=grid[Math.floor((z+dz)/TILE)];if(!row||row[Math.floor((x+dx)/TILE)]!==0)return true;}return false;}
 export function sight(grid,a,b){const n=Math.ceil(distance(a,b)/.65);for(let i=1;i<n;i++){const t=i/n;if(solid(grid,a.x+(b.x-a.x)*t,a.z+(b.z-a.z)*t,.08))return false;}return true;}

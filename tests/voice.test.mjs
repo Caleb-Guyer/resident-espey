@@ -19,7 +19,7 @@ function fixture(fetcher){
  return{voice,context,sources,duck,gains,settings};
 }
 test('Every cutscene, NPC conversation and gameplay line ships a nonempty audio recording',async()=>{
- const script=dialogueScript();assert.equal(script.length,77);assert.equal(Object.keys(VOICE_ASSETS).length,script.length);
+ const script=dialogueScript();assert.equal(script.length,98);assert.equal(Object.keys(VOICE_ASSETS).length,script.length);
  for(const l of script){const a=VOICE_ASSETS[l.key];assert.equal(a.text,l.text);assert.equal(a.speaker,l.speaker);assert.ok(a.duration>.5&&a.duration<14);const bytes=await readFile(new URL('../dist/'+a.file,import.meta.url));assert.equal(bytes.length,a.bytes);assert.ok(bytes.length>1000);assert.ok(bytes.toString('ascii',0,3)==='ID3'||bytes[0]===255,'Invalid MP3: '+a.file);}
  assert.equal(voiceKey('ETHAN ESPEY',RADIO.retry[1]),voiceKey('Ethan',RADIO.retry[1]));
 });

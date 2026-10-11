@@ -16,11 +16,15 @@ A complete, original **first-person** browser survival-horror campaign starring 
 
 Three difficulties. Three endings. Six discoverable memories. Three allies introduced through staged scenes. Enclosed classrooms, worn tiles and plaster, stained Backrooms wallpaper, furnished rooms, detailed faces, articulated creature rigs, flashlight shadows, fog, particles, directional growls, and a visible sidearm with recoil, iron sights and reload animation. No runtime CDN, accounts, purchases, or API keys are needed to play.
 
-Version 3.1 adds 77 packaged, AI-generated dialogue recordings across all 13 story scenes, survivor conversations and gameplay dialogue. Ethan, Joel, Hall, Landon and the rest of the cast have individual voices; radio transmissions and the Backrooms mimics have dedicated treatments. Dialogue lowers the effects mix while someone speaks. Master volume and dialogue volume are separate, and subtitles are optional in both gameplay and cutscenes. Pausing resumes speech from the same position; skipping or leaving a scene stops its recordings. [Audio production and voice credits](AUDIO_PRODUCTION.md).
+The game ships 98 packaged, AI-generated dialogue recordings across all 13 story scenes, survivor conversations and gameplay dialogue. Ethan, Joel, Hall, Landon and the rest of the cast have individual voices; radio transmissions and the Backrooms mimics have dedicated treatments. Dialogue lowers the effects mix while someone speaks. Master volume and dialogue volume are separate, and subtitles are optional in both gameplay and cutscenes. Pausing resumes speech from the same position; skipping or leaving a scene stops its recordings. [Audio production and voice credits](AUDIO_PRODUCTION.md).
 
-Version 3.1.1 fixes brief combat stalls by preparing both weapons and their effects during chapter loading, keeping weapon lighting stable when switching to the knife, and reusing two bounded graphics batches for particles and bullet tracers.
+Version 4.0 rebuilds all three levels around directed progression through distinct rooms. Physical shutters open in order, encounters awaken as their rooms become accessible, and bosses enter when Ethan reaches their arena. The school moves through a survivor shelter, classroom, service switch and flooded hall; the Backrooms follow water, a compass store and borrowed voices; the breach crosses triage, an infirmary, switchgear and a relay catwalk. Spoken route cues, room names and the map support navigation.
 
-The story unfolds through real-time scenes and object-triggered flashbacks, with an optional notebook. Moving and dodging follow your view direction; bullets use a three-dimensional ray with headshots and furniture occlusion. Existing browser checkpoints remain compatible. If a saved position conflicts with a new wall or prop, Ethan returns to the chapter's starting sanctuary with his discoveries intact.
+Reloads now complete at exactly zero, fixing the negative timer that could prevent every subsequent reload. Empty and tactical reloads have distinct timing, an animated magazine, mechanical cues and a progress indicator. Knife attacks and dodges cancel a reload without consuming ammunition. Flashbacks have a time-and-place lead-in, a persistent FLASHBACK label, a memory color grade and an explicit return to the present. The unwritten page is labeled as a possible future.
+
+The combat performance work is preserved: preparing both weapons and their effects during chapter loading, keeping weapon lighting stable when switching to the knife, and reusing two bounded graphics batches for particles and bullet tracers.
+
+The story unfolds through real-time scenes and object-triggered flashbacks, with an optional notebook. Moving and dodging follow your view direction; bullets use a three-dimensional ray with headshots and furniture occlusion. Existing browser saves retain the current chapter, supplies, notebook discoveries, ally names and scenes. Pre-4.0 saves restart that chapter’s route at the sanctuary because objective locations and encounters changed. New saves retain full route progress.
 
 ## Controls
 
@@ -67,7 +71,10 @@ GitHub Actions tests the campaign and publishes the `dist/` directory to GitHub 
 
 ## Project structure
 
-- `dist/data.js`: campaign, source-inspired notebook text, maps, navigation and save validation.
+- `dist/levels.js`: three authored room sequences, shutters, stage encounters and spoken route cues.
+- `dist/reload.js`: reload state, mechanical cue timing and ammunition transfer.
+- `dist/scene-context.js`: memory time, place, kind and return framing.
+- `dist/data.js`: campaign, source-inspired notebook text, navigation and save validation.
 - `dist/game.js`: combat, AI, progression, checkpoints and game loop.
 - `dist/world.js`: Three.js environment, character rigs, materials, lighting and effects.
 - `dist/fps.js`: view-relative movement, first-person ballistics and prop collision.
@@ -79,7 +86,7 @@ The source PDF is not distributed in this repository. This is a fictional, origi
 
 ## Cinematic edition (3.0)
 
-The three-chapter story now unfolds through thirteen real-time 3D sequences: the outbreak opening, two chapter arrivals, six object-triggered memories, a final choice scene, and three distinct endings. Scenes use staged characters, camera cuts and dolly moves, lighting, concise dialogue captions, and local sound design. They are pausable and skippable. There is no recorded voice cast.
+The three-chapter story now unfolds through thirteen real-time 3D sequences: the outbreak opening, two chapter arrivals, six object-triggered memories, a final choice scene, and three distinct endings. Scenes use staged characters, camera cuts and dolly moves, lighting, concise dialogue captions, and local sound design. They are pausable and skippable. Dialogue uses packaged AI-generated fictional character voices.
 
 Open the survivor closet, inspect Joel’s chair, touch the running shoes, examine the seal, find Hall’s whistle, and open the unwritten notebook to see the flashbacks. Each discovery keeps a name and a practical clue. The optional notebook supports scene replay and expanded prose. Four memories and all three allies unlock the full rescue ending. Allies are now introduced through the chapter scenes; separate conversations add context. Existing browser saves remain compatible.
 

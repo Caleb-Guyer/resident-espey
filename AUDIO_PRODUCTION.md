@@ -1,6 +1,6 @@
 # Resident Espey dialogue production
 
-Release 3.1 contains **77 unique spoken lines**, approximately **4 minutes 9 seconds** of packaged speech. All 13 story scenes, nine survivor conversation lines, and gameplay dialogue are voiced. These are **AI-generated fictional character voices**, not recordings of human performers or voice clones of the people named in the source stories.
+Release 4.0 contains **98 unique spoken lines**, approximately **5 minutes 21 seconds** of packaged speech. All 13 story scenes, nine survivor conversation lines, and gameplay dialogue are voiced. These are **AI-generated fictional character voices**, not recordings of human performers or voice clones of the people named in the source stories.
 
 Speech was synthesized locally with [hexgrad’s Kokoro-82M v1.0](https://huggingface.co/hexgrad/Kokoro-82M) through [kokoro-onnx 0.4.9](https://github.com/thewh1teagle/kokoro-onnx). The speech model is Apache-2.0; kokoro-onnx is MIT. Generation dependencies and model weights are not bundled with the game. The shipped files are finished MP3 dialogue recordings; playback makes no requests to an AI provider and needs no API key.
 
@@ -36,7 +36,7 @@ A failed scene download stops its timeline and offers retry or an explicit capti
 
 The model and voice bank were downloaded from the upstream kokoro-onnx release `model-files-v1.0`.
 
-- Model SHA-256: `7d5df8ecf7d4b1878015a32686053fd0eebe2bc377234608764cc0ef3636a6c5`
+- Model SHA-256: `7d5df8ecf7d4b1878015a32686053fd0eebe2bc398234608764cc0ef3636a6c5`
 - Voice bank SHA-256: `bca610b8308e8d99f32e6fe4197e7ec01679264efed0cac9140fe9c29f1fbf7d`
 
 The tests check every shipped recording, complete script coverage, scene timing, pause offsets, queued speech, subtitle-independent playback, cancellation during downloads, loading errors, and the audio mix.

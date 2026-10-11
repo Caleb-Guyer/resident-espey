@@ -15,3 +15,17 @@
 #scene-audio-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 #scene-audio-actions button{padding:12px 16px;border:1px solid #66716b;background:#111918;color:#dce2d7}
 .scene-controls{z-index:8}
+
+/* Cinematic period grammar: memories enter through black, retain a label, and return to the present. */
+#scene-type{position:absolute;top:3vh;left:7%;font-size:10px;letter-spacing:3px;color:#d0b99b;z-index:3}
+#scene-grade{position:absolute;inset:0;pointer-events:none;opacity:0}
+[data-period=flashback] #scene-grade{opacity:1;background:linear-gradient(135deg,#e3aa4421,#12334132);box-shadow:inset 0 0 150px #120d0955;mix-blend-mode:color}
+[data-period=premonition] #scene-grade{opacity:1;background:#2f657a33;mix-blend-mode:color}
+#scene-transition{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;background:#020304;z-index:7;padding:10%;letter-spacing:1px}
+#scene-transition h2{font-family:Georgia,serif;font-size:clamp(20px,3vw,34px);font-weight:400;letter-spacing:2px;margin:20px 0;color:#e3dece}
+#scene-transition p{font-size:12px;color:#a8b3a6;letter-spacing:1px}
+#scene-transition small{font-size:10px;color:#87968a;letter-spacing:2px}
+#reload-progress{width:155px;text-align:center;color:#c7d0bc;font-size:9px;letter-spacing:.8px}
+#reload-progress span{display:block}
+#reload-progress i{display:block;height:2px;margin-top:8px;background:linear-gradient(90deg,#b3c3a2 var(--reload,0%),#50615444 var(--reload,0%))}
+.premonition-scene .grain{opacity:.08}
