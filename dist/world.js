@@ -52,7 +52,7 @@ export class World{
  surface(asset,color,repeat=[1,1],bump=.02,roughness=.9){const map=this.assets[asset].clone();map.needsUpdate=true;map.repeat.set(...repeat);const height=map.clone();height.colorSpace=T.NoColorSpace;height.needsUpdate=true;return new T.MeshStandardMaterial({color,map,bumpMap:height,bumpScale:bump,roughness});}
  procedural(kind){
   const rnd=seeded(kind.length*87);return canvasTexture((ctx,s)=>{
-   ctx.fillStyle=kind==='paper'?'#bdb4a1':kind==='carpet'?'#81704a':kind==='wallpaper'?'#aa9659':kind==='ceiling'?'#9b9c88':'#384138';ctx.fillRect(0,0,s,s);
+   ctx.fillStyle=kind==='paper'?'#bdb4a1':kind==='carpet'?'#81704a':kind==='wallpaper'?'#aa9659':kind==='ceiling'?'#9b9c88':'#949b8b';ctx.fillRect(0,0,s,s);
    for(let i=0;i<22000;i++){ctx.fillStyle=rnd()>.5?'rgba(232,222,186,.08)':'rgba(9,12,8,.14)';ctx.fillRect(rnd()*s,rnd()*s,1+rnd()*3,1+rnd()*3);}
    if(kind==='wallpaper'){
     ctx.strokeStyle='#75643b';ctx.lineWidth=1.3;for(let x=0;x<=s;x+=32)for(let y=0;y<=s;y+=64){ctx.beginPath();ctx.ellipse(x,y,11,26,0,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(x,y-22);ctx.quadraticCurveTo(x+18,y,x,y+22);ctx.quadraticCurveTo(x-18,y,x,y-22);ctx.stroke();}
@@ -371,8 +371,8 @@ export class World{
    const closed=a.array.slice(),open=closed.slice();for(let i=0;i<a.count;i++){const x=a.getX(i),y=a.getY(i),z=a.getZ(i),w=Math.exp(-((x/.075)**2))*Math.max(0,Math.min(1,(-y-.06)/.08))*Math.max(0,Math.min(1,z/.08));open[i*3+1]-=.022*w;open[i*3+2]+=.004*w;}face.morphAttributes.position=[new T.Float32BufferAttribute(open,3)];
    const facial=mesh(face,faceMat,[1,1,1],[0,.018,0],head);g.userData.face=facial;
    const hairMap=canvasTexture((ctx,s)=>{ctx.fillStyle=player?'#8a7042':'#302a22';ctx.fillRect(0,0,s,s);const rnd=seeded(193);for(let i=0;i<9000;i++){ctx.strokeStyle=player?i%2?'#c5a46c55':'#40382b55':i%2?'#71604445':'#0f121145';ctx.lineWidth=.6+rnd();const x=rnd()*s,y=rnd()*s;ctx.beginPath();ctx.moveTo(x,y);ctx.quadraticCurveTo(x+9,y+3,x+5,y+14);ctx.stroke();}});
-   const cap=material(0xffffff,.91);cap.map=hairMap;mesh(new T.SphereGeometry(.167,32,20,0,Math.PI*2,0,Math.PI*.57),cap,[1,.82,.94],[0,.09,-.027],head);
-   for(let i=0;i<96;i++){const theta=i*2.4,phi=.13+(i%16)/16*1.50,cx=Math.sin(phi)*Math.cos(theta)*.165,cy=.09+Math.cos(phi)*.142,cz=Math.sin(phi)*Math.sin(theta)*.157-.027,points=[];for(let k=0;k<7;k++){const angle=k/6*Math.PI*1.5;points.push([cx+Math.cos(angle)*.012,cy+Math.sin(angle)*.013,cz+Math.sin(angle+.5)*.010]);}tube(head,cap,points,.0045);}
+   const cap=material(0xffffff,.91);cap.map=hairMap;mesh(new T.SphereGeometry(.173,32,20,0,Math.PI*2,0,Math.PI*.63),cap,[1,.9,.96],[0,.11,-.027],head);
+   for(let i=0;i<96;i++){const theta=i*2.4,phi=.13+(i%16)/16*1.65,cx=Math.sin(phi)*Math.cos(theta)*.173,cy=.11+Math.cos(phi)*.157,cz=Math.sin(phi)*Math.sin(theta)*.166-.027,points=[];for(let k=0;k<7;k++){const angle=k/6*Math.PI*1.5;points.push([cx+Math.cos(angle)*.012,cy+Math.sin(angle)*.013,cz+Math.sin(angle+.5)*.010]);}tube(head,cap,points,.0045);}
    head.scale.setScalar(.9);head.position.y=.6;g.userData.texturedFace=true;
    if(color===0x3e6554){tube(body,dark,[[-.1,.38,.15],[0,.04,.20],[.1,.38,.15]],.004);mesh(SPHERE,material(0xaeb4a4,.35,.7),[.035,.02,.018],[0,.04,.22],body);}
   }
