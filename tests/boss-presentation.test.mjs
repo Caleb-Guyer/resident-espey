@@ -9,7 +9,7 @@ test('Each boss has unique sculpted closed skin, normalized rig weights and real
   const g=w.character(kind),geo=g.userData.skin.geometry,weights=geo.attributes.skinWeight,indices=geo.attributes.skinIndex,edges=new Map();assert.ok(geo.attributes.position.count>15000);assert.equal(g.userData.bossRig,true);assert.equal(g.userData.skin.skeleton.bones.length,kind==='jakob'?21:10);
   for(let i=0;i<weights.count;i++){assert.ok(Math.abs(weights.getX(i)+weights.getY(i)+weights.getZ(i)+weights.getW(i)-1)<1e-5);for(const n of [indices.getX(i),indices.getY(i),indices.getZ(i),indices.getW(i)])assert.ok(n<g.userData.skin.skeleton.bones.length);}
   for(let i=0;i<geo.index.count;i+=3){const v=[geo.index.getX(i),geo.index.getX(i+1),geo.index.getX(i+2)];for(let j=0;j<3;j++){const a=v[j],b=v[(j+1)%3],key=a<b?a+','+b:b+','+a;edges.set(key,(edges.get(key)||0)+1);}}
-  assert.ok([...edges.values()].every(n=>n===2),kind+' skin has an open seam');assert.equal(g.userData.heads.length,kind==='jakob'?2:1);assert.equal(g.userData.jaws.length,g.userData.heads.length);assert.ok(g.userData.eyes.flat().every(e=>e.children.length===3));shapes.push(geo.attributes.position.count);w.disposeObject(g);
+  assert.ok([...edges.values()].every(n=>n===2),kind+' skin has an open seam');assert.equal(g.userData.heads.length,kind==='jakob'?2:1);assert.equal(g.userData.jaws.length,g.userData.heads.length);assert.ok(g.userData.eyes.flat().every(e=>e.userData.physicalEye&&e.userData.iris.visible&&e.userData.pupil.visible&&e.userData.lid.isMesh));shapes.push(geo.attributes.position.count);w.disposeObject(g);
  }assert.equal(new Set(shapes).size,4);
 });
 test('Boss locomotion, attacks, recovery, introductions and death keep posed vertices finite',()=>{

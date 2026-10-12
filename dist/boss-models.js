@@ -1,7 +1,8 @@
-import {scannedMaterial,microTexture} from './surface-materials.js?v=4.7.1';
+import {scannedMaterial,microTexture} from './surface-materials.js?v=4.8.0';
+import {surfaceMaterial} from './material-surfaces.js?v=4.8.0';
 import * as T from './vendor/three.module.js';
-import {sculptSurface,mergeRigid} from './sculpt-surface.js?v=4.7.1';
-import {CHARACTER_DESIGNS} from './creature-design.js?v=4.7.1';
+import {sculptSurface,mergeRigid} from './sculpt-surface.js?v=4.8.0';
+import {CHARACTER_DESIGNS} from './creature-design.js?v=4.8.0';
 const cache=new Map(),clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const mesh=(parent,geo,mat,at=[0,0,0],scale=[1,1,1])=>{const m=new T.Mesh(geo,mat);m.position.set(...at);m.scale.set(...scale);m.castShadow=m.receiveShadow=true;parent.add(m);return m;};
 const tube=(parent,mat,points,r=.006)=>mesh(parent,new T.TubeGeometry(new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p))),Math.max(12,points.length*5),r,6,false),mat);
@@ -12,7 +13,7 @@ export const BOSS_PROFILES=Object.freeze({
  birdy:{height:2.5,spine:1.38,head:2.16,shoulder:1.76,width:.28,hip:.96,step:.027,skin:0xb0a291}
 });
 function materials(world,kind){
- const p=BOSS_PROFILES[kind],skin=world.assets.scans?scannedMaterial(world.assets.scans,kind==='zeb'?'dark':'pale',{color:0xf4eee4,roughness:.73,clearcoat:.035,clearcoatRoughness:.7,sheen:.13,sheenColor:0x8b6551}):new T.MeshPhysicalMaterial({color:p.skin,map:world.assets.skin,roughness:.79});
+ const p=BOSS_PROFILES[kind],skin=world.assets.surfaces?surfaceMaterial(world.assets.surfaces,kind==='zeb'?'infected':'pale',{color:kind==='zeb'?0xe1d5c5:0xc8baaa,roughness:.72}):world.assets.scans?scannedMaterial(world.assets.scans,kind==='zeb'?'dark':'pale',{color:0xf4eee4,roughness:.73,clearcoat:.035,clearcoatRoughness:.7,sheen:.13,sheenColor:0x8b6551}):new T.MeshPhysicalMaterial({color:p.skin,map:world.assets.skin,roughness:.79});
  if(typeof document!=='undefined'){skin.normalMap=microTexture('skin');skin.normalScale.set(.38,.38);}
  const cloth=new T.MeshStandardMaterial({color:kind==='chris'?0x42473d:0x37352e,map:world.procedural('infectedcloth'),roughness:.94}),dark=new T.MeshStandardMaterial({color:0x646457,map:world.procedural('infectedcloth'),roughness:.92});
  return [skin,cloth,dark];
@@ -30,7 +31,7 @@ function makeRig(kind){
    const wrist=[elbow[0]+side*(kind==='chris'&&side>0?.1:.025),elbow[1]-(kind==='chris'&&side>0?.53:kind==='birdy'?.55:.42),elbow[2]+.06];
    const fore=bone(arm,[elbow[0]-ax,elbow[1]-p.shoulder,elbow[2]-az],[elbow,wrist]);arm.userData={base:0,forearm:fore,side,restX:ax};fore.userData={base:0,wrist:wrist.map((v,j)=>v-elbow[j])};arms.push(arm);
    const lx=cx+side*(fused?.13:kind==='zeb'?.23:.16),knee=[lx+side*.025,p.hip*.52,.055],ankle=[lx,p.hip*.09,.035];
-   const leg=bone(g,[lx,p.hip,0],[[lx,p.hip,0],knee]),calf=bone(leg,[knee[0]-lx,knee[1]-p.hip,knee[2]],[knee,ankle]);leg.userData={calf,side};legs.push(leg);
+   const leg=bone(g,[lx,p.hip,0],[[lx,p.hip,0],knee]),calf=bone(leg,[knee[0]-lx,knee[1]-p.hip,knee[2]],[knee,ankle]);leg.userData={calf,side};calf.userData.ankle=ankle.map((v,j)=>v-knee[j]);legs.push(leg);
   }
  }
  return {g,bones,segments,body,heads,arms,legs,spines};
@@ -41,7 +42,7 @@ function bodyGeometry(kind,rig){
  const ell=(...s)=>{shapes.push(s);volumes[group].shapes.push(s);},region=weights=>{volumes.push({shapes:[],weights});group=volumes.length-1;};
  const centers=fused?[-.28,.28]:[0];for(const [i,cx]of centers.entries()){
   region((x,y,z)=>{const neck=smooth(p.head-.43,p.head-.24,y);return [[id(rig.body),1-neck],[id(rig.heads[i]),neck]];});
-  const w=kind==='zeb'?.39:kind==='birdy'?.20:.25;
+  const w=kind==='zeb'?.39:kind==='birdy'?.163:.25;
   ell(cx,p.shoulder-.16,-.035,w,.30,kind==='zeb'?.27:.17);ell(cx,p.spine-.13,-.025,w*.76,.34,.14);ell(cx,p.hip,0,w*.79,.17,.155);
   ell(cx,p.head-.23,.023,kind==='zeb'?.115:.07,.17,.07);
   for(const side of [-1,1]){
@@ -54,7 +55,7 @@ function bodyGeometry(kind,rig){
  for(const [i,arm]of rig.arms.entries()){
   region((x,y)=>{const elbow=rig.segments[id(arm.userData.forearm)][0][1],fore=1-smooth(elbow-.10,elbow+.10,y);return [[id(arm),1-fore],[id(arm.userData.forearm),fore]];});
   const a=rig.segments[rig.bones.indexOf(arm)][0],b=rig.segments[rig.bones.indexOf(arm)][1],c=rig.segments[rig.bones.indexOf(arm.userData.forearm)][1],heavy=kind==='chris'&&i===1,f=kind==='zeb'?1.5:heavy?1.55:kind==='birdy'?.75:1;
-  ell(...a,.11*f,.155,.115*f);ell((a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2,.083*f,(a[1]-b[1])*.64,.085*f);ell(...b,.072*f,.09,.07*f);
+  ell(...a,(kind==='birdy'?.095:.11)*f,kind==='birdy'?.12:.155,.115*f);ell((a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2,.083*f,(a[1]-b[1])*.64,.085*f);ell(...b,.072*f,.09,.07*f);
   ell((b[0]+c[0])/2,(b[1]+c[1])/2,(b[2]+c[2])/2,.067*f,(b[1]-c[1])*.63,.070*f);ell(...c,.051*f,.075,.042*f);ell(c[0],c[1]-.045,c[2]+.02,.065*f,.09,.038*f);
   if(heavy)for(let j=0;j<4;j++)ell(b[0]+.025*Math.sin(j*2),b[1]-.08-j*.07,b[2]+.05,.11,.095,.075);
  }
@@ -93,7 +94,8 @@ function head(world,parent,id,skin){
  }
  // Remove the front mouth patch; the oral cavity, jaws and teeth have depth.
  const indices=[],mouthIndices=[];for(let i=0;i<geo.index.count;i+=3){const ids=[0,1,2].map(j=>geo.index.getX(i+j)),cx=ids.reduce((n,j)=>n+p.getX(j),0)/3,cy=ids.reduce((n,j)=>n+p.getY(j),0)/3,cz=ids.reduce((n,j)=>n+p.getZ(j),0)/3;
-  if(cz>.08&&(cx/.085)**2+((cy+.11)/.022)**2<1){mouthIndices.push(...ids);continue;}indices.push(...ids);
+  if(cz>.08&&(cx/.085)**2+((cy+.11)/.022)**2<1){mouthIndices.push(...ids);continue;}
+  const eyeX=id==='zeb'?.061:.052;if(cz>.08&&((Math.abs(cx)-eyeX)/.018)**2+((cy-.048)/.011)**2<1)continue;indices.push(...ids);
  }geo.setIndex(indices);geo.computeVertexNormals();
  const design=CHARACTER_DESIGNS[id]||{skin:0xb5a48d,hair:0x211d17,style:'straight'},base=new T.Color(design.skin).toArray();
  const faceMat=new T.MeshPhysicalMaterial({color:0xffffff,map:world.assets.boss||world.assets.face,bumpMap:world.assets.boss||world.assets.face,bumpScale:.0013,roughness:.78,clearcoat:.025,sheen:.12});
@@ -104,15 +106,18 @@ function head(world,parent,id,skin){
  const face=mesh(parent,geo,faceMat),coverGeo=geo.clone();coverGeo.setIndex(mouthIndices);coverGeo.computeVertexNormals();const mouthCover=mesh(parent,coverGeo,faceMat);const jaw=new T.Group();jaw.position.set(0,-.09,.035);parent.add(jaw);
  const dark=new T.MeshStandardMaterial({color:0x1d1110,roughness:.43}),lip=new T.MeshStandardMaterial({color:id==='zeb'?0x503326:0x786055,roughness:.55});
  mesh(parent,new T.SphereGeometry(1,24,16),dark,[0,-.113,.085],[.069,.027,.027]);
- const tooth=new T.MeshStandardMaterial({color:0x8c846c,roughness:.58}),toothGeo=()=>{const g=new T.SphereGeometry(1,12,10),a=g.attributes.position;for(let i=0;i<a.count;i++)a.setX(i,a.getX(i)*(1-.3*Math.max(0,a.getY(i))));g.computeVertexNormals();return g;};
- for(let i=0;i<11;i++){const x=(i-5)*.0126,z=.125-.20*x*x;mesh(parent,toothGeo(),tooth,[x,-.1,z],[.0055,i===1||i===9?.016:.011,.007]);mesh(jaw,toothGeo(),tooth,[x,-.034,z-.035],[.005,.010,.006]);}
+ const teeth=[0x9a8c6b,0x7d7257,0xa69b80,0x645b48].map(color=>new T.MeshStandardMaterial({color,roughness:.61})),toothGeo=()=>{const g=new T.SphereGeometry(1,16,12),a=g.attributes.position;for(let i=0;i<a.count;i++)a.setX(i,a.getX(i)*(1-.3*Math.max(0,a.getY(i))));g.computeVertexNormals();return g;};
+ for(let i=0;i<11;i++){const x=(i-5)*.0126,z=.125-.38*x*x,v=.82+.18*Math.sin(i*2.13+id.length),canine=i===2||i===8,broken=i===(id==='birdy'?7:id==='zeb'?3:9);const upper=mesh(parent,toothGeo(),teeth[i%4],[x,-.1+Math.sin(i*1.8)*.0025,z],[.0051*v,(canine?.014:.010)*v*(broken?.48:1),.006]);upper.rotation.z=Math.sin(i*2.1)*.12;const lower=mesh(jaw,toothGeo(),teeth[(i+2)%4],[x,-.034+Math.cos(i*2.4)*.0015,z-.035],[.0047*v,.0085*v,.0055]);lower.rotation.z=-Math.sin(i*1.4)*.13;}
  tube(parent,lip,[[-.076,-.11,.112],[-.046,-.095,.127],[0,-.095,.139],[.046,-.095,.127],[.076,-.11,.112]],.005);
  tube(jaw,lip,[[-.077,-.025,.102],[-.043,-.040,.120],[0,-.044,.120],[.045,-.040,.12],[.077,-.025,.10]],.005);
  const inside=new T.Group();for(const o of [...parent.children])if(o!==face&&o!==mouthCover&&o!==jaw)inside.add(o);parent.add(inside);mergeRigid(inside);const oralParts=[inside];
  const eyes=[];for(const side of [-1,1]){
-  const eye=new T.Group();eye.position.set(side*(id==='zeb'?.061:.052),.048,.133);parent.add(eye);eyes.push(eye);
-  const cornea=new T.MeshPhysicalMaterial({color:0xffffff,transparent:true,opacity:.035,roughness:.12,clearcoat:.6,depthWrite:false});mesh(eye,new T.SphereGeometry(.021,24,20),cornea);
-  const iris=mesh(eye,new T.SphereGeometry(1,20,16),dark,[0,0,.021],[.014,.014,.004]),pupil=mesh(eye,new T.SphereGeometry(1,16,12),dark,[0,0,.026],[.007,.007,.002]);iris.visible=pupil.visible=false;
+  const eye=new T.Group();eye.position.set(side*(id==='zeb'?.061:.052),.048,.125);parent.add(eye);eyes.push(eye);
+  const sclera=new T.MeshPhysicalMaterial({color:id==='zeb'?0x756a55:0x8a8777,roughness:.29,clearcoat:.3});mesh(eye,new T.SphereGeometry(.015,32,24),sclera);
+  const irisMaterial=new T.MeshPhysicalMaterial({color:id==='birdy'?0x55492f:id==='zeb'?0x53482f:0x51625d,roughness:.26,clearcoat:.35});const iris=mesh(eye,new T.SphereGeometry(1,28,20),irisMaterial,[0,0,.0145],[.0075,.0075,.0025]),pupil=mesh(eye,new T.SphereGeometry(1,24,16),dark,[0,0,.017],[.0033,.004,.001]);
+  const cornea=new T.MeshPhysicalMaterial({color:0xffffff,transparent:true,opacity:id==='chris'&&side>0?.12:.035,roughness:.12,clearcoat:.65,depthWrite:false});mesh(eye,new T.SphereGeometry(.0158,28,20),cornea);
+  for(const sign of[-1,1])tube(eye,skin,[[-.018,0,.004],[-.012,sign*.007,.010],[0,sign*.010,.011],[.013,sign*.007,.009],[.018,0,.004]],.002);
+  const lid=mesh(eye,new T.SphereGeometry(1,32,22),skin,[0,.016,.017],[.020,.006,.0035]);eye.userData={iris,pupil,lid,physicalEye:true};
   mesh(parent,new T.SphereGeometry(1,20,14),skin,[side*.164,-.015,.018],[.023,.043,.027]);
  }
  const hair=bossHair(parent,design,scale);

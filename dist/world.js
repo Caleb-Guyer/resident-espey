@@ -1,22 +1,24 @@
-import {WEAPONS,weaponFor} from './weapons.js?v=4.7.1';
-import {createLongGun} from './longguns.js?v=4.7.1';
-import {scannedMaterial,microTexture} from './surface-materials.js?v=4.7.1';
-import {painted} from './loading.js?v=4.7.1';
-import {BossArena} from './boss-arena.js?v=4.7.1';
-import {createAnatomy,animateCollapse} from './anatomy.js?v=4.7.1';
-import {reloadProgress} from './reload.js?v=4.7.1';
-import {ATTACKS,enemyRadius} from './enemy-director.js?v=4.7.1';
+import {WEAPONS,weaponFor} from './weapons.js?v=4.8.0';
+import {createLongGun} from './longguns.js?v=4.8.0';
+import {scannedMaterial,microTexture} from './surface-materials.js?v=4.8.0';
+import {surfaceMaterial} from './material-surfaces.js?v=4.8.0';
+import {addEnvironmentDetail} from './environment-detail.js?v=4.8.0';
+import {painted} from './loading.js?v=4.8.0';
+import {BossArena} from './boss-arena.js?v=4.8.0';
+import {createAnatomy,animateCollapse} from './anatomy.js?v=4.8.0';
+import {reloadProgress} from './reload.js?v=4.8.0';
+import {ATTACKS,enemyRadius} from './enemy-director.js?v=4.8.0';
 import * as T from './vendor/three.module.js';
-import {TILE,seeded,solid,findPath} from './data.js?v=4.7.1';
-import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock,propsOcclude,environmentDistance} from './fps.js?v=4.7.1';
-import {CombatEffects} from './combat-effects.js?v=4.7.1';
-import {WallPlacement} from './wall-placement.js?v=4.7.1';
-import {createViewModel,createHands,updateSleeveAnchors} from './viewmodel.js?v=4.7.1';
-import {createWeaponMotion,kickWeapon,stepWeaponMotion} from './weapon-motion.js?v=4.7.1';
-import {CHARACTER_DESIGNS,characterHair,dressBirdy,dressArchetype,cloneCharacter} from './creature-design.js?v=4.7.1';
-import {EnemyEffects} from './enemy-effects.js?v=4.7.1';
-import {BOSS_PROFILES,createBossModel} from './boss-models.js?v=4.7.1';
-import {animateBoss} from './boss-animation.js?v=4.7.1';
+import {TILE,seeded,solid,findPath} from './data.js?v=4.8.0';
+import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock,propsOcclude,environmentDistance} from './fps.js?v=4.8.0';
+import {CombatEffects} from './combat-effects.js?v=4.8.0';
+import {WallPlacement} from './wall-placement.js?v=4.8.0';
+import {createViewModel,createHands,updateSleeveAnchors,loadHandSurfaces} from './viewmodel.js?v=4.8.0';
+import {createWeaponMotion,kickWeapon,stepWeaponMotion} from './weapon-motion.js?v=4.8.0';
+import {CHARACTER_DESIGNS,characterHair,dressBirdy,dressArchetype,cloneCharacter} from './creature-design.js?v=4.8.0';
+import {EnemyEffects} from './enemy-effects.js?v=4.8.0';
+import {BOSS_PROFILES,createBossModel} from './boss-models.js?v=4.8.0';
+import {animateBoss} from './boss-animation.js?v=4.8.0';
 
 const BOX=bevelBox(1,1,1,.014),WALLBOX=new T.BoxGeometry(1,1,1),SPHERE=new T.SphereGeometry(1,20,14),CYL=new T.CylinderGeometry(1,1,1,16);
 const SHARED=new Set([BOX,WALLBOX,SPHERE,CYL]);
@@ -58,12 +60,12 @@ export class World{
  constructor(canvas,settings){
   this.settings=settings;this.renderer=new T.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
   this.renderer.setPixelRatio(Math.min(devicePixelRatio,settings.quality==='high'?1.65:1));this.renderer.shadowMap.enabled=settings.quality==='high';this.renderer.shadowMap.type=T.PCFSoftShadowMap;
-  this.renderer.toneMapping=T.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.45;
+  this.renderer.toneMapping=T.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.28;
   this.scene=new T.Scene();this.camera=new T.PerspectiveCamera(settings.fov||76,1,.06,85);this.camera.rotation.order='YXZ';
   this.lamps=[];this.obstacles=[];this.recoil=0;this.ads=0;this.walk=0;this.assets={};this.characterTemplates=new Map();this.characterResources=new Set();
   const loader=new T.TextureLoader();this.ready=Promise.all([['floor','floor'],['wall','plaster'],['skin','infected-skin'],['face','infected-face'],['ethan','ethan-face'],['survivor','survivor-face']].map(([name,file])=>new Promise((resolve,reject)=>{
    const t=loader.load(new URL(`./assets/${file}.webp`,import.meta.url).href,resolve,undefined,reject);t.wrapS=t.wrapT=T.RepeatWrapping;t.colorSpace=T.SRGBColorSpace;t.anisotropy=8;this.assets[name]=t;
-  })));const portrait=new Promise((resolve,reject)=>{const t=loader.load(new URL('./assets/boss-faces-v2.png',import.meta.url).href,resolve,undefined,reject);t.colorSpace=T.SRGBColorSpace;t.anisotropy=8;this.assets.boss=t;});const scans=new Promise((resolve,reject)=>{const t=loader.load(new URL('./assets/material-scans.png',import.meta.url).href,resolve,undefined,reject);t.colorSpace=T.SRGBColorSpace;t.anisotropy=8;this.assets.scans=t;});this.ready=Promise.all([this.ready,portrait,scans]);this.ready.catch(()=>{});
+  })));const portrait=new Promise((resolve,reject)=>{const t=loader.load(new URL('./assets/boss-faces-v2.png',import.meta.url).href,resolve,undefined,reject);t.colorSpace=T.SRGBColorSpace;t.anisotropy=8;this.assets.boss=t;});const scans=new Promise((resolve,reject)=>{const t=loader.load(new URL('./assets/material-scans.png',import.meta.url).href,resolve,undefined,reject);t.colorSpace=T.SRGBColorSpace;t.anisotropy=8;this.assets.scans=t;});const surfaces=new Promise((resolve,reject)=>{const t=loader.load(new URL('./assets/material-surfaces-v3.png',import.meta.url).href,resolve,undefined,reject);t.colorSpace=T.SRGBColorSpace;t.anisotropy=8;this.assets.surfaces=t;});this.ready=Promise.all([this.ready,portrait,scans,surfaces,loadHandSurfaces()]);this.ready.catch(()=>{});
   // Let the title paint and textures arrive before the detailed hands are built.
   this.ready=this.ready.then(async()=>{await painted();this.createWeapon();this.resize();});this.ready.catch(()=>{});this.resize();
  }
@@ -105,13 +107,13 @@ export class World{
   this.disposeLevel();this.finisherHands?.forEach(h=>{h.visible=false;this.scene.add(h);});this.bossArena=null;this.grid=grid;this.config=chapter;this.theme=chapter.theme;this.level=chapter.level;this.gates=[];this.blackoutUntil=0;this.protectedCells=new Set();for(const route of [this.level.route,...chapter.items.map(i=>[chapter.start,i.at])])for(let i=1;i<route.length;i++)for(const p of findPath(grid,{x:(route[i-1][0]+.5)*TILE,z:(route[i-1][1]+.5)*TILE},{x:(route[i][0]+.5)*TILE,z:(route[i][1]+.5)*TILE}))this.protectedCells.add(Math.floor(p.x/TILE)+","+Math.floor(p.z/TILE));this.lamps=[];this.nearestLamps=null;this.obstacles=[];this.portal=null;this.gent=null;this.mist=[];
   const yellow=this.theme==='backrooms',breach=this.theme==='breach';this.scene.background=new T.Color(yellow?0x1b1910:0x090e11);this.scene.fog=new T.FogExp2(yellow?0x25231a:0x0c1419,yellow?.026:.032);this.root=new T.Group();this.scene.add(this.root);
   this.scene.environment=this.viewScene.environment;this.scene.environmentIntensity=.16;
-  this.scene.add(new T.HemisphereLight(yellow?0xd5cba0:0x9fbab7,0x1a201d,yellow?.46:.36));
+  this.scene.add(new T.HemisphereLight(yellow?0xc4b98d:0xa7b6bd,0x151b1c,yellow?.31:.25));
   this.palette={metal:material(0x424c4a,.42,.66),black:material(0x151c1c,.65,.25),wood:material(yellow?0x766447:0x665b49),paper:material(0xc9bea5),rust:material(0x593b2d),glass:material(0x1a3839,.13,.5),bone:material(0xaaa18a),blood:material(0x36140e,.35)};
   this.palette.wood.map=this.procedural('wood');this.palette.wood.bumpMap=this.palette.wood.map;this.palette.wood.bumpScale=.008;this.palette.metal.bumpMap=this.procedural('fabric');this.palette.metal.bumpScale=.002;this.palette.paper.map=this.procedural('paper');
-  const floor=yellow?material(0xffffff,.98):this.surface('floor',0xc2c7c2,[24,19.2],.018,.33);if(yellow){floor.map=this.procedural('carpet');floor.map.repeat.set(36,28.8);floor.bumpMap=floor.map;floor.bumpScale=.014;}
+  const floor=yellow?material(0xffffff,.98):this.surface('floor',0xc2c7c2,[48,38.4],.018,.39);if(yellow){floor.map=this.procedural('carpet');floor.map.repeat.set(36,28.8);floor.bumpMap=floor.map;floor.bumpScale=.014;}
   mesh(new T.PlaneGeometry(72,57.6),floor,[1,1,1],[36,0,28.8],this.root).rotation.x=-Math.PI/2;
   const ceiling=material(yellow?0xb4ae87:0x89938b,.93);ceiling.map=this.procedural('ceiling');ceiling.map.repeat.set(18,14.4);mesh(new T.PlaneGeometry(72,57.6),ceiling,[1,1,1],[36,CEILING,28.8],this.root).rotation.x=Math.PI/2;
-  const wall=yellow?material(0xffffff,.96):this.surface('wall',breach?0x858e7c:0xb5c1b5,[1,1],.034);if(yellow){wall.map=this.procedural('wallpaper');wall.bumpMap=wall.map;wall.bumpScale=.012;}
+  const wall=yellow?material(0xffffff,.96):this.assets.surfaces?surfaceMaterial(this.assets.surfaces,'wall',{color:breach?0xaaa59b:0xe7e4d5,roughness:.94}):this.surface('wall',breach?0x858e7c:0xb5c1b5,[1,1],.034);if(yellow){wall.map=this.procedural('wallpaper');wall.bumpMap=wall.map;wall.bumpScale=.012;}
   const coords=[];grid.forEach((row,z)=>row.forEach((v,x)=>{if(v)coords.push([x,z]);}));const walls=new T.InstancedMesh(WALLBOX,wall,coords.length),dummy=new T.Object3D();
   coords.forEach(([x,z],i)=>{dummy.position.set((x+.5)*TILE,CEILING/2,(z+.5)*TILE);dummy.scale.set(TILE,CEILING,TILE);dummy.updateMatrix();walls.setMatrixAt(i,dummy.matrix);walls.setColorAt(i,new T.Color().setScalar(.83+(i%5)*.035));});walls.castShadow=true;walls.receiveShadow=true;this.root.add(walls);
   for(const [height,thick]of [[.09,.16],[1.02,.035],[3.17,.1]]){const trim=new T.InstancedMesh(BOX,material(yellow?0x594a2c:height===1.02?0x596860:0x313e3c,.72,.12),coords.length);coords.forEach(([x,z],i)=>{dummy.position.set((x+.5)*TILE,height,(z+.5)*TILE);dummy.scale.set(TILE+.025,thick,TILE+.025);dummy.updateMatrix();trim.setMatrixAt(i,dummy.matrix);});trim.receiveShadow=true;this.root.add(trim);}
@@ -121,7 +123,7 @@ export class World{
   this.flashlight=new T.SpotLight(0xffead2,115,27,.48,.72,2);this.flashlight.castShadow=true;this.flashlight.shadow.mapSize.set(1024,1024);this.flashlight.shadow.camera.near=.08;this.flashlight.shadow.camera.far=28;this.flashlight.shadow.bias=-.00035;this.flashlight.shadow.normalBias=.035;this.scene.add(this.flashlight,this.flashlight.target);
   this.playerLight=new T.PointLight(0xd6e2d2,2.8,3.4,2);this.scene.add(this.playerLight);this.shotLight=new T.PointLight(0xffbf65,0,5,2);this.scene.add(this.shotLight);
   this.wallPlacement=new WallPlacement(grid,TILE,this.level.rooms);this.wallMounts=this.wallPlacement.mounts;
-  this.dressDirectedRooms(chapter);this.dressArchitecture();const rnd=seeded(52+chapter.number.length),cells=[];grid.forEach((row,z)=>row.forEach((v,x)=>{if(!v)cells.push([x,z]);}));
+  this.dressDirectedRooms(chapter);this.dressArchitecture();addEnvironmentDetail(this);const rnd=seeded(52+chapter.number.length),cells=[];grid.forEach((row,z)=>row.forEach((v,x)=>{if(!v)cells.push([x,z]);}));
   for(let i=0;i<180;i++){const [x,z]=cells[Math.floor(rnd()*cells.length)],px=(x+.1+rnd()*.8)*TILE,pz=(z+.1+rnd()*.8)*TILE;if(i%3===0){const p=mesh(BOX,this.palette.paper,[.22+rnd()*.15,.003,.3+rnd()*.13],[px,.013,pz],this.root);p.rotation.y=rnd()*6;}else if(i%3===1)this.decal('stain',[px,.015,pz],.4+rnd()*1.3,true);}
   const pos=new Float32Array(500*3);for(let i=0;i<pos.length;i+=3){pos[i]=rnd()*72;pos[i+1]=rnd()*CEILING;pos[i+2]=rnd()*57.6;}const geo=new T.BufferGeometry();geo.setAttribute('position',new T.BufferAttribute(pos,3));this.dust=new T.Points(geo,new T.PointsMaterial({color:0xc6cfad,size:.022,transparent:true,opacity:.3,depthWrite:false}));this.root.add(this.dust);
   const [ex,ez]=chapter.exit;this.exit=group(this.root,(ex+.5)*TILE,0,(ez+.5)*TILE);mesh(BOX,this.palette.black,[2.15,2.9,.18],[0,1.45,0],this.exit);mesh(BOX,this.palette.wood,[1.85,2.65,.16],[0,1.33,.12],this.exit);mesh(BOX,this.palette.metal,[.16,.035,.03],[.7,1.12,.23],this.exit);
@@ -473,13 +475,13 @@ export class World{
  }
  createWeapon(){
   this.viewScene=new T.Scene();this.viewCamera=new T.PerspectiveCamera(62,1,.01,8);this.view=group(this.viewScene);this.view.scale.setScalar(1.02);this.weaponMotion=createWeaponMotion();
-  const faces=[];for(let i=0;i<6;i++){const c=document.createElement('canvas');c.width=c.height=64;const ctx=c.getContext('2d'),d=ctx.createLinearGradient(0,0,0,64);d.addColorStop(0,'#c2cfc8');d.addColorStop(.25,'#536f72');d.addColorStop(.5,'#172b2d');d.addColorStop(.75,'#839486');d.addColorStop(1,'#141b17');ctx.fillStyle=d;ctx.fillRect(0,0,64,64);faces.push(c);}const env=new T.CubeTexture(faces);env.needsUpdate=true;env.colorSpace=T.SRGBColorSpace;this.viewScene.environment=env;this.viewScene.environmentIntensity=.42;
-  this.viewScene.add(new T.HemisphereLight(0xf0dfca,0x26383c,.8));const key=new T.DirectionalLight(0xfff0dc,2.1);key.position.set(-1,3,2);this.viewScene.add(key);const rim=new T.DirectionalLight(0xb8c7ca,.7);rim.position.set(2,0,-2);this.viewScene.add(rim);
-  const metal=scannedMaterial(this.assets.scans,'metal',{color:0xffffff,roughness:.42,metalness:.68}),steel=scannedMaterial(this.assets.scans,'metal',{color:0xd9d5c7,roughness:.27}),frame=scannedMaterial(this.assets.scans,'metal',{color:0xb8bab4,roughness:.54,metalness:.55}),dark=material(0x111312,.77,.24),rubber=material(0x262822,.88),sleeve=material(0x494d42,.93);
+  const faces=[];for(let i=0;i<6;i++){const c=document.createElement('canvas');c.width=c.height=128;const ctx=c.getContext('2d'),d=ctx.createLinearGradient(0,0,0,128);d.addColorStop(0,i===2?'#c9c7b7':'#3d4d52');d.addColorStop(.38,'#233138');d.addColorStop(1,'#0b1115');ctx.fillStyle=d;ctx.fillRect(0,0,128,128);if(i!==3){ctx.fillStyle=i===2?'#e9e4ce':'#c2cfd0';ctx.fillRect(20+i*3,16,7,74);ctx.fillStyle='#7d8f93';ctx.fillRect(29+i*3,17,3,73);ctx.fillRect(98-i*3,33,4,56);}faces.push(c);}const env=new T.CubeTexture(faces);env.needsUpdate=true;env.colorSpace=T.SRGBColorSpace;this.viewScene.environment=env;this.viewScene.environmentIntensity=.42;
+  this.viewAmbient=new T.HemisphereLight(0xe1dacf,0x202d32,.42);this.viewScene.add(this.viewAmbient);const key=this.viewKey=new T.DirectionalLight(0xffefd7,1.35);key.position.set(-1,3,2);this.viewScene.add(key);const rim=this.viewRim=new T.DirectionalLight(0xb8c7ca,.45);rim.position.set(2,0,-2);this.viewScene.add(rim);
+  const metal=this.assets.surfaces?surfaceMaterial(this.assets.surfaces,'metal',{roughness:.36}):scannedMaterial(this.assets.scans,'metal',{color:0xffffff,roughness:.42,metalness:.68}),steel=this.assets.surfaces?surfaceMaterial(this.assets.surfaces,'metal',{color:0xd5d5ce,roughness:.24,metalness:.84}):scannedMaterial(this.assets.scans,'metal',{color:0xd9d5c7,roughness:.27}),frame=this.assets.surfaces?surfaceMaterial(this.assets.surfaces,'metal',{color:0xd7d8d0,roughness:.51,metalness:.62}):scannedMaterial(this.assets.scans,'metal',{color:0xb8bab4,roughness:.54,metalness:.55}),dark=material(0x111312,.77,.24),rubber=material(0x262822,.88),sleeve=material(0x494d42,.93);
   const metalNormal=microTexture('metal'),gripNormal=microTexture('grip'),skinNormal=microTexture('skin'),gripMap=this.weaponTexture('rubber'),skinMap=this.weaponTexture('skin');
   for(const m of[metal,steel,frame]){m.normalMap=metalNormal;m.normalScale.set(.18,.18);}
   rubber.map=gripMap;rubber.normalMap=gripNormal;rubber.normalScale.set(.6,.6);sleeve.map=this.procedural('fabric');sleeve.normalMap=microTexture('cloth');sleeve.normalScale.set(.45,.45);
-  const skin=new T.MeshPhysicalMaterial({color:0xe7c5ae,map:skinMap,normalMap:skinNormal,normalScale:new T.Vector2(.24,.24),roughness:.64,clearcoat:.035,clearcoatRoughness:.8,sheen:.16,sheenColor:0xb57f65});
+  const skin=this.assets.surfaces?surfaceMaterial(this.assets.surfaces,'hand',{color:0xf4e8df,normalMap:skinNormal,normalScale:new T.Vector2(.14,.14),roughness:.57,clearcoat:.02,sheen:.12}):new T.MeshPhysicalMaterial({color:0xe7c5ae,map:skinMap,normalMap:skinNormal,normalScale:new T.Vector2(.24,.24),roughness:.64,clearcoat:.035,clearcoatRoughness:.8,sheen:.16,sheenColor:0xb57f65});
   const marking=canvasTexture((ctx,s)=>{ctx.canvas.width=1024;ctx.canvas.height=128;ctx.clearRect(0,0,1024,128);ctx.fillStyle='#e5ddc044';ctx.font='28px monospace';ctx.textAlign='center';ctx.fillText('ESPEY · 9mm',512,76);});
   const materials={metal,steel,frame,dark,rubber,skin,sleeve,magazine:scannedMaterial(this.assets.scans,'metal',{color:0x9ca194,roughness:.45}),nail:new T.MeshPhysicalMaterial({color:0xb5a491,roughness:.6,clearcoat:.08}),sight:new T.MeshBasicMaterial({color:0xd2c9a0}),shell:material(0x793421,.58),marking:new T.MeshBasicMaterial({map:marking,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1})};
   this.weaponModels=new Map();for(const id of Object.keys(WEAPONS)){
@@ -565,6 +567,11 @@ export class World{
   this.yaw=yaw;this.pitch=pitch;const bob=this.settings.motion?0:Math.sin(this.walk*7)*(this.weaponMotion?.move.x||0)*.009*(1-(this.ads||0)*.8);
   const eye=Number.isFinite(p.eyeHeight)?p.eyeHeight:p.crouching?1.14:EYE_HEIGHT;this.camera.position.set(p.x,eye+bob,p.z);
   this.camera.rotation.set(pitch,yaw,0,'YXZ');this.currentAds=ads;
+ }
+ updateViewLighting(p,t){
+  if(!this.viewKey)return;const lamp=this.nearestLamps?.[0]||this.lamps?.[0],dark=t<(this.blackoutUntil||0),distance=lamp?Math.hypot(lamp.x-p.x,lamp.z-p.z):12,illumination=dark?0:Math.min(1.15,(lamp?.base||0)/(distance*distance+5));
+  this.viewAmbient.intensity=.24+illumination*.13;this.viewKey.intensity=(this.settings.flashlight===false?.18:.42)+illumination*.95;this.viewRim.intensity=.15+illumination*.30;
+  if(lamp&&!dark){const dx=lamp.x-p.x,dz=lamp.z-p.z,yaw=p.yaw||0;this.viewKey.color.set(lamp.color).lerp(this.viewRim.color,.12);this.viewKey.position.set(dx*Math.cos(yaw)-dz*Math.sin(yaw),CEILING-(p.eyeHeight||EYE_HEIGHT),dx*Math.sin(yaw)+dz*Math.cos(yaw)).normalize().multiplyScalar(3);}else{this.viewKey.color.setHex(0xd7d4c4);this.viewKey.position.set(-1,2.5,1.5);}
  }
  updateWeapon(dt,t,p){
   dt=Number.isFinite(dt)?Math.max(0,dt):0;this.weaponMotion??=createWeaponMotion();
@@ -658,7 +665,7 @@ export class World{
   if(this.dust)this.dust.position.y=Math.sin(t*.13)*.08;if(this.portal){this.portal.rotation.z=t*.14;this.portal.material.color.setHSL(.025,.6,.36+Math.sin(t)*.06);}
   for(const o of this.mist){o.quaternion.copy(this.camera.quaternion);o.material.opacity=.13+Math.sin(t+o.position.y)*.06;}
   this.combatEffects?.update(dt);
-  this.updateWeapon(dt,t,p);this.renderer.autoClear=true;this.renderer.render(this.scene,this.camera);this.worldCalls=this.renderer.info.render.calls;
+  this.updateViewLighting(p,t);this.updateWeapon(dt,t,p);this.renderer.autoClear=true;this.renderer.render(this.scene,this.camera);this.worldCalls=this.renderer.info.render.calls;
   this.renderer.autoClear=false;this.renderer.clearDepth();this.renderer.render(this.viewScene,this.viewCamera);this.worldCalls+=this.renderer.info.render.calls;
  }
 }

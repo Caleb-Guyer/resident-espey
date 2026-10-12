@@ -1,12 +1,19 @@
-import {BOSS_PROFILES} from './boss-models.js?v=4.7.1';
-import {ATTACKS} from './enemy-director.js?v=4.7.1';
+import {BOSS_PROFILES} from './boss-models.js?v=4.8.0';
+import {ATTACKS} from './enemy-director.js?v=4.8.0';
 const clamp=n=>Math.max(0,Math.min(1,n)),ease=n=>{n=clamp(n);return n*n*(3-2*n);};
+export function plantBossFoot(leg,p,phase,walk,lift=.055,stride=.14){
+ const calf=leg.userData.calf,ankle=calf.userData.ankle;if(!ankle)return;const a=Math.hypot(calf.position.y,calf.position.z),b=Math.hypot(ankle[1],ankle[2]),upperRest=-Math.atan2(calf.position.z,-calf.position.y),lowerRest=-Math.atan2(ankle[2],-ankle[1]),swing=Math.max(0,Math.sin(phase))*walk;
+ leg.position.y=p.hip-.022*walk;const y=p.hip*.09+swing*lift,z=.035-Math.cos(phase)*stride*walk,dy=leg.position.y-y,distance=Math.max(.02,Math.min(a+b-.00001,Math.hypot(dy,z))),angle=Math.acos(Math.max(-1,Math.min(1,(a*a+distance*distance-b*b)/(2*a*distance)))),bend=Math.PI-Math.acos(Math.max(-1,Math.min(1,(a*a+b*b-distance*distance)/(2*a*b)))),upper=-Math.atan2(z,dy)-angle;
+ leg.rotation.set(upper-upperRest,0,0);calf.rotation.set(bend-(lowerRest-upperRest),0,0);
+}
 export function animateBoss(g,t,moving,mood={}){
  const d=g.userData,kind=d.kind,p=BOSS_PROFILES[kind],seed=d.phase||0,pace=kind==='chris'?6.8:kind==='zeb'?2.7:kind==='birdy'?4.2:4.4,cycle=t*pace+seed,walk=moving?1:0,breathe=Math.sin(t*1.65+seed);
  g.position.y=0;g.rotation.x=0;g.rotation.z=0;d.body.position.y=p.spine+(kind==='zeb'?.007:.003)*breathe-(kind==='zeb'?.025:.010)*Math.abs(Math.sin(cycle))*walk;d.body.rotation.set(kind==='birdy'?.12:kind==='chris'?.16:.045,0,Math.sin(cycle)*walk*.022);d.body.scale.set(1+breathe*.0025,1,1+breathe*.004);
  d.spines.forEach((s,i)=>{if(s===d.body)return;s.rotation.set(.04+Math.sin(t*1.9+i)*.024,Math.sin(t*.9+i)*.035,(i?1:-1)*.035);});
  d.heads.forEach((h,i)=>{h.scale.set(1,1,1);h.position.y=h.userData.restHeadY??h.position.y;h.rotation.set(kind==='birdy'?-.12:-.06,Math.sin(t*.6+seed+i)*.045,kind==='chris'?-.1:kind==='jakob'?(i?-.075:.075):Math.sin(t*.8+seed)*.012);});
- d.legs.forEach((l,i)=>{const s=Math.sin(cycle+(i%2)*Math.PI+(i>1?.65:0)),heavy=kind==='zeb'?.20:.30;l.rotation.set(s*heavy*walk+(kind==='chris'&&i===1?.1:0),0,0);l.userData.calf.rotation.set(Math.max(0,-s)*.38*walk+(kind==='birdy'?.12:.05),0,0);});
+ d.eyes?.flat().forEach((eye,i)=>{const phase=(t+seed*.13+i*.007)%4.9,blink=phase<.15?Math.sin(phase/.15*Math.PI):0,lid=eye.userData.lid;if(lid){lid.position.y=.016*(1-blink);lid.scale.y=.006+.008*blink;}for(const part of[eye.userData.iris,eye.userData.pupil])if(part){part.position.x=Math.sin(t*.67+seed)*.0010;part.position.y=Math.sin(t*.47+i*.09)*.0008;}});
+ const elapsed=Number.isFinite(d.gaitTime)?Math.max(0,Math.min(.1,t-d.gaitTime)):1/60;d.gaitTime=t;d.gaitBlend=(d.gaitBlend||0)+(walk-(d.gaitBlend||0))*(1-Math.exp(-elapsed*10));d.body.position.y-=d.gaitBlend*.010;
+ d.legs.forEach((l,i)=>plantBossFoot(l,p,cycle+(i%2)*Math.PI+(i>1?.65:0),d.gaitBlend,kind==='zeb'?.036:.055,kind==='zeb'?.11:.14));
  d.arms.forEach((a,i)=>{a.rotation.set((kind==='birdy'?.10:kind==='chris'&&i===1?.07:-.1)+Math.sin(cycle+(i%2)*Math.PI)*walk*(kind==='zeb'?.08:.16),0,(i%2?1:-1)*(kind==='zeb'?.07:.03));a.userData.forearm.rotation.set(-.10+Math.sin(t*.8+i)*.018,0,0);});
  const a=ATTACKS[mood.attack],u=a?ease((mood.attackTime||0)/(mood.tellDuration||a.tell)):0,wind=mood.windup>0?u:0,swing=mood.strike>0?Math.sin((1-mood.strike/.4)*Math.PI):0;
  let mouth=.045+(breathe+1)*.013;
@@ -62,7 +69,7 @@ export function animateBoss(g,t,moving,mood={}){
    if(!loose.userData.landed){loose.visible=gone;loose.scale.setScalar(gone?1:0);const fall=tearing&&i===side?ease((beat.time-3)/1.25):1;loose.position.set((i?1:-1)*(1.0+fall*.4),1.65*(1-fall)+.05,fall*.32);loose.rotation.set(-fall*Math.PI/2,(i?1:-1)*(.10+fall*.30),(i?1:-1)*fall*.18);if(!gone)loose.position.set(0,0,0);}
   }
   if(phase===2){d.wings[1].rotation.z+=.16;d.wingWrists[1].rotation.z+=.30;d.body.rotation.z=-.075;}
-  if(phase>=3){g.position.y=0;d.legs.forEach((l,i)=>{l.rotation.x=Math.sin(cycle+i*Math.PI)*.36*walk;l.userData.calf.rotation.x=Math.max(0,-Math.sin(cycle+i*Math.PI))*.4*walk;});d.body.rotation.x=.23;}
+  if(phase>=3){g.position.y=0;d.legs.forEach((l,i)=>plantBossFoot(l,p,cycle+i*Math.PI,d.gaitBlend,.052,mood.charge>0?.16:.14));d.body.rotation.x=.23;}
   if(tearing){const u=ease(beat.time/1.1);d.body.position.y-=.20*u;d.body.rotation.x=.18+Math.sin(rip*Math.PI)*.18;d.head.rotation.x=-.10-rip*.27;d.jaw.rotation.x=.05+rip*.37;d.faces[0].morphTargetInfluences[0]=rip*.8;d.arms.forEach(a=>a.rotation.x=-.22);}
   if(['groundRush','scream'].includes(mood.attack)){d.head.rotation.x-=wind*.28;d.jaw.rotation.x=.12+wind*.3;d.faces[0].morphTargetInfluences[0]=wind*.85;}
   if(mood.attack==='talons'){d.arms.forEach((arm,i)=>{arm.rotation.x-=wind*.7+swing*.7;arm.rotation.z+=(i?1:-1)*wind*.3;});}

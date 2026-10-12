@@ -1,4 +1,5 @@
 import * as T from './vendor/three.module.js';
+import {profileGeometry} from './profile-geometry.js?v=4.8.0';
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const handCache=new Map();
 const tetra=[[0,5,1,6],[0,1,2,6],[0,2,3,6],[0,3,7,6],[0,7,4,6],[0,4,5,6]],corners=[[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0,0,1],[1,0,1],[1,1,1],[0,1,1]];
@@ -22,7 +23,7 @@ function sweep(points,radii,folds=0){
  }
  const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('uv',new T.Float32BufferAttribute(tex,2));g.setIndex(index);g.computeVertexNormals();g.userData.sweptSurface=true;return g;
 }
-function handGeometry(side){
+export function handSurface(side){
  if(handCache.has(side))return handCache.get(side).clone();
  const ell=[],segments=[];
  const blob=(p,r)=>ell.push([...p,...r]);
@@ -37,12 +38,12 @@ function handGeometry(side){
   for(let i=0;i<4;i++){const y=-.045-i*.020,r=.008-i*.0006;finger([[-.035,y,.024],[-.045,y,-.013],[-.023,y-.003,-.043],[.017-i*.003,y-.005,-.029]],r);}
   blob([-.037,-.051,.025],[.018,.024,.023]);finger([[-.038,-.050,.018],[-.043,-.020,-.010],[-.035,-.012,-.047]],.0095);
  }
- const smin=(a,b,k=.0028)=>{const h=clamp(.5+.5*(b-a)/k,0,1);return b*(1-h)+a*h-k*h*(1-h);};
+ const smin=(a,b,k=.0036)=>{const h=clamp(.5+.5*(b-a)/k,0,1);return b*(1-h)+a*h-k*h*(1-h);};
  const field=(x,y,z)=>{
   let d=1;for(const[cx,cy,cz,rx,ry,rz]of ell)d=smin(d,(Math.hypot((x-cx)/rx,(y-cy)/ry,(z-cz)/rz)-1)*Math.min(rx,ry,rz));
   for(const[a,b,r1,r2]of segments){const dx=b[0]-a[0],dy=b[1]-a[1],dz=b[2]-a[2],t=clamp(((x-a[0])*dx+(y-a[1])*dy+(z-a[2])*dz)/(dx*dx+dy*dy+dz*dz),0,1);d=smin(d,Math.hypot(x-a[0]-dx*t,y-a[1]-dy*t,z-a[2]-dz*t)-(r1+(r2-r1)*t));}return d;
  };
- const step=.0038,origin=[-.072,-.171,-.072],nx=39,ny=57,nz=53,id=(x,y,z)=>(z*ny+y)*nx+x,values=new Float32Array(nx*ny*nz);
+ const step=.0027,origin=[-.072,-.171,-.072],nx=56,ny=83,nz=77,id=(x,y,z)=>(z*ny+y)*nx+x,values=new Float32Array(nx*ny*nz);
  for(let z=0;z<nz;z++)for(let y=0;y<ny;y++)for(let x=0;x<nx;x++)values[id(x,y,z)]=field(origin[0]+x*step,origin[1]+y*step,origin[2]+z*step);
  const positions=[],indices=[],lookup=new Map();
  const vertex=(a,b,pa,pb)=>{const key=a<b?a+','+b:b+','+a;if(lookup.has(key))return lookup.get(key);const t=values[a]/(values[a]-values[b]),v=positions.length/3;positions.push(...pa.map((x,i)=>x+(pb[i]-x)*t));lookup.set(key,v);return v;};
@@ -55,15 +56,23 @@ function handGeometry(side){
    if(inside.length===1)emit(outside.map(j=>v(inside[0],j)),away);else if(outside.length===1)emit(inside.map(j=>v(outside[0],j)),away);else{const[a,b]=inside,[c,d]=outside,q=[v(a,c),v(a,d),v(b,d),v(b,c)];emit([q[0],q[1],q[2]],away);emit([q[0],q[2],q[3]],away);}
   }
  }
- const g=new T.BufferGeometry(),tex=[];for(let i=0;i<positions.length;i+=3)tex.push(Math.atan2(positions[i],positions[i+2]-.04)/(Math.PI*2)+.5,(positions[i+1]+.16)*6);
- g.setAttribute('position',new T.Float32BufferAttribute(positions,3));g.setAttribute('uv',new T.Float32BufferAttribute(tex,2));g.setIndex(indices);g.computeVertexNormals();
+ const g=new T.BufferGeometry(),tex=[],normals=[],epsilon=.00015;for(let i=0;i<positions.length;i+=3){const[x,y,z]=positions.slice(i,i+3);tex.push(Math.atan2(x,z-.04)/(Math.PI*2)+.5,(y+.16)*6);const dx=field(x+epsilon,y,z)-field(x-epsilon,y,z),dy=field(x,y+epsilon,z)-field(x,y-epsilon,z),dz=field(x,y,z+epsilon)-field(x,y,z-epsilon),length=Math.hypot(dx,dy,dz)||1;normals.push(dx/length,dy/length,dz/length);}
+ g.setAttribute('position',new T.Float32BufferAttribute(positions,3));g.setAttribute('normal',new T.Float32BufferAttribute(normals,3));g.setAttribute('uv',new T.Float32BufferAttribute(tex,2));g.setIndex(indices);g.userData.detail='continuous gradient-shaded hand surface';
  const morph=g.attributes.position.clone();for(let i=0;i<morph.count;i++){const x=morph.getX(i),y=morph.getY(i),z=morph.getZ(i);if(side===1){const w=Math.exp(-(((y+.028)/.013)**2))*clamp((.030-z)/.04,0,1);morph.setZ(i,z+w*.0035);}else{const w=clamp((.022-z)/.060,0,1)*clamp((-.02-y)/.025,0,1);morph.setX(i,x-w*.006);morph.setZ(i,z+w*.012);}}
  g.morphAttributes.position=[morph];g.computeBoundingSphere();handCache.set(side,g);return g.clone();
 }
+export function decodeHandSurfaces(buffer){
+ const bytes=buffer instanceof ArrayBuffer?buffer:buffer.buffer.slice(buffer.byteOffset,buffer.byteOffset+buffer.byteLength),header=new Uint32Array(bytes,0,3);if(header[0]!==0x38344852||header[1]!==1||header[2]!==2)throw Error('Invalid hand surface asset');let offset=12;const decoded=[];
+ for(let i=0;i<2;i++){const meta=new Uint32Array(bytes,offset,3),side=meta[0]===1?1:-1,n=meta[1],count=meta[2];offset+=12;if(n<1000||n>200000||count>1500000||offset+(n*11+count)*4>bytes.byteLength)throw Error('Incomplete hand surface asset');const g=new T.BufferGeometry();
+  for(const[name,size]of[['position',3],['normal',3],['uv',2],['morph',3]]){const data=new Float32Array(bytes,offset,n*size).slice();offset+=n*size*4;const attribute=new T.BufferAttribute(data,size);if(name==='morph')g.morphAttributes.position=[attribute];else g.setAttribute(name,attribute);}
+  g.setIndex(new T.BufferAttribute(new Uint32Array(bytes,offset,count).slice(),1));offset+=count*4;g.computeBoundingSphere();g.userData.detail='prebaked continuous hand surface';decoded.push([side,g]);
+ }if(offset!==bytes.byteLength||decoded[0][0]===decoded[1][0])throw Error('Invalid hand surface layout');for(const[side,g]of decoded)handCache.set(side,g);return true;
+}
+export async function loadHandSurfaces(){try{const response=await fetch(new URL('./assets/hands-v3.bin',import.meta.url));if(!response.ok)return false;return decodeHandSurfaces(await response.arrayBuffer());}catch{return false;}}
 export function createHands(m,root,anchored=false){
  const hands=[],skins=[];
  for(const side of[1,-1]){
-  const rest=side===1?[.020,-.115,.085]:[-.037,-.111,.060],hand=group(root,rest);hand.userData.rest=rest;const geo=handGeometry(side),translation=new T.Matrix4().makeTranslation(...rest.map(v=>-v));geo.applyMatrix4(translation);geo.morphAttributes.position[0].applyMatrix4(translation);geo.computeBoundingSphere();const skin=add(hand,geo,m.skin);skin.frustumCulled=false;skins.push(skin);
+  const rest=side===1?[.020,-.115,.085]:[-.037,-.111,.060],hand=group(root,rest);hand.userData.rest=rest;const geo=handSurface(side),translation=new T.Matrix4().makeTranslation(...rest.map(v=>-v));geo.applyMatrix4(translation);geo.morphAttributes.position[0].applyMatrix4(translation);geo.computeBoundingSphere();const skin=add(hand,geo,m.skin);skin.frustumCulled=false;skins.push(skin);
   const local=p=>p.map((v,i)=>v-rest[i]);
   const armPoints=(side===1?[[.020,-.115,.085],[.026,-.140,.095],[.058,-.175,.119],[.082,-.213,.136]]:[[-.037,-.112,.060],[-.046,-.141,.073],[-.061,-.178,.088],[-.082,-.213,.110]]).map(local);
   add(hand,sweep(armPoints,[[.019,.019],[.022,.021],[.026,.024],[.032,.029]]),m.skin);
@@ -79,7 +88,6 @@ export function createHands(m,root,anchored=false){
   const cuff=add(hand,new T.TorusGeometry(.033,.003,12,48),m.sleeve,local(clothPoints[0].map((v,i)=>v+rest[i])));cuff.quaternion.setFromUnitVectors(new T.Vector3(0,0,1),new T.Vector3(...clothPoints[1]).sub(new T.Vector3(...clothPoints[0])).normalize());cuff.scale.y=.92;
   if(side===1)add(hand,sphere,m.nail,local([-.040,-.016,.018]),[.001,.0045,.0055]);else add(hand,sphere,m.nail,local([-.045,-.014,-.045]),[.0012,.0048,.0055]);
   if(side===1){
-   for(let f=0;f<3;f++){const y=-.046-f*.018;add(hand,sphere,m.skin,local([.041,y,.041]),[.0065,.0048,.006]);}
    const vein=new T.CatmullRomCurve3([[.046,-.094,.064],[.043,-.066,.063],[.037,-.032,.057]].map(p=>new T.Vector3(...local(p))));add(hand,new T.TubeGeometry(vein,30,.00055,8,false),m.skin);
   }
   hands.push(hand);
@@ -97,7 +105,7 @@ export function createViewModel(m){
  const hole=new T.Path();hole.moveTo(-.071,-.012);hole.quadraticCurveTo(-.068,-.047,-.031,-.048);hole.lineTo(-.006,-.048);hole.lineTo(-.006,-.013);hole.closePath();outline.holes.push(hole);add(gun,sideShape(outline,.034),m.frame);
  add(gun,rounded(.039,.014,.098,.003),m.frame,[0,.030,-.10]);
  // Broad radiused shoulders, a recessed ejection port, and machined edges.
- add(slide,rounded(.038,.032,.209,.0055),m.metal,[0,.055,-.064]);
+ add(slide,profileGeometry([[-.170,.027,.024,.055],[-.162,.038,.032,.055],[-.130,.038,.032,.055],[.024,.037,.031,.055],[.040,.029,.025,.055]],.65),m.metal);
  add(slide,rounded(.025,.003,.190,.001),m.steel,[0,.071,-.064]);
  add(slide,rounded(.0008,.013,.037,.002),m.dark,[.0193,.053,-.051]);
  add(slide,rounded(.0011,.006,.031,.001),m.steel,[.0195,.049,-.051]);
