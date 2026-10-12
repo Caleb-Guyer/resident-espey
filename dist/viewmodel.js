@@ -60,7 +60,7 @@ function handGeometry(side){
  const morph=g.attributes.position.clone();for(let i=0;i<morph.count;i++){const x=morph.getX(i),y=morph.getY(i),z=morph.getZ(i);if(side===1){const w=Math.exp(-(((y+.028)/.013)**2))*clamp((.030-z)/.04,0,1);morph.setZ(i,z+w*.0035);}else{const w=clamp((.022-z)/.060,0,1)*clamp((-.02-y)/.025,0,1);morph.setX(i,x-w*.006);morph.setZ(i,z+w*.012);}}
  g.morphAttributes.position=[morph];g.computeBoundingSphere();handCache.set(side,g);return g.clone();
 }
-export function createHands(m,root){
+export function createHands(m,root,anchored=false){
  const hands=[],skins=[];
  for(const side of[1,-1]){
   const rest=side===1?[.020,-.115,.085]:[-.037,-.111,.060],hand=group(root,rest);hand.userData.rest=rest;const geo=handGeometry(side),translation=new T.Matrix4().makeTranslation(...rest.map(v=>-v));geo.applyMatrix4(translation);geo.morphAttributes.position[0].applyMatrix4(translation);geo.computeBoundingSphere();const skin=add(hand,geo,m.skin);skin.frustumCulled=false;skins.push(skin);
@@ -68,7 +68,14 @@ export function createHands(m,root){
   const armPoints=(side===1?[[.020,-.115,.085],[.026,-.140,.095],[.058,-.175,.119],[.082,-.213,.136]]:[[-.037,-.112,.060],[-.046,-.141,.073],[-.061,-.178,.088],[-.082,-.213,.110]]).map(local);
   add(hand,sweep(armPoints,[[.019,.019],[.022,.021],[.026,.024],[.032,.029]]),m.skin);
   const clothPoints=[[side*.082,-.213,side===1?.136:.110],[side*.145,-.320,.18],[side*.235,-.50,.32]].map(local);
-  add(hand,sweep(clothPoints,[[.034,.031],[.047,.040],[.058,.05]],.065),m.sleeve);
+  const clothGeo=sweep(clothPoints,[[.034,.031],[.047,.040],[.058,.05]],.065),clothMaterial=anchored?m.sleeve.clone():m.sleeve;
+  if(anchored){
+   const weights=new Float32Array(clothGeo.attributes.position.count);for(let i=0;i<weights.length;i++){const u=clamp(clothGeo.attributes.uv.getY(i)/2,0,1);weights[i]=u*u*(3-2*u);}
+   clothGeo.setAttribute('armWeight',new T.BufferAttribute(weights,1));const delta=new T.Vector3();
+   clothMaterial.onBeforeCompile=shader=>{shader.uniforms.armAnchor={value:delta};shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nattribute float armWeight;uniform vec3 armAnchor;').replace('#include <begin_vertex>','#include <begin_vertex>\ntransformed+=armAnchor*armWeight;');};clothMaterial.customProgramCacheKey=()=> 'view-sleeve-anchor-47';
+   hand.userData.sleeveAnchor={side,delta,end:new T.Vector3(...clothPoints[2]),target:new T.Vector3()};
+  }
+  const cloth=add(hand,clothGeo,clothMaterial);cloth.frustumCulled=false;
   const cuff=add(hand,new T.TorusGeometry(.033,.003,12,48),m.sleeve,local(clothPoints[0].map((v,i)=>v+rest[i])));cuff.quaternion.setFromUnitVectors(new T.Vector3(0,0,1),new T.Vector3(...clothPoints[1]).sub(new T.Vector3(...clothPoints[0])).normalize());cuff.scale.y=.92;
   if(side===1)add(hand,sphere,m.nail,local([-.040,-.016,.018]),[.001,.0045,.0055]);else add(hand,sphere,m.nail,local([-.045,-.014,-.045]),[.0012,.0048,.0055]);
   if(side===1){
@@ -80,6 +87,9 @@ export function createHands(m,root){
 
  return {hands,skins};
 }
+// Keep the far end of each sleeve below and behind the view camera while the
+// hand follows its grip. Only the sleeve stretches; finger anatomy stays rigid.
+export function updateSleeveAnchors(...hands){for(const hand of hands){const a=hand?.userData.sleeveAnchor;if(!a)continue;hand.worldToLocal(a.target.set(a.side*.38,-.60,.18));a.delta.copy(a.target).sub(a.end);}}
 export function createViewModel(m){
  const root=new T.Group(),gun=group(root),slide=group(gun);
  // A continuous frame silhouette includes a real opening in the trigger guard.
@@ -121,7 +131,7 @@ export function createViewModel(m){
  for(let i=0;i<7;i++)add(magazine,new T.CircleGeometry(.0014,20),m.dark,[.0126,.021+i*.012,0]).rotation.y=Math.PI/2;
  const trigger=group(gun,[0,-.006,-.039]);add(trigger,new T.TubeGeometry(new T.CatmullRomCurve3([[0,0,0],[0,-.016,.002],[0,-.028,.012]].map(p=>new T.Vector3(...p))),24,.002,10,false),m.steel);
  const hammer=group(gun,[0,.061,.049]);add(hammer,rounded(.011,.012,.006,.002),m.steel,[0,.004,0]);for(let i=0;i<4;i++)add(hammer,rounded(.010,.0005,.0006,.00015),m.dark,[0,.004+i*.002,.0033]);
- const {hands,skins}=createHands(m,root);
+ const {hands,skins}=createHands(m,root,true);
  if(m.marking){const label=add(slide,new T.PlaneGeometry(.067,.0065),m.marking,[-.0224,.049,-.035]);label.rotation.y=-Math.PI/2;}
  return {root,gun,slide,grip,magazine,trigger,hammer,rightHand:hands[0],leftHand:hands[1],rightSkin:skins[0],leftSkin:skins[1]};
 }

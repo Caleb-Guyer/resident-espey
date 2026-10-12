@@ -4,7 +4,7 @@
 
 Some places remember you. Some refuse to let you go.
 
-Version **4.7.0** improves handling and encounter clarity. Guns retract and rise when approaching a wall, then smoothly recover their sights as Ethan steps back. The reticle returns while the sights are lowered. Crouching eases the camera between standing and crouched height; shots and projectile hits use the current stance height. Metal surfaces now combine grain with varied roughness and softer worn highlights.
+Version **4.7.1** improves handling and encounter clarity. Guns retract and rise when approaching a wall, then smoothly recover their sights as Ethan steps back. The reticle returns while the sights are lowered. The raised stance keeps the stock away from the camera, and sleeves remain anchored below the view throughout raised and reload poses. Crouching eases the camera between standing and crouched height; shots, muzzle flashes, brass and projectile hits use the current stance height. Metal surfaces now combine grain with varied roughness and softer worn highlights.
 
 Creatures steer around nearby creatures during pursuit. Charges test their entire swept movement, including grazing hits. Injury lighting indicates the attack direction without another HUD panel, and projectiles retain their original attack direction. Boss projectiles respect a raised shutter's bottom edge and remaining panel. Introductions and phase movies clear prior hazards; defeating a boss clears its remaining projectiles, pools and waves. Decorative zero-damage effects cannot trigger injury feedback.
 

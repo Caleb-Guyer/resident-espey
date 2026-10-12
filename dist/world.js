@@ -1,22 +1,22 @@
-import {WEAPONS,weaponFor} from './weapons.js?v=4.7.0';
-import {createLongGun} from './longguns.js?v=4.7.0';
-import {scannedMaterial,microTexture} from './surface-materials.js?v=4.7.0';
-import {painted} from './loading.js?v=4.7.0';
-import {BossArena} from './boss-arena.js?v=4.7.0';
-import {createAnatomy,animateCollapse} from './anatomy.js?v=4.7.0';
-import {reloadProgress} from './reload.js?v=4.7.0';
-import {ATTACKS,enemyRadius} from './enemy-director.js?v=4.7.0';
+import {WEAPONS,weaponFor} from './weapons.js?v=4.7.1';
+import {createLongGun} from './longguns.js?v=4.7.1';
+import {scannedMaterial,microTexture} from './surface-materials.js?v=4.7.1';
+import {painted} from './loading.js?v=4.7.1';
+import {BossArena} from './boss-arena.js?v=4.7.1';
+import {createAnatomy,animateCollapse} from './anatomy.js?v=4.7.1';
+import {reloadProgress} from './reload.js?v=4.7.1';
+import {ATTACKS,enemyRadius} from './enemy-director.js?v=4.7.1';
 import * as T from './vendor/three.module.js';
-import {TILE,seeded,solid,findPath} from './data.js?v=4.7.0';
-import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock,propsOcclude,environmentDistance} from './fps.js?v=4.7.0';
-import {CombatEffects} from './combat-effects.js?v=4.7.0';
-import {WallPlacement} from './wall-placement.js?v=4.7.0';
-import {createViewModel,createHands} from './viewmodel.js?v=4.7.0';
-import {createWeaponMotion,kickWeapon,stepWeaponMotion} from './weapon-motion.js?v=4.7.0';
-import {CHARACTER_DESIGNS,characterHair,dressBirdy,dressArchetype,cloneCharacter} from './creature-design.js?v=4.7.0';
-import {EnemyEffects} from './enemy-effects.js?v=4.7.0';
-import {BOSS_PROFILES,createBossModel} from './boss-models.js?v=4.7.0';
-import {animateBoss} from './boss-animation.js?v=4.7.0';
+import {TILE,seeded,solid,findPath} from './data.js?v=4.7.1';
+import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock,propsOcclude,environmentDistance} from './fps.js?v=4.7.1';
+import {CombatEffects} from './combat-effects.js?v=4.7.1';
+import {WallPlacement} from './wall-placement.js?v=4.7.1';
+import {createViewModel,createHands,updateSleeveAnchors} from './viewmodel.js?v=4.7.1';
+import {createWeaponMotion,kickWeapon,stepWeaponMotion} from './weapon-motion.js?v=4.7.1';
+import {CHARACTER_DESIGNS,characterHair,dressBirdy,dressArchetype,cloneCharacter} from './creature-design.js?v=4.7.1';
+import {EnemyEffects} from './enemy-effects.js?v=4.7.1';
+import {BOSS_PROFILES,createBossModel} from './boss-models.js?v=4.7.1';
+import {animateBoss} from './boss-animation.js?v=4.7.1';
 
 const BOX=bevelBox(1,1,1,.014),WALLBOX=new T.BoxGeometry(1,1,1),SPHERE=new T.SphereGeometry(1,20,14),CYL=new T.CylinderGeometry(1,1,1,16);
 const SHARED=new Set([BOX,WALLBOX,SPHERE,CYL]);
@@ -503,7 +503,7 @@ export class World{
   this.view.updateMatrixWorld(true);this.weaponVector??=new T.Vector3();this.weaponEuler??=new T.Euler(0,0,0,'YXZ');
   const v=this.weaponVector.set(...at).applyMatrix4(this.gun.matrixWorld),scale=Math.tan(T.MathUtils.degToRad(this.camera.fov/2))/Math.tan(T.MathUtils.degToRad(this.viewCamera.fov/2));
   v.x*=scale;v.y*=scale;v.applyEuler(this.weaponEuler.set(p.pitch||0,p.yaw||0,0,'YXZ'));
-  return {x:p.x+v.x,y:(p.crouching?1.14:EYE_HEIGHT)+v.y,z:p.z+v.z};
+  return {x:p.x+v.x,y:(Number.isFinite(p.eyeHeight)?p.eyeHeight:p.crouching?1.14:EYE_HEIGHT)+v.y,z:p.z+v.z};
  }
  muzzleOrigin(p){return this.weaponPoint(p,weaponFor(p).muzzle);}
  ejectCasing(origin,yaw,p){if(p&&this.gun)this.combatEffects?.eject(this.weaponPoint(p,weaponFor(p).port),yaw,true);else this.combatEffects?.eject(origin,yaw);}
@@ -576,7 +576,7 @@ export class World{
   const magRest=this.magazine.userData.rest||[0,-.06,0];this.magazine.position.set(...magRest.map((v,i)=>v+pose.reload.magazine[i]));this.magazine.rotation.set(0,0,pose.reload.magazine[0]*1.1);this.magazine.visible=pose.reload.magazineVisible;
   if(this.leftHand){const rest=this.leftHand.userData.rest;this.leftHand.position.set(...rest.map((v,i)=>v+pose.reload.hand[i]));this.leftHand.rotation.set(...pose.reload.handRotation.map((v,i)=>v+(this.leftHand.userData.restRotation?.[i]||0)));this.leftSkin.morphTargetInfluences[0]=pose.reload.grasp;this.rightSkin.morphTargetInfluences[0]=pose.trigger;this.trigger.rotation.x=-pose.trigger*.15;this.hammer.rotation.x=-pose.trigger*.22;}
   this.slide.position.z=pose.slide;if(this.pump){this.pump.position.z=pose.pump||0;if(this.weaponId==='shotgun'){this.leftHand.position.z+=(pose.pump||0);if(!this.pumpEjected&&this.weaponMotion.shotAge>.34&&this.weaponMotion.shotAge<.7){this.pumpEjected=true;this.ejectCasing({x:p.x,y:EYE_HEIGHT,z:p.z},p.yaw,p);this.combatEffects?.shellLast?.();}}}if(this.hands?.userData.shell){const shell=this.hands.userData.shell;shell.visible=!!pose.shell;const rest=this.leftHand.position;shell.position.set(rest.x+.04,rest.y+.055,rest.z-.01);}this.muzzle.visible=this.flashTimer>0;this.viewFlash.intensity=this.flashTimer>0?6:0;
-  this.view.updateMatrixWorld(true);this.viewFlash.position.set(...w.muzzle).applyMatrix4((this.gun||this.view).matrixWorld);
+  this.view.updateMatrixWorld(true);updateSleeveAnchors(this.rightHand,this.leftHand);this.viewFlash.position.set(...w.muzzle).applyMatrix4((this.gun||this.view).matrixWorld);
   this.knife.visible=this.knifeTimer>0;this.view.visible=this.knifeTimer<=0;this.knife.rotation.z=-1.25+Math.sin((.46-this.knifeTimer)/.46*Math.PI)*2;this.knife.rotation.x=-.4;
   const fov=(this.settings.fov||76)+pose.fovOffset;if(Math.abs(this.camera.fov-fov)>.001){this.camera.fov=fov;this.camera.updateProjectionMatrix();}
  }

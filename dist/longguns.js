@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {createHands} from './viewmodel.js?v=4.7.0';
+import {createHands} from './viewmodel.js?v=4.7.1';
 const add=(g,geo,m,p=[0,0,0],scale=[1,1,1])=>{const o=new T.Mesh(geo,m);o.position.set(...p);o.scale.set(...scale);g.add(o);return o;};
 const group=(g,p=[0,0,0])=>{const o=new T.Group();o.position.set(...p);g.add(o);return o;};
 function rounded(w,h,d,r=.005){const x=w/2,y=h/2,s=new T.Shape();s.moveTo(-x+r,-y);s.lineTo(x-r,-y);s.quadraticCurveTo(x,-y,x,-y+r);s.lineTo(x,y-r);s.quadraticCurveTo(x,y,x-r,y);s.lineTo(-x+r,y);s.quadraticCurveTo(-x,y,-x,y-r);s.lineTo(-x,-y+r);s.quadraticCurveTo(-x,-y,-x+r,-y);const g=new T.ExtrudeGeometry(s,{depth:d-r*2,bevelEnabled:true,bevelSegments:5,bevelThickness:r,bevelSize:r,curveSegments:12}).translate(0,0,-d/2+r);g.computeBoundingBox();const a=g.attributes.position,n=g.attributes.normal,u=g.attributes.uv,min=g.boundingBox.min,size=g.boundingBox.getSize(new T.Vector3());for(let i=0;i<a.count;i++){const nx=Math.abs(n.getX(i)),ny=Math.abs(n.getY(i)),nz=Math.abs(n.getZ(i));u.setXY(i,nx>ny&&nx>nz?(a.getZ(i)-min.z)/(size.z||1):(a.getX(i)-min.x)/(size.x||1),ny>nx&&ny>nz?(a.getZ(i)-min.z)/(size.z||1):(a.getY(i)-min.y)/(size.y||1));}return g;}
@@ -29,6 +29,6 @@ export function createLongGun(m,id){
   add(gun,rounded(.002,.024,.050,.004),m.dark,[.0245,.038,-.108]);add(slide,rounded(.003,.012,.037,.002),m.steel,[.025,.038,-.108]);
   sights(gun,m,-.406,.105,true);
  }
- const {hands,skins}=createHands(m,root),left=hands[1];left.position.set(-.020,-.071,shotgun?-.348:-.278);left.userData.rest=left.position.toArray();left.rotation.set(0,0,-.30);left.userData.restRotation=[0,0,-.30];
+ const {hands,skins}=createHands(m,root,true),left=hands[1];left.position.set(-.020,-.071,shotgun?-.348:-.278);left.userData.rest=left.position.toArray();left.rotation.set(0,0,-.30);left.userData.restRotation=[0,0,-.30];
  return {root,gun,slide,grip:g,magazine,trigger,hammer,pump,rightHand:hands[0],leftHand:left,rightSkin:skins[0],leftSkin:skins[1],muzzleAt:shotgun?[0,.059,-.69]:[0,.071,-.564]};
 }
