@@ -8,8 +8,8 @@ const edges=[[0,1],[0,2],[0,3],[1,2],[1,3],[2,3]];
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 function segmentDistance(x,y,z,a,b){const dx=b[0]-a[0],dy=b[1]-a[1],dz=b[2]-a[2],u=clamp(((x-a[0])*dx+(y-a[1])*dy+(z-a[2])*dz)/(dx*dx+dy*dy+dz*dz||1),0,1);return (x-a[0]-dx*u)**2+(y-a[1]-dy*u)**2+(z-a[2]-dz*u)**2;}
 function profile(kind){
- const human=['player','npc','gentleman'].includes(kind),bare=['zsiga','jakob','zeb'].includes(kind),long=kind==='jakob'?1.28:kind==='zsiga'?1.12:1;
- return {human,bare,long,torso:kind==='zeb'?1.48:kind==='zsiga'?.8:1};
+ const human=['player','npc','gentleman'].includes(kind),bare=['zsiga','jakob','jakobHalf','zeb','crawler','stalker'].includes(kind),long=kind==='jakob'?1.28:['zsiga','stalker','jakobHalf'].includes(kind)?1.12:1;
+ return {human,bare,long,torso:kind==='zeb'?1.48:kind==='brute'?1.32:kind==='zsiga'||kind==='stalker'?.8:1};
 }
 function geometryFor(kind){
  const p=profile(kind),key=JSON.stringify(p);if(cache.has(key))return cache.get(key).clone();

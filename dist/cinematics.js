@@ -1,8 +1,8 @@
-import {sceneContext,MEMORY_LEAD_IN} from './scene-context.js?v=4.2.0';
-import {dialogueFrame,speakingActor,speechMotion} from './cinematic-direction.js?v=4.2.0';
+import {sceneContext,MEMORY_LEAD_IN} from './scene-context.js?v=4.3.0';
+import {dialogueFrame,speakingActor,speechMotion} from './cinematic-direction.js?v=4.3.0';
 import * as T from './vendor/three.module.js';
-import {SCENES,StoryClock} from './story.js?v=4.2.0';
-import {voicedScene} from './voice-timeline.js?v=4.2.0';
+import {SCENES,StoryClock} from './story.js?v=4.3.0';
+import {voicedScene} from './voice-timeline.js?v=4.3.0';
 const $=s=>document.querySelector(s);
 
 // A separate, lit stage prevents cinematic actors from touching combat or save state.
@@ -93,7 +93,7 @@ export class Cinematics{
     for(let i=0;i<15;i++){const vein=box(red,[.05,1.2,.06],[(i%2?1:-1)*3.88,.4+i%4*.65,-6+i*.7]);vein.rotation.z=Math.sin(i)*.9;}
    }
   }
-  for(const a of this.story.actors){const g=this.world.character(a.kind,a.color);this.stage.add(g);this.actors.set(a.id,g);}
+  for(const a of this.story.actors){const g=this.world.character(a.kind,a.color,a.id);this.stage.add(g);this.actors.set(a.id,g);}
  }
  event(e){if(e.sound)this.game.sound.play(e.sound);if(e.door!==undefined&&this.door)this.doorTarget=e.door;if(e.serum&&this.vial){const fore=this.actors.get('hall')?.userData.arms?.[0]?.userData.forearm;if(fore){fore.add(this.vial);this.vial.position.set(0,-.39,.03);this.vial.rotation.z=.7;}else this.vial.visible=false;}if(e.collapse&&this.crater)this.crater.visible=true;
   if(e.maze&&this.mazeStage){this.mazeStage.visible=true;for(const g of this.actors.values())g.visible=false;const landon=this.actors.get('landon');if(landon){landon.visible=true;landon.position.set(.7,0,0);}this.key.color.set(0xffe0a1);}

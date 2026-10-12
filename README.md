@@ -4,6 +4,12 @@
 
 Some places remember you. Some refuse to let you go.
 
+Version **4.3.0** expands the campaign from 15 to 42 staged encounters and adds crawlers, spitters, armored brutes and flanking stalkers. The bosses have distinct committed attacks, visible tells, recovery windows and second phases: Chris crashes into walls, Jakob and Bobby alternate two fused bodies, Zeb casts bile and expanding ruptures, and Birdy swoops and sheds feather volleys. Headshots interrupt specific tells; targeting the speaking head silences the Joined. Temporary acid pools and shockwaves use bounded graphics batches and respect cover.
+
+Birdy has thin brown hair and a 6.8-meter span of articulated, veined wings that fold through narrow passages. Earl and Zeb have Black skin tones, including their faces. Jakob has straight brown hair; Bobby has curly brown hair, with separate heads and four animated arms joined by scarred tissue. Character rigs and textures are cached, with independent bones and materials for every instance.
+
+Chapter preparation yields between character builds and displays an explicit loading screen. The entire level, dormant creatures, reserved boss, both weapons and every attack effect upload before play; parallel shader compilation is used where available. The opening cinematic is prepared before its clock starts. Distant creatures skip expensive animation, and navigation searches have a per-frame budget. Existing 4.0+ objective, pickup and defeated-enemy IDs remain compatible; new supplies are appended.
+
 Version **4.2.0** rebuilds the first-person pistol and hands: a contoured metal frame, open top slide, rounded barrel, cutout trigger guard, textured grip panels, continuous hand surfaces, knuckles, fingernails, and folded sleeves. Recoil uses a stable damped response; the slide and trigger cycle separately. Reloads show the support hand extracting, replacing, and seating the magazine, with a separate slide release for empty reloads. Aim settles to centered sights, movement sway fades when Ethan stops, and shot vibration no longer comes from random camera offsets.
 
 Version **4.1.3** fixes firing while holding right-click aim. Mouse buttons work independently in either press or release order, including drag-look fallback. Touch controls also preserve a held fire button when another finger releases aim. Reloading and shot cooldowns still apply.

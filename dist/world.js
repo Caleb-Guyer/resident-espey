@@ -1,12 +1,14 @@
-import {createAnatomy,animateCollapse} from './anatomy.js?v=4.2.0';
-import {reloadProgress} from './reload.js?v=4.2.0';
+import {createAnatomy,animateCollapse} from './anatomy.js?v=4.3.0';
+import {reloadProgress} from './reload.js?v=4.3.0';
 import * as T from './vendor/three.module.js';
-import {TILE,seeded,solid,findPath} from './data.js?v=4.2.0';
-import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock} from './fps.js?v=4.2.0';
-import {CombatEffects} from './combat-effects.js?v=4.2.0';
-import {WallPlacement} from './wall-placement.js?v=4.2.0';
-import {createViewModel} from './viewmodel.js?v=4.2.0';
-import {createWeaponMotion,kickWeapon,stepWeaponMotion} from './weapon-motion.js?v=4.2.0';
+import {TILE,seeded,solid,findPath} from './data.js?v=4.3.0';
+import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock} from './fps.js?v=4.3.0';
+import {CombatEffects} from './combat-effects.js?v=4.3.0';
+import {WallPlacement} from './wall-placement.js?v=4.3.0';
+import {createViewModel} from './viewmodel.js?v=4.3.0';
+import {createWeaponMotion,kickWeapon,stepWeaponMotion} from './weapon-motion.js?v=4.3.0';
+import {CHARACTER_DESIGNS,characterHair,dressBirdy,dressArchetype,cloneCharacter} from './creature-design.js?v=4.3.0';
+import {EnemyEffects} from './enemy-effects.js?v=4.3.0';
 
 const BOX=bevelBox(1,1,1,.014),WALLBOX=new T.BoxGeometry(1,1,1),SPHERE=new T.SphereGeometry(1,20,14),CYL=new T.CylinderGeometry(1,1,1,16);
 const SHARED=new Set([BOX,WALLBOX,SPHERE,CYL]);
@@ -46,13 +48,14 @@ export class World{
   this.renderer.setPixelRatio(Math.min(devicePixelRatio,settings.quality==='high'?1.65:1));this.renderer.shadowMap.enabled=settings.quality==='high';this.renderer.shadowMap.type=T.PCFSoftShadowMap;
   this.renderer.toneMapping=T.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.45;
   this.scene=new T.Scene();this.camera=new T.PerspectiveCamera(settings.fov||76,1,.06,85);this.camera.rotation.order='YXZ';
-  this.lamps=[];this.obstacles=[];this.recoil=0;this.ads=0;this.walk=0;this.assets={};
+  this.lamps=[];this.obstacles=[];this.recoil=0;this.ads=0;this.walk=0;this.assets={};this.characterTemplates=new Map();this.characterResources=new Set();
   const loader=new T.TextureLoader();this.ready=Promise.all([['floor','floor'],['wall','plaster'],['skin','infected-skin'],['face','infected-face'],['ethan','ethan-face'],['survivor','survivor-face']].map(([name,file])=>new Promise((resolve,reject)=>{
    const t=loader.load(new URL(`./assets/${file}.webp`,import.meta.url).href,resolve,undefined,reject);t.wrapS=t.wrapT=T.RepeatWrapping;t.colorSpace=T.SRGBColorSpace;t.anisotropy=8;this.assets[name]=t;
   })));this.ready.catch(()=>{});
-  this.createWeapon();this.resize();
+  // Let the title paint and textures arrive before the detailed hands are built.
+  this.ready=this.ready.then(async()=>{await new Promise(requestAnimationFrame);this.createWeapon();this.resize();});this.ready.catch(()=>{});this.resize();
  }
- resize(){this.renderer.setSize(innerWidth,innerHeight,false);this.camera.aspect=innerWidth/innerHeight;this.camera.updateProjectionMatrix();this.viewCamera.aspect=this.camera.aspect;this.viewCamera.updateProjectionMatrix();}
+ resize(){this.renderer.setSize(innerWidth,innerHeight,false);this.camera.aspect=innerWidth/innerHeight;this.camera.updateProjectionMatrix();if(this.viewCamera){this.viewCamera.aspect=this.camera.aspect;this.viewCamera.updateProjectionMatrix();}}
  stageBoxGeometry(){return BOX.clone();}
  surface(asset,color,repeat=[1,1],bump=.02,roughness=.9){const map=this.assets[asset].clone();map.needsUpdate=true;map.repeat.set(...repeat);const height=map.clone();height.colorSpace=T.NoColorSpace;height.needsUpdate=true;return new T.MeshStandardMaterial({color,map,bumpMap:height,bumpScale:bump,roughness});}
  procedural(kind){
@@ -75,15 +78,15 @@ export class World{
   for(const objects of buckets.values()){if(objects.length<3)continue;const first=objects[0],batch=new T.InstancedMesh(first.geometry,first.material,objects.length);objects.forEach((o,i)=>batch.setMatrixAt(i,o.matrixWorld));batch.castShadow=true;batch.receiveShadow=true;this.root.add(batch);for(const o of objects)o.parent.remove(o);}
  }
  disposeLevel(){
-  this.combatEffects?.dispose();this.combatEffects=null;
+  this.combatEffects?.dispose();this.combatEffects=null;this.enemyEffects?.dispose();this.enemyEffects=null;
   if(!this.root)return;const geos=new Set(),mats=new Set(),textures=new Set(),skeletons=new Set(),keep=new Set(Object.values(this.assets));
   this.scene.traverse(o=>{if(o.isSkinnedMesh)skeletons.add(o.skeleton);if(o.geometry&&!SHARED.has(o.geometry))geos.add(o.geometry);if(o.material)for(const m of Array.isArray(o.material)?o.material:[o.material]){mats.add(m);for(const key of ['map','bumpMap','roughnessMap','alphaMap'])if(m[key]&&!keep.has(m[key]))textures.add(m[key]);}});
-  for(const g of geos)g.dispose();for(const m of mats)m.dispose();for(const t of textures)t.dispose();for(const s of skeletons)s.dispose();this.flashlight?.shadow?.dispose();this.scene.clear();this.decalMaps={};
+  for(const g of geos)if(!this.characterResources?.has(g))g.dispose();for(const m of mats)m.dispose();for(const t of textures)if(!this.characterResources?.has(t))t.dispose();for(const s of skeletons)s.dispose();this.flashlight?.shadow?.dispose();this.scene.clear();this.decalMaps={};
  }
  disposeObject(root){
   const geos=new Set(),mats=new Set(),textures=new Set(),skeletons=new Set(),keep=new Set(Object.values(this.assets));
   root.traverse(o=>{if(o.isSkinnedMesh)skeletons.add(o.skeleton);if(o.geometry&&!SHARED.has(o.geometry))geos.add(o.geometry);if(o.material)for(const m of Array.isArray(o.material)?o.material:[o.material]){mats.add(m);for(const key of ['map','bumpMap','roughnessMap','alphaMap'])if(m[key]&&!keep.has(m[key]))textures.add(m[key]);}if(o.isLight)o.shadow?.dispose();});
-  for(const g of geos)g.dispose();for(const m of mats)m.dispose();for(const t of textures)t.dispose();for(const s of skeletons)s.dispose();root.clear();
+  for(const g of geos)if(!this.characterResources?.has(g))g.dispose();for(const m of mats)m.dispose();for(const t of textures)if(!this.characterResources?.has(t))t.dispose();for(const s of skeletons)s.dispose();root.clear();
  }
  load(chapter,grid){
   this.weaponMotion=createWeaponMotion();this.ads=this.recoil=this.walk=this.flashTimer=this.knifeTimer=0;this.currentAds=false;
@@ -113,7 +116,7 @@ export class World{
   this.sign(breach?'P.A. / 204':'204',[this.exit.position.x,2.85,this.exit.position.z+.23],1.2,.3,'#cabaa0','#171d19');this.sign('EXIT',[this.exit.position.x,3.05,this.exit.position.z+.22],.7,.23,'#f4ceaa','#572c20');
   this.exitLight=new T.PointLight(0xbd5840,12,7,2);this.exitLight.position.set(this.exit.position.x,2.7,this.exit.position.z+.7);this.scene.add(this.exitLight);
   if(breach){this.portal=mesh(new T.TorusGeometry(1.65,.055,8,64),new T.MeshBasicMaterial({color:0xb6583c}),[1,1,1],[(chapter.boss.at[0]+.5)*TILE,1.8,(chapter.exit[1]+.5)*TILE-1.2],this.root);mesh(new T.CircleGeometry(1.63,48),new T.MeshBasicMaterial({color:0x010202}),[1,1,1],[(chapter.boss.at[0]+.5)*TILE,1.8,(chapter.exit[1]+.5)*TILE-1.22],this.root);this.gent=this.character('gentleman');this.gent.position.set((chapter.boss.at[0]+.5)*TILE,0,(chapter.exit[1]+.5)*TILE-.8);this.root.add(this.gent);}
-  this.optimizeStatic();this.createGates();this.view.visible=true;this.combatEffects=new CombatEffects(this.root);
+  this.optimizeStatic();this.createGates();this.view.visible=true;this.combatEffects=new CombatEffects(this.root);this.enemyEffects=new EnemyEffects(this.root);
  }
  blocked(x,z,r){return propsBlock(this.obstacles,x,z,r);}
  clearWalkPath(a,b){const len=Math.hypot(b.x-a.x,b.z-a.z);for(let t=.3;t<len;t+=.45)if(this.blocked(a.x+(b.x-a.x)*t/len,a.z+(b.z-a.z)*t/len,.38))return false;return true;}
@@ -336,9 +339,23 @@ export class World{
    for(let i=0;i<9;i++)tube(this.root,p.blood,[[28+i*2,3.2,16],[29+i*2,2.7,12],[30+i*2,3.1,8]],.055);
   }
  }
- character(kind,color){
-  const human=kind==='npc'||kind==='player',player=kind==='player',gent=kind==='gentleman',bare=['zsiga','jakob','zeb'].includes(kind);
-  const skin=human?material(0xc2a68c,.78):this.surface('skin',kind==='zsiga'?0x899b94:kind==='zeb'?0x889173:0xadb3a0,[2,2],.006,.68);
+ character(kind,color,identity=kind==='player'?'ethan':kind){
+  const key=[kind,color??'',identity].join('/');if(!this.characterTemplates.has(key)){
+   const template=this.buildCharacter(kind,color,identity);this.characterTemplates.set(key,template);
+   template.traverse(o=>{if(o.geometry)this.characterResources.add(o.geometry);for(const m of o.material?(Array.isArray(o.material)?o.material:[o.material]):[])for(const k of ['map','bumpMap','roughnessMap','alphaMap'])if(m[k])this.characterResources.add(m[k]);});
+  }
+  return cloneCharacter(this.characterTemplates.get(key));
+ }
+ buildCharacter(kind,color,identity=kind){
+  if(kind==='jakob'){
+   const g=new T.Group(),twins=['jakob','bobby'].map((id,i)=>{const half=this.buildCharacter('jakobHalf',i?0x4d4236:color,id);half.position.x=i?.255:-.255;half.rotation.z=i?-.075:.075;half.scale.set(.92,1.43,.92);g.add(half);return half;});
+   const a=twins[0].userData,b=twins[1].userData;g.userData={...a,kind:'jakob',human:false,twins,heads:[a.head,b.head],faces:[a.face,b.face],arms:[...a.arms,...b.arms],legs:[...a.legs,...b.legs],identities:['jakob','bobby']};
+   const flesh=this.surface('skin',0x927b67,[2,2],.008,.64),raw=material(0x45271e,.52);
+   mesh(SPHERE,flesh,[.39,.39,.19],[0,1.55,-.035],g);for(let i=0;i<9;i++)tube(g,raw,[[-.34,1.22+i*.055,.17],[0,1.26+i*.053,.23],[.34,1.24+i*.05,.16]],.009);
+   return g;
+  }
+  const human=kind==='npc'||kind==='player',player=kind==='player',gent=kind==='gentleman',bare=['zsiga','jakobHalf','zeb','crawler','stalker'].includes(kind),design=CHARACTER_DESIGNS[identity];
+  const skin=human?material(design?.skin??0xc2a68c,.78):this.surface('skin',design?.skin??(kind==='zsiga'?0x899b94:0xadb3a0),[2,2],.006,.68);
   const cloth=material(color??(player?0x495b43:0x46574f),.96);cloth.map=this.procedural(human?'fabric':'infectedcloth');cloth.bumpMap=cloth.map;cloth.bumpScale=.0015;
   const dark=material(0x272c29,.91),bone=material(0xaaa08a,.73),raw=material(0x25110e,.53);dark.map=this.procedural('fabric');dark.bumpMap=dark.map;dark.bumpScale=.002;
   const g=createAnatomy(kind,[skin,cloth,dark]),{body,head,jaw,arms,legs}=g.userData;
@@ -357,23 +374,16 @@ export class World{
   }else if(bare){
    for(const side of[-1,1])for(let i=0;i<6;i++)tube(body,bone,[[side*.025,.28-i*.055,.14],[side*.13,.27-i*.052,.165],[side*.2,.23-i*.05,.10]],.007);
    for(let i=0;i<9;i++)tube(body,raw,[[Math.sin(i*3)*.17,.25-i*.04,.13],[Math.sin(i*3+.3)*.18,.2-i*.04,.163],[Math.sin(i*3+.5)*.14,.12-i*.04,.14]],.0035);
-   if(kind==='jakob'){const extra=group(body,.11,-.08,.17);mesh(SPHERE,skin,[.075,.11,.062],[0,0,0],extra);for(const side of[-1,1])mesh(SPHERE,dark,[.013,.018,.009],[side*.028,.024,.056],extra);mesh(SPHERE,raw,[.028,.031,.009],[0,-.035,.06],extra);mergeParts(extra);}
    if(kind==='zeb')for(let i=0;i<15;i++){const a=i*2.4;mesh(SPHERE,i%3?skin:raw,[.035,.065,.028],[Math.cos(a)*.31,Math.sin(a)*.19+.12,Math.sin(a)*.22],body);}
   }else if(!gent){
    const shape=new T.Shape();shape.moveTo(-.025,.11);shape.lineTo(.045,.08);shape.lineTo(.031,.027);shape.lineTo(.05,-.058);shape.lineTo(.012,-.115);shape.lineTo(-.038,-.065);shape.lineTo(-.045,.03);shape.closePath();const wound=mesh(new T.ShapeGeometry(shape),raw,[1,1,1],[-.12,.19,.157],body);wound.rotation.z=-.15;
   }
-  if(kind==='birdy'){
-   g.clear();const center=group(g,0,1.5,0);mesh(SPHERE,dark,[.12,.22,.12],[0,0,0],center);
-   const glow=new T.MeshStandardMaterial({color:0xbd3b22,emissive:0xc74022,emissiveIntensity:1.3,roughness:.2});mesh(SPHERE,glow,[.077,.11,.084],[0,.04,.085],center);
-   for(const side of[-1,1])for(let i=0;i<5;i++)tube(center,bone,[[side*.025,.13-i*.08,.06],[side*(.18+i*.025),.08-i*.07,.03],[side*.26,-.05-i*.07,-.07]],.015);
-   const limbs=[];for(let i=0;i<6;i++){const a=i/6*Math.PI*2;const limb=group(center);tube(limb,raw,[[Math.cos(a)*.1,Math.sin(a)*.2,0],[Math.cos(a)*.5,Math.sin(a)*.6,-.04],[Math.cos(a)*.85,Math.sin(a)*.75,.17]],.016);link(limb,bone,[Math.cos(a)*.85,Math.sin(a)*.75,.17],[Math.cos(a)*.95,Math.sin(a)*.88,.34],.009);limbs.push(limb);mergeParts(limb);}
-   g.add(new T.PointLight(0xbb2919,3.5,5,2));g.userData.tendrils=limbs;mergeParts(center);
-  }
-  if(!human&&!gent&&kind!=='birdy'){
+  if(kind==='birdy')dressBirdy(g,skin,raw);
+  if(!human&&!gent){
    const skull=head.children[0];for(const o of[...head.children])if(o!==skull&&o!==jaw){head.remove(o);if(o.geometry&&!SHARED.has(o.geometry))o.geometry.dispose();}jaw.clear();
    const face=new T.SphereGeometry(1,32,28),a=face.getAttribute('position'),uv=face.getAttribute('uv');
    for(let i=0;i<a.count;i++){const x=a.getX(i)*.172,y=a.getY(i)*.225;let z=a.getZ(i)*.149;if(z>0)z+=.02*Math.exp(-((x/.038)**2)-((y+.02)/.05)**2);a.setXYZ(i,x,y,z);uv.setXY(i,x/.39+.5,y/.47+.5);}face.computeVertexNormals();
-   const faceMat=new T.MeshStandardMaterial({map:this.assets.face,color:kind==='zsiga'?0x9daba2:0xb5ac98,roughness:.89});
+   const faceMat=new T.MeshStandardMaterial({map:this.assets.face,color:design?.face??(kind==='zsiga'?0x9daba2:0xb5ac98),roughness:.89});
    faceMat.onBeforeCompile=shader=>{
     shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vHeadPos;').replace('#include <begin_vertex>','#include <begin_vertex>\nvHeadPos = position;');
     shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vHeadPos;').replace('#include <map_fragment>','vec4 faceColor = texture2D(map, vMapUv); float frontBlend = smoothstep(0.01, 0.065, vHeadPos.z); diffuseColor.rgb *= mix(vec3(0.28,0.32,0.25), faceColor.rgb, faceColor.a * frontBlend);');
@@ -388,20 +398,21 @@ export class World{
    for(const o of[...head.children])if(o!==jaw){head.remove(o);if(o.geometry&&!SHARED.has(o.geometry))o.geometry.dispose();}jaw.clear();
    const face=new T.SphereGeometry(1,40,36),a=face.getAttribute('position'),uv=face.getAttribute('uv');
    for(let i=0;i<a.count;i++){const rawX=a.getX(i)*.17,y=a.getY(i)*.235,x=rawX*(y<-.055?1-Math.min(.34,(-y-.055)*1.7):1);let z=a.getZ(i)*.145;if(z>0){z+=.028*Math.exp(-((x/.033)**2)-((y+.035)/.05)**2);z+=.008*Math.exp(-(((y+.045)/.05)**2))*Math.exp(-(((Math.abs(x)-.075)/.04)**2));}a.setXYZ(i,x,y,z);uv.setXY(i,rawX/.39+.5,y/.48+.5);}face.computeVertexNormals();
-   const faceMat=new T.MeshStandardMaterial({map:player?this.assets.ethan:this.assets.survivor,roughness:.86});
+   const faceMat=new T.MeshStandardMaterial({map:player?this.assets.ethan:this.assets.survivor,color:design?.face??0xffffff,roughness:.86});
    faceMat.onBeforeCompile=shader=>{
     shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vHeadPos;').replace('#include <begin_vertex>','#include <begin_vertex>\nvHeadPos = position;');
     shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vHeadPos;').replace('#include <map_fragment>','vec4 faceColor = texture2D(map, vMapUv); float frontBlend = smoothstep(-0.015, 0.065, vHeadPos.z); vec3 baseSkin = vec3(0.53,0.38,0.27); diffuseColor.rgb *= mix(baseSkin, faceColor.rgb, faceColor.a * frontBlend);');
    };
    const closed=a.array.slice(),open=closed.slice();for(let i=0;i<a.count;i++){const x=a.getX(i),y=a.getY(i),z=a.getZ(i),w=Math.exp(-((x/.075)**2))*Math.max(0,Math.min(1,(-y-.06)/.08))*Math.max(0,Math.min(1,z/.08));open[i*3+1]-=.022*w;open[i*3+2]+=.004*w;}face.morphAttributes.position=[new T.Float32BufferAttribute(open,3)];
    const facial=mesh(face,faceMat,[1,1,1],[0,.018,0],head);g.userData.face=facial;
-   const hairMap=canvasTexture((ctx,s)=>{ctx.fillStyle=player?'#8a7042':'#302a22';ctx.fillRect(0,0,s,s);const rnd=seeded(193);for(let i=0;i<9000;i++){ctx.strokeStyle=player?i%2?'#c5a46c55':'#40382b55':i%2?'#71604445':'#0f121145';ctx.lineWidth=.6+rnd();const x=rnd()*s,y=rnd()*s;ctx.beginPath();ctx.moveTo(x,y);ctx.quadraticCurveTo(x+9,y+3,x+5,y+14);ctx.stroke();}});
-   const cap=material(0xffffff,.91);cap.map=hairMap;mesh(new T.SphereGeometry(.173,32,20,0,Math.PI*2,0,Math.PI*.63),cap,[1,.9,.96],[0,.11,-.027],head);
-   for(let i=0;i<96;i++){const theta=i*2.4,phi=.13+(i%16)/16*1.65,cx=Math.sin(phi)*Math.cos(theta)*.173,cy=.11+Math.cos(phi)*.157,cz=Math.sin(phi)*Math.sin(theta)*.166-.027,points=[];for(let k=0;k<7;k++){const angle=k/6*Math.PI*1.5;points.push([cx+Math.cos(angle)*.012,cy+Math.sin(angle)*.013,cz+Math.sin(angle+.5)*.010]);}tube(head,cap,points,.0045);}
+   characterHair(head,design??{hair:0x302a22,style:'curly'});
    head.scale.setScalar(.9);head.position.y=.6;g.userData.texturedFace=true;
    if(color===0x3e6554){tube(body,dark,[[-.1,.38,.15],[0,.04,.20],[.1,.38,.15]],.004);mesh(SPHERE,material(0xaeb4a4,.35,.7),[.035,.02,.018],[0,.04,.22],body);}
   }
 
+  if(!human&&design)characterHair(head,design);
+  dressArchetype(g,kind,skin,raw);
+  g.userData.identity=identity;g.userData.design=design?{...design}:null;
   if(gent){mesh(CYL,dark,[.18,.28,.18],[0,.30,-.015],head);mesh(CYL,dark,[.29,.023,.24],[0,.18,0],head);g.scale.y=1.55;mesh(SPHERE,material(0xb0b6a3,.94),[.15,.21,.14],[0,.02,0],head);for(const side of[-1,1]){mesh(SPHERE,dark,[.04,.029,.018],[side*.055,.045,.127],head);mesh(SPHERE,material(0xd0cba4,.21),[.006,.006,.004],[side*.055,.04,.146],head);}tube(head,dark,[[-.092,-.055,.116],[-.055,-.096,.14],[0,-.116,.144],[.055,-.096,.14],[.092,-.055,.116]],.006);for(let i=0;i<9;i++)mesh(SPHERE,bone,[.004,.008,.006],[(i-4)*.014,-.11+Math.abs(i-4)*.006,.144],head);}
   if(BODY_SCALE[kind]){const[w,h]=BODY_SCALE[kind];g.scale.set(w,h,w);}
   mergeParts(body);mergeParts(head);mergeParts(jaw);return g;
@@ -409,15 +420,33 @@ export class World{
  animateCharacter(g,t,moving,mood={}){
   const kind=g.userData.kind,phase=g.userData.phase||0;if(mood.dead){animateCollapse(g,mood.deathTime||0);return;}
   g.userData.body.rotation.set(0,0,0);g.userData.head.rotation.set(0,0,0);if(g.userData.face)g.userData.face.morphTargetInfluences[0]=0;
-  if(kind==='birdy'){g.position.y=Math.sin(t*1.7)*.19;g.rotation.z=Math.sin(t*.7)*.1;g.userData.tendrils?.forEach((a,i)=>a.rotation.z=Math.sin(t*1.5+i)*.06);return;}
+  if(g.userData.twins){g.userData.twins.forEach((half,i)=>{this.animateCharacter(half,t+i*.7,moving,{...mood,windup:mood.activeHead===i?mood.windup:0});half.userData.head.rotation.y+=(i?-.25:.25);});return;}
   if(kind==='zsiga'){g.position.y=.04+Math.sin(t*1.5+phase)*.035;g.rotation.z=Math.sin(t*.9+phase)*.018;}
   const stride=kind==='runner'||kind==='chris'?7.5:kind==='zeb'?3:4.6;
   g.userData.legs?.forEach((leg,i)=>{leg.rotation.x=moving&&kind!=='zsiga'?Math.sin(t*stride+phase+i*Math.PI)*.30:0;if(leg.userData.calf)leg.userData.calf.rotation.x=moving?Math.max(0,-Math.sin(t*stride+phase+i*Math.PI))*.42:0;});
   g.userData.arms?.forEach((arm,i)=>{arm.rotation.x=arm.userData.base+(moving?Math.sin(t*stride*.7+i*2+phase)*.12:Math.sin(t*.65+i)*.025);if(arm.userData.forearm)arm.userData.forearm.rotation.x=arm.userData.forearm.userData.base;});
   g.userData.body.position.y=1.02+Math.sin(t*1.5+phase)*.004;
-  if(!g.userData.human){g.userData.body.rotation.x=kind==='zeb'?.10:.15+(mood.stagger>0?-.24:0);g.userData.head.position.z=.025+(moving?.012:0);if(mood.windup>0)g.userData.arms.forEach((a,i)=>a.rotation.x=-1.15+Math.sin(t*6+i)*.08);g.userData.head.rotation.x=-.08+Math.sin(t*.8+phase)*.055;g.userData.head.rotation.z=Math.sin(t*1.4+phase)*.09+(kind==='chris'?-.17:0);g.userData.jaw.rotation.x=.07+Math.max(0,Math.sin(t*1.8+phase))*.22;g.userData.body.rotation.z=moving?Math.sin(t*stride+phase)*.028:0;g.userData.head.rotation.y=Math.sin(t*.5+phase)*.065;
+  if(kind==='birdy'){
+   const flight=mood.charge>0?.35:mood.windup>0?.12:0;g.position.y=flight+Math.sin(t*1.8)*.045;
+   const spread=mood.wingSpace===false?1.3:0;
+   g.userData.wings.forEach((w,i)=>{const side=i?1:-1;w.rotation.y=side*(spread+(mood.recover>0?.55:.2));w.rotation.z=side*(Math.sin(t*(mood.charge>0?9:2.3))* (mood.charge>0?.26:.06)+(mood.windup>0?.2:0));});
+   if(mood.charge>0){g.userData.legs.forEach(l=>{l.rotation.x=.9;l.userData.calf.rotation.x=1.1;});g.userData.arms.forEach(a=>a.rotation.x=-1.2);}
+  }
+  if(kind==='crawler'){g.userData.body.rotation.x=1;g.userData.body.position.y=.8;g.userData.arms.forEach((a,i)=>{a.rotation.x=-1.3+(moving?Math.sin(t*9+i*Math.PI)*.3:0);a.userData.forearm.rotation.x=-.75;});g.userData.legs.forEach((l,i)=>{l.rotation.x=-.8+(moving?Math.sin(t*9+i*Math.PI)*.25:0);l.userData.calf.rotation.x=1.2;});}
+  if(g.userData.sac)g.userData.sac.scale.set(.15,.2*(1+Math.sin(t*(mood.windup>0?9:2))*.08),.14);
+  if(!g.userData.human){if(kind!=='crawler')g.userData.body.rotation.x=kind==='zeb'?.10:.15+(mood.stagger>0?-.24:0);g.userData.head.position.z=.025+(moving?.012:0);if(mood.windup>0)g.userData.arms.forEach((a,i)=>a.rotation.x=-1.15+Math.sin(t*6+i)*.08);g.userData.head.rotation.x=-.08+Math.sin(t*.8+phase)*.055;g.userData.head.rotation.z=Math.sin(t*1.4+phase)*.09+(kind==='chris'?-.17:0);g.userData.jaw.rotation.x=.07+Math.max(0,Math.sin(t*1.8+phase))*.22;g.userData.body.rotation.z=moving?Math.sin(t*stride+phase)*.028:0;g.userData.head.rotation.y=Math.sin(t*.5+phase)*.065;
    if(g.userData.face)g.userData.face.morphTargetInfluences[0]=mood.windup>0?.9:.25+Math.max(0,Math.sin(t*1.8+phase))*.35;
    if(mood.stagger>0){g.userData.body.rotation.z=(mood.hitSide||1)*Math.min(.19,mood.stagger*.6);g.userData.head.rotation.x-=mood.stagger*.3;}if(mood.strike>0)g.userData.arms.forEach(a=>a.rotation.x=-.8-mood.strike*1.3);}
+  if(kind==='chris'){
+   if(mood.charge>0){g.userData.body.rotation.x=.48;g.userData.arms.forEach(a=>a.rotation.x=-1.1);g.userData.head.rotation.x=-.3;}
+   else if(mood.windup>0){g.userData.body.rotation.x=-.14;g.userData.arms[1].rotation.x=-1.8;}
+   else if(mood.recover>0){g.userData.body.rotation.x=.4;g.userData.head.rotation.x=.3;g.userData.arms[1].rotation.x=-.3;}
+  }
+  if(kind==='zeb'){
+   g.userData.bileSacs?.forEach(s=>{const swell=mood.windup>0?1.2:mood.recover>0?.8:1;s.scale.set(.07,.11*swell,.065*swell);});
+   if(mood.attack==='rupture'&&mood.windup>0){g.userData.body.position.y=.96;g.userData.body.rotation.x=.27;g.userData.arms.forEach(a=>a.rotation.x=.25);}
+  }
+  if(mood.recover>0&&g.userData.face)g.userData.face.material.emissive.setHex(0x291b0c);
  }
  weaponTexture(kind){
   const rnd=seeded(430+kind.length*29);return canvasTexture((ctx,s)=>{
@@ -462,23 +491,40 @@ export class World{
  muzzleOrigin(p){return this.weaponPoint(p,[0,.054,-.197]);}
  ejectCasing(origin,yaw,p){if(p&&this.gun)this.combatEffects?.eject(this.weaponPoint(p,[.024,.052,-.024]),yaw,true);else this.combatEffects?.eject(origin,yaw);}
  swingKnife(){this.knifeTimer=.46;}
+ async prepareCombatAsync(){
+  if(this.renderer.compileAsync){await this.renderer.compileAsync(this.scene,this.camera);await this.renderer.compileAsync(this.viewScene,this.viewCamera);}
+  await new Promise(requestAnimationFrame);this.prepareCombat();await new Promise(requestAnimationFrame);
+ }
+ headPositions(g){
+  this.headVector??=new T.Vector3();return (g.userData.heads||[g.userData.head]).map(h=>{const v=h.getWorldPosition(this.headVector);return {x:v.x,y:v.y+.02,z:v.z};});
+ }
  prepareCombat(){
   // Upload and render both weapons, the muzzle flash and both effect batches
   // offscreen during chapter loading, before the player can attack.
   const target=this.renderer.getRenderTarget(),autoClear=this.renderer.autoClear;
   const gun=this.view.visible,knife=this.knife.visible,muzzle=this.muzzle.visible;
+  const enemyBatches=this.enemyEffects?[this.enemyEffects.projectiles,this.enemyEffects.stains,this.enemyEffects.rings]:[],enemyCounts=enemyBatches.map(m=>m.count);
   const particles=this.combatEffects.particles.count,tracers=this.combatEffects.tracers.geometry.drawRange.count,casings=this.combatEffects.casings.count;
-  const hidden=[],culling=[];this.root?.traverse(o=>{if(o.userData?.kind){if(!o.visible){hidden.push(o);o.visible=true;}o.traverse(m=>{if(m.isMesh){culling.push([m,m.frustumCulled]);m.frustumCulled=false;}});}});
+  const hidden=[],culling=[];this.root?.traverse(o=>{
+   if(o.userData?.kind&&!o.visible){hidden.push(o);o.visible=true;}
+   // Upload the entire authored level. The cinematic camera can be nowhere
+   // near the player, and later rooms must not allocate buffers during a fight.
+   if(o.isMesh||o.isPoints){culling.push([o,o.frustumCulled]);o.frustumCulled=false;}
+  });
   this.viewScene.traverse(o=>{if(!o.visible){hidden.push(o);o.visible=true;}if(o.isMesh){culling.push([o,o.frustumCulled]);o.frustumCulled=false;}});
   const warm=new T.WebGLRenderTarget(16,16);
   try{
    this.renderer.setRenderTarget(warm);this.renderer.autoClear=true;
-   this.combatEffects.particles.count=1;this.combatEffects.casings.count=1;this.combatEffects.tracers.geometry.setDrawRange(0,2);
+   enemyBatches.forEach(m=>m.count=1);this.combatEffects.particles.count=1;this.combatEffects.casings.count=1;this.combatEffects.tracers.geometry.setDrawRange(0,2);
    this.renderer.render(this.scene,this.camera);
    this.view.visible=this.knife.visible=this.muzzle.visible=true;
    this.renderer.render(this.viewScene,this.viewCamera);
+   // Default-framebuffer shaders include tone mapping and output conversion;
+   // warming only an offscreen target leaves these programs cold. Loading UI
+   // covers the canvas while all rooms and hidden attack variants are drawn.
+   if(target===null){this.renderer.setRenderTarget(null);this.renderer.render(this.scene,this.camera);this.renderer.render(this.viewScene,this.viewCamera);}
   }finally{
-   this.combatEffects.particles.count=particles;this.combatEffects.casings.count=casings;this.combatEffects.tracers.geometry.setDrawRange(0,tracers);
+   enemyBatches.forEach((m,i)=>m.count=enemyCounts[i]);this.combatEffects.particles.count=particles;this.combatEffects.casings.count=casings;this.combatEffects.tracers.geometry.setDrawRange(0,tracers);
    this.view.visible=gun;this.knife.visible=knife;this.muzzle.visible=muzzle;
    for(const o of hidden)o.visible=false;for(const[o,value]of culling)o.frustumCulled=value;this.renderer.setRenderTarget(target);this.renderer.autoClear=autoClear;warm.dispose();
   }
@@ -545,6 +591,17 @@ export class World{
   this.combatEffects?.burst(x,z,color,count,y);
  }
  tracer(a,b){this.combatEffects?.tracer(a,b);}
+ attackMarker(){
+  const g=group(this.root);g.userData.kind='attack-marker';const mat=new T.MeshBasicMaterial({color:0xcf7953,transparent:true,opacity:.35,side:T.DoubleSide,depthWrite:false});
+  const ring=mesh(new T.RingGeometry(.94,1,48),mat,[1,1,1],[0,.038,0],g);ring.rotation.x=-Math.PI/2;ring.castShadow=false;
+  const line=mesh(WALLBOX,mat,[.55,.015,1],[0,.04,0],g);line.castShadow=false;g.userData.ring=ring;g.userData.line=line;g.visible=false;return g;
+ }
+ updateAttackMarker(e){
+  const g=e.warning,a=e.attack;if(!g||!a)return;g.position.set(e.x,0,e.z);g.rotation.y=Math.atan2(e.chargeX,e.chargeZ);
+  const dash=['rush','bobby','swoop','pounce','crawl','stalk'].includes(a),r=a==='rupture'?6.2:a==='crush'?2.9:a==='rake'?3.1:dash?1.1:.85;
+  g.userData.ring.scale.setScalar(r);g.userData.line.visible=dash;const length=Math.min(9,Math.hypot(e.targetX-e.x,e.targetZ-e.z)+1);g.userData.line.scale.z=length;g.userData.line.position.z=length/2;
+  g.userData.ring.material.opacity=.25+Math.sin(e.attackTime*12)*.06;
+ }
  warning(x,z,r){const o=mesh(new T.RingGeometry(r-.12,r,48),new T.MeshBasicMaterial({color:0xd87748,transparent:true,opacity:.5,side:T.DoubleSide,depthWrite:false}),[1,1,1],[x,.04,z],this.root);o.rotation.x=-Math.PI/2;o.castShadow=false;return o;}
  update(dt,t,p,aim,shake){
   this.setView(p,p.yaw||0,p.pitch||0,t,p.aiming);if(p.moving)this.walk+=dt*(p.sprinting?1.45:1);

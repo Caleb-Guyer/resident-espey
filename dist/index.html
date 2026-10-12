@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="en" data-version="4.2.0">
+<html lang="en" data-version="4.3.0">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b1011">
 <title>Resident Espey — The Last Bell</title>
 <meta name="description" content="Become Ethan Espey. Survive the infected halls, descend into the Backrooms, and rewrite the last page. A free first-person survival-horror game.">
 <meta property="og:title" content="Resident Espey — The Last Bell"><meta property="og:description" content="Some places remember you. Some refuse to let you go."><meta property="og:type" content="website">
-<link rel="icon" type="image/svg+xml" href="assets/icon.svg"><link rel="stylesheet" href="style.css?v=4.2.0">
+<link rel="icon" type="image/svg+xml" href="assets/icon.svg"><link rel="stylesheet" href="style.css?v=4.3.0">
 </head>
 <body>
 <canvas id="world" aria-label="Resident Espey 3D game world"></canvas>
@@ -17,7 +17,7 @@
  <h1>RESIDENT<br><span>ESPEY</span></h1><div class="subtitle">THE LAST BELL</div>
  <nav class="menu" aria-label="Main menu"><button id="continue-game" hidden>Continue<small id="save-label"></small></button><button id="new-game">New game</button><button id="settings">Settings</button><button id="how-to">Controls</button><button id="credits">Credits</button></nav>
  </div>
- <footer class="title-bottom"><span>Headphones recommended · AI-generated voices</span><span class="version">4.2.0</span></footer>
+ <footer class="title-bottom"><span>Headphones recommended · AI-generated voices</span><span class="version">4.3.0</span></footer>
 </main>
 <section id="hud" hidden aria-label="Game status">
  <div class="hud-top"><div class="objective-panel"><div id="chapter-label" class="eyebrow"></div><h2 id="location-label"></h2><p id="objective"></p></div><div class="hud-actions"><button id="map-button" title="Map (M)">Map <kbd>M</kbd></button><button id="journal-button" title="Notebook (J)">Notebook <kbd>J</kbd></button><button id="pause-button" aria-label="Pause game" title="Pause (Escape)">Ⅱ</button></div></div>
@@ -37,6 +37,7 @@
 <section id="overlay" class="screen overlay" hidden aria-modal="true" role="dialog" aria-labelledby="overlay-title"><div class="dialog"><div id="overlay-eyebrow" class="eyebrow"></div><h2 id="overlay-title"></h2><div id="overlay-body"></div><div id="overlay-actions"></div></div></section>
 <div id="chapter-card" hidden><span class="eyebrow"></span><h2></h2><p></p></div>
 <div id="touch-controls" hidden aria-label="Touch game controls"><div id="look-pad" aria-label="Drag to look"><span>LOOK</span></div><div id="joystick"><i></i></div><div class="touch-actions"><button data-action="fire">FIRE</button><button data-action="melee">KNIFE</button><button data-action="interact">USE</button><button data-action="dash">DODGE</button><button data-action="reload">LOAD</button><button data-action="heal">HEAL</button><button data-action="aim">AIM</button></div></div>
+<section id="loading-screen" hidden aria-label="Loading chapter" role="status"><div class="loading-panel"><p id="loading-chapter" class="eyebrow"></p><h2 id="loading-location"></h2><div id="loading-track" role="progressbar" aria-label="Chapter preparation" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="loading-fill"></i></div><p id="loading-hint"></p><span class="loading-symbol" aria-hidden="true"></span></div></section>
 <div id="fatal" hidden><h2>The signal was lost.</h2><p>A browser with WebGL 2 is needed to enter the school. Try a current version of Chrome, Edge, Firefox, or Safari with hardware acceleration enabled.</p><button onclick="location.reload()">TRY AGAIN</button></div>
-<script type="module" src="main.js?v=4.2.0"></script>
+<script type="module" src="main.js?v=4.3.0"></script>
 </body></html>
