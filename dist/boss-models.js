@@ -1,8 +1,9 @@
-import {scannedMaterial,microTexture} from './surface-materials.js?v=4.8.0';
-import {surfaceMaterial} from './material-surfaces.js?v=4.8.0';
+import {scannedMaterial,microTexture} from './surface-materials.js?v=5.0.0';
+import {surfaceMaterial} from './material-surfaces.js?v=5.0.0';
+import {artistHead} from './licensed-art.js?v=5.0.0';
 import * as T from './vendor/three.module.js';
-import {sculptSurface,mergeRigid} from './sculpt-surface.js?v=4.8.0';
-import {CHARACTER_DESIGNS} from './creature-design.js?v=4.8.0';
+import {sculptSurface,mergeRigid} from './sculpt-surface.js?v=5.0.0';
+import {CHARACTER_DESIGNS} from './creature-design.js?v=5.0.0';
 const cache=new Map(),clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const mesh=(parent,geo,mat,at=[0,0,0],scale=[1,1,1])=>{const m=new T.Mesh(geo,mat);m.position.set(...at);m.scale.set(...scale);m.castShadow=m.receiveShadow=true;parent.add(m);return m;};
 const tube=(parent,mat,points,r=.006)=>mesh(parent,new T.TubeGeometry(new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p))),Math.max(12,points.length*5),r,6,false),mat);
@@ -118,12 +119,14 @@ function head(world,parent,id,skin){
   const cornea=new T.MeshPhysicalMaterial({color:0xffffff,transparent:true,opacity:id==='chris'&&side>0?.12:.035,roughness:.12,clearcoat:.65,depthWrite:false});mesh(eye,new T.SphereGeometry(.0158,28,20),cornea);
   for(const sign of[-1,1])tube(eye,skin,[[-.018,0,.004],[-.012,sign*.007,.010],[0,sign*.010,.011],[.013,sign*.007,.009],[.018,0,.004]],.002);
   const lid=mesh(eye,new T.SphereGeometry(1,32,22),skin,[0,.016,.017],[.020,.006,.0035]);eye.userData={iris,pupil,lid,physicalEye:true};
-  mesh(parent,new T.SphereGeometry(1,20,14),skin,[side*.164,-.015,.018],[.023,.043,.027]);
+  const ear=mesh(parent,new T.SphereGeometry(1,20,14),skin,[side*.164,-.015,.018],[.023,.043,.027]);ear.userData.legacyEar=true;
  }
  const hair=bossHair(parent,design,scale);
  for(let i=0;i<4;i++)tube(parent,lip,[[-.12+i*.028,-.045,.131],[-.115+i*.024,-.08,.144],[-.10+i*.02,-.13,.13]],.0017);
  const closed=p.array.slice(),open=closed.slice();for(let i=0;i<p.count;i++){const y=p.getY(i),x=p.getX(i),z=p.getZ(i),w=Math.exp(-((x/.095)**2))*clamp((-y-.08)/.10,0,1)*clamp(z/.1,0,1);open[i*3+1]-=.10*w;}geo.morphAttributes.position=[new T.Float32BufferAttribute(open,3)];face.updateMorphTargets();
- mergeRigid(jaw);mergeRigid(hair);return {face,jaw,eyes,hair,design,mouthCover,oralParts};
+ mergeRigid(jaw);mergeRigid(hair);
+ if(world.licensed){const replacement=artistHead(world.licensed,id);parent.add(replacement);face.visible=mouthCover.visible=false;jaw.visible=false;inside.visible=false;eyes.forEach(e=>e.visible=false);parent.traverse(o=>{if(o.userData.legacyEar)o.visible=false;});return {face:replacement,jaw,eyes,hair,design,mouthCover,oralParts:[inside],artistHead:true};}
+ return {face,jaw,eyes,hair,design,mouthCover,oralParts};
 }
 function featherGeometry(length,width,curve){
  const positions=[],uv=[];const point=(t,side)=>{const w=width*Math.sin(Math.PI*(.06+.94*t))*(1-.6*t)*(1+.05*Math.sin(t*72));return [side*w,-t*length,Math.sin(t*Math.PI)*curve+side*side*.009];};

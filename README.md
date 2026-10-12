@@ -4,6 +4,12 @@
 
 Some places remember you. Some refuse to let you go.
 
+Version **5.0.0** begins an artist-asset rebuild. Walkers and runners use Rikindle3D's licensed character, proper UV textures, and eleven imported motion clips with blended states, in-place locomotion and a lasting death pose. Boss faces use the artist's facial geometry, eyes and teeth with different head proportions; retired portrait and oral meshes stay hidden throughout speech and combat. Animated headshots follow the imported head bone.
+
+Photographed plaster, chipped brick-backed walls, worn tiles and linoleum now use separate color, normal and roughness maps. Artist-made desks, utility cabinets, fire alarms and CCTV cameras replace or supplement room stand-ins while respecting the existing furniture and wall reservations. The title image is captured from the actual game environment. Source files, authors and licenses are tracked in [licensed art credits](LICENSED_ART.md). [5.0 verification](PLAYTEST_5.0.md).
+
+This is a concrete move toward the requested production standard, not a claim of finished AAA parity. Bespoke boss bodies, weapon/hand rigs, survivor performances and human voice acting remain substantial production work.
+
 Version **4.8.0** rebuilds the first-person hands with finer continuous surfaces and gradient normals, loaded from a prepared mesh asset before gameplay. The pistol slide, shotgun receiver, pump and stock, and carbine receiver, handguard and stock now use smooth tapered profiles. New original material surfaces add fine skin pores, worn blued steel and weathered plaster. Weapon light direction and intensity follow nearby room lamps and blackouts. Recoil, sights, reload timing and independent weapon ammunition remain intact.
 
 Bosses have recessed three-dimensional eyes, irises, pupils and blinking lids, uneven discolored teeth, softer skin detail, and grounded two-link leg animation with a planted stance and lifted swing. Lil Birdy has a thinner torso; his enormous wings and both permanent tear-away phases remain. Service cabinets, cable looms, plumbing, valves and irregular wet floor reflections dress authored rooms without occupying thresholds. Finer floor tiles, varied fluorescent reflections and lower ambient light strengthen depth and contrast. [4.8 verification](PLAYTEST_4.8.md) · [Art assets and generation prompt](ART_4.8.md).

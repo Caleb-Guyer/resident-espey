@@ -1,5 +1,5 @@
-import {BOSS_PROFILES} from './boss-models.js?v=4.8.0';
-import {ATTACKS} from './enemy-director.js?v=4.8.0';
+import {BOSS_PROFILES} from './boss-models.js?v=5.0.0';
+import {ATTACKS} from './enemy-director.js?v=5.0.0';
 const clamp=n=>Math.max(0,Math.min(1,n)),ease=n=>{n=clamp(n);return n*n*(3-2*n);};
 export function plantBossFoot(leg,p,phase,walk,lift=.055,stride=.14){
  const calf=leg.userData.calf,ankle=calf.userData.ankle;if(!ankle)return;const a=Math.hypot(calf.position.y,calf.position.z),b=Math.hypot(ankle[1],ankle[2]),upperRest=-Math.atan2(calf.position.z,-calf.position.y),lowerRest=-Math.atan2(ankle[2],-ankle[1]),swing=Math.max(0,Math.sin(phase))*walk;
@@ -79,5 +79,5 @@ export function animateBoss(g,t,moving,mood={}){
   if(beat?.id==='zeb-rupture'){const u=ease((beat.time-.8)/2);d.bileSacs[1].scale.set(.075,.13*(1-u)+.043*u,.055*(1-u)+.018*u);d.arms.forEach((arm,i)=>arm.rotation.z=(i?1:-1)*(.1+Math.sin(u*Math.PI)*.2));d.jaw.rotation.x=.12+u*.24;}
  }
  if(mood.dead){const u=ease((mood.deathTime||0)/1.1);g.position.y=.10*u;g.rotation.x=-Math.PI*.47*u;d.heads.forEach(h=>h.rotation.x=.3*u);d.arms.forEach((arm,i)=>{arm.rotation.x=.26*u;arm.rotation.z=(i%2?1:-1)*.38*u;});d.legs.forEach(l=>l.userData.calf.rotation.x=.42*u);}
- d.mouthCovers.forEach((cover,i)=>{const open=d.jaws[i].rotation.x>=.13;cover.visible=!open;d.jaws[i].visible=open;d.oralParts?.[i]?.forEach(o=>o.visible=open);});return g;
+ d.mouthCovers.forEach((cover,i)=>{const face=d.faces[i],artist=!!face.userData.artist,open=d.jaws[i].rotation.x>=.13;if(face.userData.artistDetail)face.userData.artistDetail.morphTargetInfluences[0]=face.morphTargetInfluences[0];cover.visible=!artist&&!open;d.jaws[i].visible=!artist&&open;d.oralParts?.[i]?.forEach(o=>o.visible=!artist&&open);});return g;
 }

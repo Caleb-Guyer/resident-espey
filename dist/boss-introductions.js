@@ -1,8 +1,8 @@
 import * as T from './vendor/three.module.js';
-import {StoryClock} from './story.js?v=4.8.0';
-import {voicedScene} from './voice-timeline.js?v=4.8.0';
-import {fitEncounterCamera} from './combat-space.js?v=4.8.0';
-import {speechMotion} from './cinematic-direction.js?v=4.8.0';
+import {StoryClock} from './story.js?v=5.0.0';
+import {voicedScene} from './voice-timeline.js?v=5.0.0';
+import {fitEncounterCamera} from './combat-space.js?v=5.0.0';
+import {speechMotion} from './cinematic-direction.js?v=5.0.0';
 export const BOSS_NAMES=Object.freeze({chris:'Chris',jakob:'Jakob & Bobby',zeb:'Zeb',birdy:'Lil Birdy'});
 export function displayName(name){return ({'Coach Hall':'Hall','Joel Honeycutt':'Joel','Landon Chapa':'Landon','Earl Britt':'Earl','Nathan Nunley':'Nathan','Zebene Martine':'Zeb'})[name]||name;}
 const shot=(at,from,to,look,fov=54)=>({at,from,to,look,end:look,fov});
@@ -46,7 +46,7 @@ export class BossIntroduction{
   // Refit obstructed shots toward the entry side while retaining their height.
   this.updateTearHands(t);world.camera.position.copy(pos);world.camera.lookAt(this.origin.x+sample.look[0],sample.look[1],this.origin.z+sample.look[2]);world.camera.fov=sample.fov;world.camera.updateProjectionMatrix();
   world.flashlight.position.copy(pos).add(new T.Vector3(-.9,.55,0));world.flashlight.target.position.set(this.origin.x,1.8,this.origin.z);world.flashlight.intensity=enemy.kind==='birdy'?33:38;
-  const line=sample.line;if(line&&(enemy.kind==='birdy'||enemy.kind==='jakob')){const mouth=speechMotion(line,this.clock.time);enemy.model.userData.jaws[0].rotation.x=.045+mouth*.25;enemy.model.userData.faces[0].morphTargetInfluences[0]=mouth*.7;enemy.model.userData.mouthCovers[0].visible=mouth<.34;enemy.model.userData.jaws[0].visible=mouth>=.34;enemy.model.userData.oralParts?.[0]?.forEach(o=>o.visible=mouth>=.34);}
+  const line=sample.line;if(line&&(enemy.kind==='birdy'||enemy.kind==='jakob')){const mouth=speechMotion(line,this.clock.time),d=enemy.model.userData,artist=!!d.faces[0].userData.artist;d.jaws[0].rotation.x=.045+mouth*.25;d.faces[0].morphTargetInfluences[0]=mouth*.7;if(d.faces[0].userData.artistDetail)d.faces[0].userData.artistDetail.morphTargetInfluences[0]=mouth*.7;d.mouthCovers[0].visible=!artist&&mouth<.34;d.jaws[0].visible=!artist&&mouth>=.34;d.oralParts?.[0]?.forEach(o=>o.visible=!artist&&mouth>=.34);}
   $('#scene-speaker').textContent=line?displayName(line.speaker):'';$('#scene-subtitle').textContent=line?.text||'';$('#scene-captions').hidden=(!cinema.captionFallback&&game.settings.subtitles===false)||!line;
   $('#scene-loading').hidden=!state||state.ready||cinema.captionFallback;$('#scene-loading-message').textContent=state?.error?'Dialogue could not load.':'Preparing audio…';$('#scene-audio-actions').hidden=!state?.error;
   $('#scene-location').textContent=!this.beat&&t>9?BOSS_NAMES[enemy.kind]:'';$('#scene-location').style.opacity=!this.beat&&t>9?'1':'0';$('#scene-time').style.opacity=0;$('#scene-progress').style.width=this.clock.time/this.story.duration*100+'%';$('#scene-fade').style.opacity=sample.fade;

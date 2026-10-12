@@ -1,24 +1,25 @@
-import {WEAPONS,weaponFor} from './weapons.js?v=4.8.0';
-import {createLongGun} from './longguns.js?v=4.8.0';
-import {scannedMaterial,microTexture} from './surface-materials.js?v=4.8.0';
-import {surfaceMaterial} from './material-surfaces.js?v=4.8.0';
-import {addEnvironmentDetail} from './environment-detail.js?v=4.8.0';
-import {painted} from './loading.js?v=4.8.0';
-import {BossArena} from './boss-arena.js?v=4.8.0';
-import {createAnatomy,animateCollapse} from './anatomy.js?v=4.8.0';
-import {reloadProgress} from './reload.js?v=4.8.0';
-import {ATTACKS,enemyRadius} from './enemy-director.js?v=4.8.0';
+import {WEAPONS,weaponFor} from './weapons.js?v=5.0.0';
+import {createLongGun} from './longguns.js?v=5.0.0';
+import {scannedMaterial,microTexture} from './surface-materials.js?v=5.0.0';
+import {surfaceMaterial} from './material-surfaces.js?v=5.0.0';
+import {addEnvironmentDetail} from './environment-detail.js?v=5.0.0';
+import {loadLicensedArt,photographedMaterial,createLicensedEnemy,animateLicensedEnemy,dressLicensedRooms,fittedProp} from './licensed-art.js?v=5.0.0';
+import {painted} from './loading.js?v=5.0.0';
+import {BossArena} from './boss-arena.js?v=5.0.0';
+import {createAnatomy,animateCollapse} from './anatomy.js?v=5.0.0';
+import {reloadProgress} from './reload.js?v=5.0.0';
+import {ATTACKS,enemyRadius} from './enemy-director.js?v=5.0.0';
 import * as T from './vendor/three.module.js';
-import {TILE,seeded,solid,findPath} from './data.js?v=4.8.0';
-import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock,propsOcclude,environmentDistance} from './fps.js?v=4.8.0';
-import {CombatEffects} from './combat-effects.js?v=4.8.0';
-import {WallPlacement} from './wall-placement.js?v=4.8.0';
-import {createViewModel,createHands,updateSleeveAnchors,loadHandSurfaces} from './viewmodel.js?v=4.8.0';
-import {createWeaponMotion,kickWeapon,stepWeaponMotion} from './weapon-motion.js?v=4.8.0';
-import {CHARACTER_DESIGNS,characterHair,dressBirdy,dressArchetype,cloneCharacter} from './creature-design.js?v=4.8.0';
-import {EnemyEffects} from './enemy-effects.js?v=4.8.0';
-import {BOSS_PROFILES,createBossModel} from './boss-models.js?v=4.8.0';
-import {animateBoss} from './boss-animation.js?v=4.8.0';
+import {TILE,seeded,solid,findPath} from './data.js?v=5.0.0';
+import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock,propsOcclude,environmentDistance} from './fps.js?v=5.0.0';
+import {CombatEffects} from './combat-effects.js?v=5.0.0';
+import {WallPlacement} from './wall-placement.js?v=5.0.0';
+import {createViewModel,createHands,updateSleeveAnchors,loadHandSurfaces} from './viewmodel.js?v=5.0.0';
+import {createWeaponMotion,kickWeapon,stepWeaponMotion} from './weapon-motion.js?v=5.0.0';
+import {CHARACTER_DESIGNS,characterHair,dressBirdy,dressArchetype,cloneCharacter} from './creature-design.js?v=5.0.0';
+import {EnemyEffects} from './enemy-effects.js?v=5.0.0';
+import {BOSS_PROFILES,createBossModel} from './boss-models.js?v=5.0.0';
+import {animateBoss} from './boss-animation.js?v=5.0.0';
 
 const BOX=bevelBox(1,1,1,.014),WALLBOX=new T.BoxGeometry(1,1,1),SPHERE=new T.SphereGeometry(1,20,14),CYL=new T.CylinderGeometry(1,1,1,16);
 const SHARED=new Set([BOX,WALLBOX,SPHERE,CYL]);
@@ -67,11 +68,11 @@ export class World{
    const t=loader.load(new URL(`./assets/${file}.webp`,import.meta.url).href,resolve,undefined,reject);t.wrapS=t.wrapT=T.RepeatWrapping;t.colorSpace=T.SRGBColorSpace;t.anisotropy=8;this.assets[name]=t;
   })));const portrait=new Promise((resolve,reject)=>{const t=loader.load(new URL('./assets/boss-faces-v2.png',import.meta.url).href,resolve,undefined,reject);t.colorSpace=T.SRGBColorSpace;t.anisotropy=8;this.assets.boss=t;});const scans=new Promise((resolve,reject)=>{const t=loader.load(new URL('./assets/material-scans.png',import.meta.url).href,resolve,undefined,reject);t.colorSpace=T.SRGBColorSpace;t.anisotropy=8;this.assets.scans=t;});const surfaces=new Promise((resolve,reject)=>{const t=loader.load(new URL('./assets/material-surfaces-v3.png',import.meta.url).href,resolve,undefined,reject);t.colorSpace=T.SRGBColorSpace;t.anisotropy=8;this.assets.surfaces=t;});this.ready=Promise.all([this.ready,portrait,scans,surfaces,loadHandSurfaces()]);this.ready.catch(()=>{});
   // Let the title paint and textures arrive before the detailed hands are built.
-  this.ready=this.ready.then(async()=>{await painted();this.createWeapon();this.resize();});this.ready.catch(()=>{});this.resize();
+  this.ready=Promise.all([this.ready,loadLicensedArt(this.characterResources).then(library=>{this.licensed=library;})]).then(async()=>{await painted();this.createWeapon();this.resize();});this.ready.catch(()=>{});this.resize();
  }
  resize(){this.needsPausedRender=true;this.renderer.setSize(innerWidth,innerHeight,false);this.camera.aspect=innerWidth/innerHeight;this.camera.updateProjectionMatrix();if(this.viewCamera){this.viewCamera.aspect=this.camera.aspect;this.viewCamera.updateProjectionMatrix();}}
  stageBoxGeometry(){return BOX.clone();}
- surface(asset,color,repeat=[1,1],bump=.02,roughness=.9){const map=this.assets[asset].clone();map.needsUpdate=true;map.repeat.set(...repeat);const height=map.clone();height.colorSpace=T.NoColorSpace;height.needsUpdate=true;return new T.MeshStandardMaterial({color,map,bumpMap:height,bumpScale:bump,roughness});}
+ surface(asset,color,repeat=[1,1],bump=.02,roughness=.9){if(asset==='floor'&&this.licensed){const m=photographedMaterial(this.licensed.materials.get('floor_tiles_06'),repeat,color);m.roughness=roughness;return m;}const map=this.assets[asset].clone();map.needsUpdate=true;map.repeat.set(...repeat);const height=map.clone();height.colorSpace=T.NoColorSpace;height.needsUpdate=true;return new T.MeshStandardMaterial({color,map,bumpMap:height,bumpScale:bump,roughness});}
  procedural(kind){
   const rnd=seeded(kind.length*87);return canvasTexture((ctx,s)=>{
    ctx.fillStyle=kind==='paper'?'#bdb4a1':kind==='carpet'?'#81704a':kind==='wallpaper'?'#aa9659':kind==='ceiling'?'#9b9c88':'#949b8b';ctx.fillRect(0,0,s,s);
@@ -110,10 +111,10 @@ export class World{
   this.scene.add(new T.HemisphereLight(yellow?0xc4b98d:0xa7b6bd,0x151b1c,yellow?.31:.25));
   this.palette={metal:material(0x424c4a,.42,.66),black:material(0x151c1c,.65,.25),wood:material(yellow?0x766447:0x665b49),paper:material(0xc9bea5),rust:material(0x593b2d),glass:material(0x1a3839,.13,.5),bone:material(0xaaa18a),blood:material(0x36140e,.35)};
   this.palette.wood.map=this.procedural('wood');this.palette.wood.bumpMap=this.palette.wood.map;this.palette.wood.bumpScale=.008;this.palette.metal.bumpMap=this.procedural('fabric');this.palette.metal.bumpScale=.002;this.palette.paper.map=this.procedural('paper');
-  const floor=yellow?material(0xffffff,.98):this.surface('floor',0xc2c7c2,[48,38.4],.018,.39);if(yellow){floor.map=this.procedural('carpet');floor.map.repeat.set(36,28.8);floor.bumpMap=floor.map;floor.bumpScale=.014;}
+  const floor=yellow&&this.licensed?photographedMaterial(this.licensed.materials.get('old_linoleum_flooring_01'),[36,28.8],0xb5a378):yellow?material(0xffffff,.98):this.surface('floor',0xc2c7c2,[36,28.8],.018,.65);if(yellow&&!this.licensed){floor.map=this.procedural('carpet');floor.map.repeat.set(36,28.8);floor.bumpMap=floor.map;floor.bumpScale=.014;}
   mesh(new T.PlaneGeometry(72,57.6),floor,[1,1,1],[36,0,28.8],this.root).rotation.x=-Math.PI/2;
   const ceiling=material(yellow?0xb4ae87:0x89938b,.93);ceiling.map=this.procedural('ceiling');ceiling.map.repeat.set(18,14.4);mesh(new T.PlaneGeometry(72,57.6),ceiling,[1,1,1],[36,CEILING,28.8],this.root).rotation.x=Math.PI/2;
-  const wall=yellow?material(0xffffff,.96):this.assets.surfaces?surfaceMaterial(this.assets.surfaces,'wall',{color:breach?0xaaa59b:0xe7e4d5,roughness:.94}):this.surface('wall',breach?0x858e7c:0xb5c1b5,[1,1],.034);if(yellow){wall.map=this.procedural('wallpaper');wall.bumpMap=wall.map;wall.bumpScale=.012;}
+  const wall=this.licensed?photographedMaterial(this.licensed.materials.get(breach?'painted_plaster_wall':yellow?'beige_wall_001':'damaged_plaster'),[.45,.45],yellow?0xd4bb70:breach?0x8b9790:0xd7d7c9,true):yellow?material(0xffffff,.96):this.assets.surfaces?surfaceMaterial(this.assets.surfaces,'wall',{color:breach?0xaaa59b:0xe7e4d5,roughness:.94}):this.surface('wall',breach?0x858e7c:0xb5c1b5,[1,1],.034);if(yellow&&!this.licensed){wall.map=this.procedural('wallpaper');wall.bumpMap=wall.map;wall.bumpScale=.012;}
   const coords=[];grid.forEach((row,z)=>row.forEach((v,x)=>{if(v)coords.push([x,z]);}));const walls=new T.InstancedMesh(WALLBOX,wall,coords.length),dummy=new T.Object3D();
   coords.forEach(([x,z],i)=>{dummy.position.set((x+.5)*TILE,CEILING/2,(z+.5)*TILE);dummy.scale.set(TILE,CEILING,TILE);dummy.updateMatrix();walls.setMatrixAt(i,dummy.matrix);walls.setColorAt(i,new T.Color().setScalar(.83+(i%5)*.035));});walls.castShadow=true;walls.receiveShadow=true;this.root.add(walls);
   for(const [height,thick]of [[.09,.16],[1.02,.035],[3.17,.1]]){const trim=new T.InstancedMesh(BOX,material(yellow?0x594a2c:height===1.02?0x596860:0x313e3c,.72,.12),coords.length);coords.forEach(([x,z],i)=>{dummy.position.set((x+.5)*TILE,height,(z+.5)*TILE);dummy.scale.set(TILE+.025,thick,TILE+.025);dummy.updateMatrix();trim.setMatrixAt(i,dummy.matrix);});trim.receiveShadow=true;this.root.add(trim);}
@@ -123,7 +124,7 @@ export class World{
   this.flashlight=new T.SpotLight(0xffead2,115,27,.48,.72,2);this.flashlight.castShadow=true;this.flashlight.shadow.mapSize.set(1024,1024);this.flashlight.shadow.camera.near=.08;this.flashlight.shadow.camera.far=28;this.flashlight.shadow.bias=-.00035;this.flashlight.shadow.normalBias=.035;this.scene.add(this.flashlight,this.flashlight.target);
   this.playerLight=new T.PointLight(0xd6e2d2,2.8,3.4,2);this.scene.add(this.playerLight);this.shotLight=new T.PointLight(0xffbf65,0,5,2);this.scene.add(this.shotLight);
   this.wallPlacement=new WallPlacement(grid,TILE,this.level.rooms);this.wallMounts=this.wallPlacement.mounts;
-  this.dressDirectedRooms(chapter);this.dressArchitecture();addEnvironmentDetail(this);const rnd=seeded(52+chapter.number.length),cells=[];grid.forEach((row,z)=>row.forEach((v,x)=>{if(!v)cells.push([x,z]);}));
+  this.dressDirectedRooms(chapter);this.dressArchitecture();addEnvironmentDetail(this);dressLicensedRooms(this);const rnd=seeded(52+chapter.number.length),cells=[];grid.forEach((row,z)=>row.forEach((v,x)=>{if(!v)cells.push([x,z]);}));
   for(let i=0;i<180;i++){const [x,z]=cells[Math.floor(rnd()*cells.length)],px=(x+.1+rnd()*.8)*TILE,pz=(z+.1+rnd()*.8)*TILE;if(i%3===0){const p=mesh(BOX,this.palette.paper,[.22+rnd()*.15,.003,.3+rnd()*.13],[px,.013,pz],this.root);p.rotation.y=rnd()*6;}else if(i%3===1)this.decal('stain',[px,.015,pz],.4+rnd()*1.3,true);}
   const pos=new Float32Array(500*3);for(let i=0;i<pos.length;i+=3){pos[i]=rnd()*72;pos[i+1]=rnd()*CEILING;pos[i+2]=rnd()*57.6;}const geo=new T.BufferGeometry();geo.setAttribute('position',new T.BufferAttribute(pos,3));this.dust=new T.Points(geo,new T.PointsMaterial({color:0xc6cfad,size:.022,transparent:true,opacity:.3,depthWrite:false}));this.root.add(this.dust);
   const [ex,ez]=chapter.exit;this.exit=group(this.root,(ex+.5)*TILE,0,(ez+.5)*TILE);mesh(BOX,this.palette.black,[2.15,2.9,.18],[0,1.45,0],this.exit);mesh(BOX,this.palette.wood,[1.85,2.65,.16],[0,1.33,.12],this.exit);mesh(BOX,this.palette.metal,[.16,.035,.03],[.7,1.12,.23],this.exit);
@@ -186,13 +187,16 @@ export class World{
   const chalk=material(0xffffff,.98);chalk.map=canvasTexture((ctx,n)=>{ctx.canvas.width=n*4;ctx.fillStyle='#172721';ctx.fillRect(0,0,n*4,n);ctx.strokeStyle='#b4c6b155';ctx.lineWidth=2;ctx.font='28px cursive';ctx.fillStyle='#c0c9b1aa';ctx.fillText('SMITHSON VALLEY  /  NIGHT SHIFT',40,58);ctx.fillText('NETWORK OFFLINE',40,110);ctx.fillText('HALL  -  03:04',40,410);for(let i=0;i<8;i++){ctx.beginPath();ctx.moveTo(40,155+i*25);ctx.lineTo(720+(i%3)*65,155+i*25);ctx.stroke();}ctx.strokeRect(1260,120,400,155);ctx.strokeRect(1380,275,220,95);ctx.beginPath();ctx.moveTo(1460,135);ctx.lineTo(1460,240);ctx.lineTo(1650,240);ctx.stroke();ctx.fillText('204',1420,190);ctx.fillText('KEEP DOOR CLOSED',1250,435);});
   const bed=(x,z)=>this.prop(x,z,1.0,2.1,.85,g=>{mesh(BOX,p.metal,[.95,.12,2],[0,.58,0],g);mesh(BOX,fabric,[.84,.16,1.85],[0,.72,0],g);mesh(BOX,p.paper,[.7,.14,.4],[0,.88,-.68],g);for(const dx of[-.4,.4])for(const dz of[-.84,.84])link(g,p.metal,[dx,.62,dz],[dx,.05,dz],.03);for(const dz of[-.95,.95])link(g,p.metal,[-.45,1,dz],[.45,1,dz],.035);});
   const shelf=(x,z)=>this.prop(x,z,1.4,.6,2.3,g=>{for(const dx of[-.67,.67])mesh(BOX,p.metal,[.05,2.3,.6],[dx,1.15,0],g);for(let y=.2;y<2.3;y+=.5){mesh(BOX,p.metal,[1.4,.04,.6],[0,y,0],g);for(let i=0;i<4;i++)mesh(BOX,i%2?p.wood:p.paper,[.16,.26,.36],[-.45+i*.3,y+.15,0],g);}});
-  const terminal=(x,z)=>this.prop(x,z,1.5,1.0,1.3,g=>{mesh(BOX,p.wood,[1.5,.09,.7],[0,.79,0],g);for(const dx of[-.65,.65])for(const dz of[-.27,.27])link(g,p.metal,[dx,.75,dz],[dx,.03,dz],.03);mesh(BOX,p.black,[.6,.42,.07],[0,1.1,-.18],g);mesh(new T.PlaneGeometry(.55,.35),glow,[1,1,1],[0,1.1,-.138],g);mesh(BOX,p.black,[.45,.025,.17],[0,.85,.16],g);mesh(BOX,fabric,[.48,.1,.5],[0,.47,.8],g);mesh(BOX,fabric,[.48,.45,.07],[0,.74,1],g);});
+  const terminal=(x,z)=>this.prop(x,z,1.5,1.0,1.3,g=>{
+   let height=.79;if(this.licensed){const desk=fittedProp(this.licensed.props.get('metal_office_desk'),1.5,.82,.7);height=desk.userData.dimensions[1];g.add(desk);}else{mesh(BOX,p.wood,[1.5,.09,.7],[0,.79,0],g);for(const dx of[-.65,.65])for(const dz of[-.27,.27])link(g,p.metal,[dx,.75,dz],[dx,.03,dz],.03);}
+   mesh(BOX,p.black,[.6,.42,.07],[0,height+.23,-.18],g);mesh(new T.PlaneGeometry(.55,.35),glow,[1,1,1],[0,height+.23,-.138],g);mesh(BOX,p.black,[.45,.025,.17],[0,height+.064,.16],g);mesh(BOX,fabric,[.48,.1,.5],[0,.47,.8],g);mesh(BOX,fabric,[.48,.45,.07],[0,.74,1],g);
+  });
   for(const r of this.level.rooms){
    const [a,b,c,d]=r.bounds,x=(a+c+1)*TILE/2,z=(b+d+1)*TILE/2,w=(c-a+1)*TILE,depth=(d-b+1)*TILE;
    const north=b*TILE+.015,south=(d+1)*TILE-.015,left=(a+.5)*TILE,right=(c+.5)*TILE;
    this.wallSign(r,r.name.toUpperCase(),2.8,Math.min(5,w-1),.4,yellow?'#9d865d':'#bac7b6','#16231e');
    const industrial=['utility','switchgear','relay','catwalk'].includes(r.kind),patch=yellow?material(0xc5b88e,.97):this.surface('floor',industrial?0x758380:['closet','storage'].includes(r.kind)?0xb7ad98:0xb8c3b8,[w/3,depth/3],.023,industrial?.52:.38);
-   if(yellow){patch.map=this.procedural('carpet');patch.map.repeat.set(w/2,depth/2);patch.bumpMap=patch.map;patch.bumpScale=.012;}
+   if(yellow&&this.licensed){const photographed=photographedMaterial(this.licensed.materials.get('old_linoleum_flooring_01'),[w/2,depth/2],0xb5a378);patch.copy(photographed);photographed.dispose();}else if(yellow){patch.map=this.procedural('carpet');patch.map.repeat.set(w/2,depth/2);patch.bumpMap=patch.map;patch.bumpScale=.012;}
    const plane=mesh(new T.PlaneGeometry(w-.05,depth-.05),patch,[1,1,1],[x,.004,z],this.root);plane.rotation.x=-Math.PI/2;
    if(['computers','science'].includes(r.kind)){
     const desks=[];for(const px of[left+.6,right-.6])for(let pz=b+1;pz<d;pz+=2){const desk=terminal(px,(pz+.5)*TILE);if(desk)desks.push(desk);}
@@ -358,6 +362,7 @@ export class World{
   }
  }
  character(kind,color,identity=kind==='player'?'ethan':kind){
+  if(this.licensed&&['walker','runner'].includes(kind))return createLicensedEnemy(this.licensed,kind,color);
   const key=[kind,color??'',identity].join('/');if(!this.characterTemplates.has(key)){
    const template=this.buildCharacter(kind,color,identity);this.characterTemplates.set(key,template);
    template.traverse(o=>{if(o.geometry)this.characterResources.add(o.geometry);for(const m of o.material?(Array.isArray(o.material)?o.material:[o.material]):[])for(const k of ['map','bumpMap','roughnessMap','alphaMap'])if(m[k])this.characterResources.add(m[k]);});
@@ -430,6 +435,7 @@ export class World{
   mergeParts(body);mergeParts(head);mergeParts(jaw);return g;
  }
  animateCharacter(g,t,moving,mood={}){
+  if(g.userData.licensedActor)return animateLicensedEnemy(g,t,moving,mood);
   if(g.userData.bossRig){animateBoss(g,t,moving,mood);if(g.userData.kind==='birdy'&&!mood.beat&&this.root){g.updateMatrixWorld(true);for(const wing of g.userData.detachedWings)if(wing.visible&&!wing.userData.landed){this.root.attach(wing);wing.position.y=.055;wing.userData.landed=true;}}return g;}
   const kind=g.userData.kind,phase=g.userData.phase||0;if(mood.dead){animateCollapse(g,mood.deathTime||0);return;}
   g.userData.body.rotation.set(0,0,0);g.userData.head.rotation.set(0,0,0);if(g.userData.face)g.userData.face.morphTargetInfluences[0]=0;

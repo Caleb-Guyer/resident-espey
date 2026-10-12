@@ -1,4 +1,4 @@
-import {solid} from './data.js?v=4.8.0';
+import {solid} from './data.js?v=5.0.0';
 
 export const EYE_HEIGHT=1.64;
 export const CEILING=3.35;

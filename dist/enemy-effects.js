@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {solid} from './data.js?v=4.8.0';
+import {solid} from './data.js?v=5.0.0';
 const acquire=(list,free,capacity)=>free.pop()||(list.length>=capacity?list.shift():{});
 const release=(free,item,capacity)=>{if(item.pooled&&free.length<capacity)free.push(item);};
 export class EnemyEffects{
