@@ -1,14 +1,15 @@
-import {sceneContext,MEMORY_LEAD_IN} from './scene-context.js?v=4.4.0';
-import {dialogueFrame,speakingActor,speechMotion} from './cinematic-direction.js?v=4.4.0';
+import {painted} from './loading.js?v=4.5.0';
+import {sceneContext,MEMORY_LEAD_IN} from './scene-context.js?v=4.5.0';
+import {dialogueFrame,speakingActor,speechMotion} from './cinematic-direction.js?v=4.5.0';
 import * as T from './vendor/three.module.js';
-import {SCENES,StoryClock} from './story.js?v=4.4.0';
-import {voicedScene} from './voice-timeline.js?v=4.4.0';
-import {BossIntroduction,displayName} from './boss-introductions.js?v=4.4.0';
+import {SCENES,StoryClock} from './story.js?v=4.5.0';
+import {voicedScene} from './voice-timeline.js?v=4.5.0';
+import {BossIntroduction,displayName} from './boss-introductions.js?v=4.5.0';
 const $=s=>document.querySelector(s);
 
 // A separate, lit stage prevents cinematic actors from touching combat or save state.
 export class Cinematics{
- constructor(game){this.game=game;this.world=game.world;this.active=false;$('#skip-scene').onclick=()=>this.finish();$('#pause-scene').onclick=()=>this.togglePause();$('#retry-scene-audio').onclick=()=>{if(this.arena?.active){const e=this.arena.enemy,done=this.arena.complete;this.arena.cancel();this.arena.play(e,done);}else this.play(this.id,this.complete);};$('#caption-scene').onclick=()=>{this.game.voice?.stop();this.captionFallback=true;$('#scene-loading').hidden=true;};}
+ constructor(game){this.game=game;this.world=game.world;this.active=false;$('#skip-scene').onclick=()=>this.finish();$('#pause-scene').onclick=()=>this.togglePause();$('#retry-scene-audio').onclick=()=>{if(this.arena?.active){const e=this.arena.enemy,done=this.arena.complete,beat=this.arena.beat;this.arena.cancel();this.arena.play(e,done,beat);}else this.play(this.id,this.complete);};$('#caption-scene').onclick=()=>{this.game.voice?.stop();this.captionFallback=true;$('#scene-loading').hidden=true;};}
  play(id,complete=()=>{}){
   if(this.active)this.cancel();let story=SCENES[id];if(!story){complete();return;}story=voicedScene(story);
   this.id=id;this.story=story;this.complete=complete;this.clock=new StoryClock(story);this.active=true;this.paused=false;this.finished=false;this.context=sceneContext(id);this.leadIn=this.context.kind==='present'?1.5:MEMORY_LEAD_IN;this.returnTime=null;
@@ -21,10 +22,11 @@ export class Cinematics{
   $('#scene-transition-title').textContent=this.context.title||story.label;$('#scene-transition-place').textContent=this.context.place||story.when;$('#scene-transition-object').textContent=this.context.object||'';
   $('#scene-transition').hidden=false;$('#scene-transition').style.opacity=1;this.update(0);
  }
- playEncounter(enemy,complete){if(this.active)this.cancel();this.arena??=new BossIntroduction(this);this.arena.play(enemy,complete);}
+ playEncounter(enemy,complete,beat=null){if(this.active)this.cancel();this.arena??=new BossIntroduction(this);this.arena.play(enemy,complete,beat);}
  togglePause(){if(this.arena?.active){this.arena.togglePause();return;}if(!this.active)return;this.paused=!this.paused;$('#pause-scene').textContent=this.paused?'Resume':'Pause';this.game.sound.pause(this.paused);this.game.voice?.pause(this.paused||this.leadIn>0||this.returnTime!==null);}
  text(text,at,w=2,h=.35,color='#d4ceae',parent=this.stage){const prior=this.world.root;this.world.root=parent;const o=this.world.sign(text,at,w,h,color);this.world.root=prior;return o;}
  build(type){
+  if(this.stageCache?.has(this.id)){this.restorePack(this.stageCache.get(this.id));return;}
   this.portal=this.endingMic=this.door=this.vial=this.crater=this.mazeStage=this.rings=null;this.doorTarget=undefined;this.footbeat=undefined;
   this.scene=new T.Scene();this.stage=new T.Group();this.scene.add(this.stage);this.actors=new Map();this.geometry=[this.world.stageBoxGeometry(),new T.CylinderGeometry(1,1,1,16),new T.SphereGeometry(1,16,12)];
   this.materials=[];const mat=(color,roughness=.8,metalness=0)=>{const m=new T.MeshStandardMaterial({color,roughness,metalness});this.materials.push(m);return m;};
@@ -95,7 +97,21 @@ export class Cinematics{
     for(let i=0;i<15;i++){const vein=box(red,[.05,1.2,.06],[(i%2?1:-1)*3.88,.4+i%4*.65,-6+i*.7]);vein.rotation.z=Math.sin(i)*.9;}
    }
   }
-  for(const a of this.story.actors){const g=this.world.character(a.kind,a.color,a.id);this.stage.add(g);this.actors.set(a.id,g);}
+  for(const a of this.story.actors){const g=this.world.character(a.kind,a.color,a.id);this.stage.add(g);this.actors.set(a.id,g);}this.capturePack();
+ }
+ capturePack(){
+  this.stageCache||=new Map();const fields=['scene','stage','actors','geometry','materials','portal','key','faceLight','endingMic','door','vial','crater','mazeStage','rings'],pack={fields:{},nodes:[],materials:[]};for(const k of fields)pack.fields[k]=this[k];const materials=new Set();
+  this.scene.traverse(o=>{pack.nodes.push({o,parent:o.parent,p:o.position.clone(),q:o.quaternion.clone(),s:o.scale.clone(),visible:o.visible,morph:o.morphTargetInfluences?[...o.morphTargetInfluences]:null});for(const m of o.material?(Array.isArray(o.material)?o.material:[o.material]):[])if(!materials.has(m)){materials.add(m);pack.materials.push({m,color:m.color?.clone(),emissive:m.emissive?.clone()});}});this.stageCache.set(this.id,pack);
+ }
+ restorePack(pack){
+  Object.assign(this,pack.fields);for(const n of pack.nodes){if(n.parent&&n.o.parent!==n.parent)n.parent.add(n.o);n.o.position.copy(n.p);n.o.quaternion.copy(n.q);n.o.scale.copy(n.s);n.o.visible=n.visible;if(n.morph)n.o.morphTargetInfluences=[...n.morph];}for(const {m,color,emissive}of pack.materials){if(color)m.color.copy(color);if(emissive)m.emissive.copy(emissive);}this.doorTarget=this.footbeat=undefined;this.scene.updateMatrixWorld(true);
+ }
+ clearPrepared(){for(const p of this.stageCache?.values()||[])this.world.disposeObject(p.fields.scene);this.stageCache?.clear();}
+ async prewarm(ids){
+  const w=this.world,r=w.renderer,camera=w.camera,position=camera.position.clone(),rotation=camera.quaternion.clone(),fov=camera.fov,target=r.getRenderTarget(),autoClear=r.autoClear,warm=new T.WebGLRenderTarget(16,16);let savedId=this.id,savedStory=this.story;
+  try{r.autoClear=true;if(this.game.voice)await Promise.allSettled(ids.flatMap(id=>voicedScene(SCENES[id]).lines.map(l=>this.game.voice.load(l.key))));for(const id of ids){await painted();this.id=id;this.story=voicedScene(SCENES[id]);this.build(this.story.stage);const visibility=[],culling=[];this.scene.traverse(o=>{if(!o.visible){visibility.push(o);o.visible=true;}if(o.isMesh){culling.push([o,o.frustumCulled]);o.frustumCulled=false;}});
+   try{if(r.compileAsync)await r.compileAsync(this.scene,camera);r.setRenderTarget(warm);if(r.compileAsync)await r.compileAsync(this.scene,camera);r.render(this.scene,camera);r.setRenderTarget(target);if(target===null)r.render(this.scene,camera);}finally{visibility.forEach(o=>o.visible=false);for(const[o,v]of culling)o.frustumCulled=v;}
+  }}finally{r.setRenderTarget(target);r.autoClear=autoClear;warm.dispose();camera.position.copy(position);camera.quaternion.copy(rotation);camera.fov=fov;camera.updateProjectionMatrix();this.id=savedId;this.story=savedStory;this.scene=null;}
  }
  event(e){if(e.sound)this.game.sound.play(e.sound);if(e.door!==undefined&&this.door)this.doorTarget=e.door;if(e.serum&&this.vial){const fore=this.actors.get('hall')?.userData.arms?.[0]?.userData.forearm;if(fore){fore.add(this.vial);this.vial.position.set(0,-.39,.03);this.vial.rotation.z=.7;}else this.vial.visible=false;}if(e.collapse&&this.crater)this.crater.visible=true;
   if(e.maze&&this.mazeStage){this.mazeStage.visible=true;for(const g of this.actors.values())g.visible=false;const landon=this.actors.get('landon');if(landon){landon.visible=true;landon.position.set(.7,0,0);}this.key.color.set(0xffe0a1);}
@@ -130,7 +146,7 @@ export class Cinematics{
   }
   $('#scene-fade').style.opacity=transition?1:sample.fade;$('#scene-progress').style.width=t/this.story.duration*100+'%';$('#scene-location').style.opacity=t<5?1:0;$('#scene-time').style.opacity=t<5?1:0;
   this.world.renderer.autoClear=true;this.world.renderer.render(this.scene,camera);this.world.worldCalls=this.world.renderer.info.render.calls;
-  $('#world').dataset.state=JSON.stringify({...this.game.snapshot(),cinematic:this.id,sceneTime:Math.round(t*10)/10,scenePaused:this.paused,voice:voice?.status});
+  if(this.game.debugSnapshots)$('#world').dataset.state=JSON.stringify({...this.game.snapshot(),cinematic:this.id,sceneTime:Math.round(t*10)/10,scenePaused:this.paused,voice:voice?.status});
   if(done&&this.returnTime===null){
    if(this.context.return){this.returnTime=0;this.game.voice?.pause(true);$('#scene-transition-title').textContent=this.context.return;$('#scene-transition-place').textContent=this.game.config?.place||'Smithson Valley';$('#scene-transition-object').textContent=this.context.kind==='premonition'?'The future is unwritten.':'Ethan Espey · The last night';}
    else this.finish();
@@ -138,7 +154,7 @@ export class Cinematics{
  }
  release(){
   this.game.voice?.stop();this.active=false;$('#cinematic').hidden=true;$('#scene-loading').hidden=true;document.body.classList.remove('memory-scene','premonition-scene');$('#scene-transition').hidden=true;this.world.camera.fov=this.savedFov;this.world.camera.updateProjectionMatrix();
-  this.world.disposeObject(this.scene);this.scene=null;this.actors.clear();this.game.sound.pause(true);
+  if(!this.stageCache?.has(this.id))this.world.disposeObject(this.scene);this.scene=null;this.game.sound.pause(true);
  }
  finish(){if(this.arena?.active){this.arena.finish();return;}if(!this.active||this.finished)return;this.finished=true;const complete=this.complete;this.release();complete();}
  cancel(){if(this.arena?.active){this.arena.cancel();return;}if(!this.active)return;this.finished=true;this.release();}

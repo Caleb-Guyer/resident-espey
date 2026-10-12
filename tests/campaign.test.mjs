@@ -1,3 +1,4 @@
+import {crushBobby} from '../dist/boss-fights.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {CHAPTERS,TILE,makeGrid,findPath,solid,sight,validSave,endingFor,DIFFICULTIES} from '../dist/data.js';
@@ -48,8 +49,14 @@ test('The complete campaign still reaches the best ending through real progressi
   for(const item of g.items.filter(i=>i.kind==='page')){g.nearest=item;g.interact();}
   for(const item of g.items.filter(i=>['fuse','seal','anchor'].includes(i.kind))){g.nearest=item;g.interact();}
   assert.equal(g.objectives,3);assert.equal(g.bossSpawned,false,'Boss waits for the arena entrance');const beat=g.level.beats.find(b=>b.boss);g.player.x=(beat.at[0]+.5)*TILE;g.player.z=(beat.at[1]+.5)*TILE;g.directRoute();assert.ok(g.bossSpawned);assert.equal(g.bossDead,false);
-  g.hurtEnemy(g.boss,10000);assert.equal(g.bossDead,true);g.nearest={kind:'exit'};g.interact();
+  g.boss.stageResolved=1;g.hurtEnemy(g.boss,10000);if(g.boss.kind==='jakob'){assert.equal(g.bossDead,false,'The chase cannot be skipped by damage');g.boss.phase=2;assert.equal(crushBobby(g.boss),true);g.boss.stageResolved=1;g.hurtEnemy(g.boss,10000);}assert.equal(g.bossDead,true);g.nearest={kind:'exit'};g.interact();
   if(chapter===1){assert.equal(puzzles,1);g.puzzleSolved=true;g.nextChapter();}
  }
  assert.equal(finales,1);assert.equal(g.pages.size,6);assert.equal(g.allies.size,3);g.finish('remember');assert.equal(ending,'home');assert.equal(g.running,false);
+});
+
+test('Same-chapter retries retain prepared story stages; chapter changes release them',()=>{
+ const g=fixture(),model=()=>({position:{set(){}},rotation:{},traverse(){},visible:true});let releases=0;
+ g.world={load(){},character:model,object:model,memoryObject:model,setView(){},blocked(){return false;},root:{add(){},remove(){}}};g.cinema={clearPrepared(){releases++;}};g.difficulty='survivor';g.time=0;g.ui.showGame=()=>{};
+ g.loadChapter(0);assert.equal(releases,0);g.loadChapter(0);assert.equal(releases,0);g.loadChapter(1);assert.equal(releases,1);g.loadChapter(1);assert.equal(releases,1);
 });

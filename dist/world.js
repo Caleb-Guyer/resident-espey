@@ -1,16 +1,18 @@
-import {createAnatomy,animateCollapse} from './anatomy.js?v=4.4.0';
-import {reloadProgress} from './reload.js?v=4.4.0';
+import {painted} from './loading.js?v=4.5.0';
+import {BossArena} from './boss-arena.js?v=4.5.0';
+import {createAnatomy,animateCollapse} from './anatomy.js?v=4.5.0';
+import {reloadProgress} from './reload.js?v=4.5.0';
 import * as T from './vendor/three.module.js';
-import {TILE,seeded,solid,findPath} from './data.js?v=4.4.0';
-import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock} from './fps.js?v=4.4.0';
-import {CombatEffects} from './combat-effects.js?v=4.4.0';
-import {WallPlacement} from './wall-placement.js?v=4.4.0';
-import {createViewModel} from './viewmodel.js?v=4.4.0';
-import {createWeaponMotion,kickWeapon,stepWeaponMotion} from './weapon-motion.js?v=4.4.0';
-import {CHARACTER_DESIGNS,characterHair,dressBirdy,dressArchetype,cloneCharacter} from './creature-design.js?v=4.4.0';
-import {EnemyEffects} from './enemy-effects.js?v=4.4.0';
-import {BOSS_PROFILES,createBossModel} from './boss-models.js?v=4.4.0';
-import {animateBoss} from './boss-animation.js?v=4.4.0';
+import {TILE,seeded,solid,findPath} from './data.js?v=4.5.0';
+import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock} from './fps.js?v=4.5.0';
+import {CombatEffects} from './combat-effects.js?v=4.5.0';
+import {WallPlacement} from './wall-placement.js?v=4.5.0';
+import {createViewModel} from './viewmodel.js?v=4.5.0';
+import {createWeaponMotion,kickWeapon,stepWeaponMotion} from './weapon-motion.js?v=4.5.0';
+import {CHARACTER_DESIGNS,characterHair,dressBirdy,dressArchetype,cloneCharacter} from './creature-design.js?v=4.5.0';
+import {EnemyEffects} from './enemy-effects.js?v=4.5.0';
+import {BOSS_PROFILES,createBossModel} from './boss-models.js?v=4.5.0';
+import {animateBoss} from './boss-animation.js?v=4.5.0';
 
 const BOX=bevelBox(1,1,1,.014),WALLBOX=new T.BoxGeometry(1,1,1),SPHERE=new T.SphereGeometry(1,20,14),CYL=new T.CylinderGeometry(1,1,1,16);
 const SHARED=new Set([BOX,WALLBOX,SPHERE,CYL]);
@@ -55,7 +57,7 @@ export class World{
    const t=loader.load(new URL(`./assets/${file}.webp`,import.meta.url).href,resolve,undefined,reject);t.wrapS=t.wrapT=T.RepeatWrapping;t.colorSpace=T.SRGBColorSpace;t.anisotropy=8;this.assets[name]=t;
   })));const portrait=new Promise((resolve,reject)=>{const t=loader.load(new URL('./assets/boss-faces-v2.png',import.meta.url).href,resolve,undefined,reject);t.colorSpace=T.SRGBColorSpace;t.anisotropy=8;this.assets.boss=t;});this.ready=Promise.all([this.ready,portrait]);this.ready.catch(()=>{});
   // Let the title paint and textures arrive before the detailed hands are built.
-  this.ready=this.ready.then(async()=>{await new Promise(requestAnimationFrame);this.createWeapon();this.resize();});this.ready.catch(()=>{});this.resize();
+  this.ready=this.ready.then(async()=>{await painted();this.createWeapon();this.resize();});this.ready.catch(()=>{});this.resize();
  }
  resize(){this.renderer.setSize(innerWidth,innerHeight,false);this.camera.aspect=innerWidth/innerHeight;this.camera.updateProjectionMatrix();if(this.viewCamera){this.viewCamera.aspect=this.camera.aspect;this.viewCamera.updateProjectionMatrix();}}
  stageBoxGeometry(){return BOX.clone();}
@@ -92,7 +94,7 @@ export class World{
  }
  load(chapter,grid){
   this.weaponMotion=createWeaponMotion();this.ads=this.recoil=this.walk=this.flashTimer=this.knifeTimer=0;this.currentAds=false;
-  this.disposeLevel();this.grid=grid;this.config=chapter;this.theme=chapter.theme;this.level=chapter.level;this.gates=[];this.blackoutUntil=0;this.protectedCells=new Set();for(const route of [this.level.route,...chapter.items.map(i=>[chapter.start,i.at])])for(let i=1;i<route.length;i++)for(const p of findPath(grid,{x:(route[i-1][0]+.5)*TILE,z:(route[i-1][1]+.5)*TILE},{x:(route[i][0]+.5)*TILE,z:(route[i][1]+.5)*TILE}))this.protectedCells.add(Math.floor(p.x/TILE)+","+Math.floor(p.z/TILE));this.lamps=[];this.obstacles=[];this.portal=null;this.gent=null;this.mist=[];
+  this.disposeLevel();this.bossArena=null;this.grid=grid;this.config=chapter;this.theme=chapter.theme;this.level=chapter.level;this.gates=[];this.blackoutUntil=0;this.protectedCells=new Set();for(const route of [this.level.route,...chapter.items.map(i=>[chapter.start,i.at])])for(let i=1;i<route.length;i++)for(const p of findPath(grid,{x:(route[i-1][0]+.5)*TILE,z:(route[i-1][1]+.5)*TILE},{x:(route[i][0]+.5)*TILE,z:(route[i][1]+.5)*TILE}))this.protectedCells.add(Math.floor(p.x/TILE)+","+Math.floor(p.z/TILE));this.lamps=[];this.obstacles=[];this.portal=null;this.gent=null;this.mist=[];
   const yellow=this.theme==='backrooms',breach=this.theme==='breach';this.scene.background=new T.Color(yellow?0x1b1910:0x090e11);this.scene.fog=new T.FogExp2(yellow?0x25231a:0x0c1419,yellow?.026:.032);this.root=new T.Group();this.scene.add(this.root);
   this.scene.environment=this.viewScene.environment;this.scene.environmentIntensity=.16;
   this.scene.add(new T.HemisphereLight(yellow?0xd5cba0:0x9fbab7,0x1a201d,yellow?.46:.36));
@@ -118,7 +120,7 @@ export class World{
   this.sign(breach?'P.A. / 204':'204',[this.exit.position.x,2.85,this.exit.position.z+.23],1.2,.3,'#cabaa0','#171d19');this.sign('EXIT',[this.exit.position.x,3.05,this.exit.position.z+.22],.7,.23,'#f4ceaa','#572c20');
   this.exitLight=new T.PointLight(0xbd5840,12,7,2);this.exitLight.position.set(this.exit.position.x,2.7,this.exit.position.z+.7);this.scene.add(this.exitLight);
   if(breach){this.portal=mesh(new T.TorusGeometry(1.65,.055,8,64),new T.MeshBasicMaterial({color:0xb6583c}),[1,1,1],[(chapter.boss.at[0]+.5)*TILE,1.8,(chapter.exit[1]+.5)*TILE-1.2],this.root);mesh(new T.CircleGeometry(1.63,48),new T.MeshBasicMaterial({color:0x010202}),[1,1,1],[(chapter.boss.at[0]+.5)*TILE,1.8,(chapter.exit[1]+.5)*TILE-1.22],this.root);this.gent=this.character('gentleman');this.gent.position.set((chapter.boss.at[0]+.5)*TILE,0,(chapter.exit[1]+.5)*TILE-.8);this.root.add(this.gent);}
-  this.optimizeStatic();this.createGates();this.view.visible=true;this.combatEffects=new CombatEffects(this.root);this.enemyEffects=new EnemyEffects(this.root);
+  this.optimizeStatic();this.createGates();this.view.visible=true;this.combatEffects=new CombatEffects(this.root);this.enemyEffects=new EnemyEffects(this.root);this.bossArena=new BossArena(this,chapter);
  }
  blocked(x,z,r){return propsBlock(this.obstacles,x,z,r);}
  clearWalkPath(a,b){const len=Math.hypot(b.x-a.x,b.z-a.z);for(let t=.3;t<len;t+=.45)if(this.blocked(a.x+(b.x-a.x)*t/len,a.z+(b.z-a.z)*t/len,.38))return false;return true;}
@@ -152,7 +154,7 @@ export class World{
    mergeParts(shutter);mergeParts(g);this.gates.push({...gate,shutter,lampMaterial,obstacle,target:0});
   }
  }
- syncGates(stage,immediate=false){for(const g of this.gates){const open=stage>=g.requires;g.obstacle.active=!open;g.target=open?3.18:0;g.lampMaterial.color.setHex(open?0x77ad94:0xbc5038);if(immediate)g.shutter.position.y=g.target;}}
+ syncGates(stage,immediate=false){for(const g of this.gates){const open=stage>=g.requires&&!g.forcedClosed;g.obstacle.active=!open;g.target=open?3.18:0;g.lampMaterial.color.setHex(open?0x77ad94:0xbc5038);if(immediate)g.shutter.position.y=g.target;}}
  wallLabel(m,text,y,w,h,color,background=null,dx=0,depth=.018){return this.sign(text,[m.x+m.nz*dx+m.nx*depth,y,m.z-m.nx*dx+m.nz*depth],w,h,color,background,m.yaw);}
  wallSign(room,text,y,width,height,color,background=null,options={}){
   const m=this.wallPlacement.place(room.bounds,{kind:'sign',room:room.name,width,height,y,depth:.02,...options});
@@ -495,17 +497,20 @@ export class World{
    try{await this.renderer.compileAsync(this.scene,this.camera);await this.renderer.compileAsync(this.viewScene,this.viewCamera);this.renderer.setRenderTarget(warm);await this.renderer.compileAsync(this.scene,this.camera);await this.renderer.compileAsync(this.viewScene,this.viewCamera);}
    finally{for(const o of hidden)o.visible=false;this.renderer.setRenderTarget(target);warm.dispose();}
   }
-  await new Promise(requestAnimationFrame);this.prepareCombat();await new Promise(requestAnimationFrame);
+  await painted();this.prepareCombat();await painted();
  }
  headPositions(g){
-  this.headVector??=new T.Vector3();return (g.userData.heads||[g.userData.head]).map(h=>{const v=h.getWorldPosition(this.headVector);return {x:v.x,y:v.y+.02,z:v.z};});
+  g.updateMatrixWorld(true);this.headVector??=new T.Vector3();const d=g.userData,heads=d.heads||[d.head],out=d.hitHeadsCache||=([]);let count=0;
+  for(let i=0;i<heads.length;i++){if(i===1&&d.crushedBobby)continue;const h=heads[i],v=this.headVector.set(0,.02,0).applyMatrix4(h.matrixWorld),point=out[count]||=( {} );point.x=v.x;point.y=v.y;point.z=v.z;count++;}out.length=count;return out;
  }
  faceCharacter(g,yaw,dt){if(g.userData?.bossRig){const delta=Math.atan2(Math.sin(yaw-g.rotation.y),Math.cos(yaw-g.rotation.y));g.rotation.y+=delta*(1-Math.exp(-dt*8));}else g.rotation.y=yaw;}
  bossHitParts(g){
-  const d=g.userData,p=BOSS_PROFILES[d.kind],v=new T.Vector3(),parts=[],world=(bone,point=[0,0,0])=>{bone.updateWorldMatrix(true,false);v.set(...point).applyMatrix4(bone.matrixWorld);return {x:v.x,y:v.y,z:v.z};};
-  for(const spine of d.spines){const cy=spine===d.body?p.spine:p.spine+.08;parts.push({a:world(spine,[0,p.hip-cy,0]),b:world(spine,[0,p.shoulder-.1-cy,0]),r:d.kind==='zeb'?.34:d.kind==='birdy'?.18:.24});}
-  d.arms.forEach((arm,i)=>{const fore=arm.userData.forearm;parts.push({a:world(arm),b:world(fore),r:d.kind==='zeb'?.15:.09});parts.push({a:world(fore),b:world(fore,fore.userData.wrist),r:d.kind==='chris'&&i===1?.14:d.kind==='zeb'?.11:.075});});
-  d.legs.forEach(l=>{const calf=l.userData.calf;parts.push({a:world(l),b:world(calf),r:d.kind==='zeb'?.16:.1});parts.push({a:world(calf),b:world(calf,[0,-p.hip*.43,0]),r:.085});});return parts;
+  g.updateMatrixWorld(true);const d=g.userData,p=BOSS_PROFILES[d.kind],parts=d.hitPartsCache||=([]);this.hitVector??=new T.Vector3();let count=0;
+  const point=(out,bone,x=0,y=0,z=0)=>{const v=this.hitVector.set(x,y,z).applyMatrix4(bone.matrixWorld);out.x=v.x;out.y=v.y;out.z=v.z;},part=(a,b,r,ax=0,ay=0,az=0,bx=0,by=0,bz=0)=>{const q=parts[count]||=( {a:{},b:{}} );q.r=r;point(q.a,a,ax,ay,az);point(q.b,b,bx,by,bz);count++;};
+  for(const spine of d.spines){const cy=spine===d.body?p.spine:p.spine+.08;part(spine,spine,d.kind==='zeb'?.34:d.kind==='birdy'?.18:.24,0,p.hip-cy,0,0,p.shoulder-.1-cy,0);}
+  d.arms.forEach((arm,i)=>{const fore=arm.userData.forearm;part(arm,fore,d.kind==='zeb'?.15:.09);part(fore,fore,d.kind==='chris'&&i===1?.14:d.kind==='zeb'?.11:.075,0,0,0,...fore.userData.wrist);});
+  d.legs.forEach(l=>{const calf=l.userData.calf;part(l,calf,d.kind==='zeb'?.16:.1);part(calf,calf,.085,0,0,0,0,-p.hip*.43,0);});
+  if(d.wings)d.wings.forEach((w,i)=>{part(w,d.wingWrists[i],.085);part(d.wingWrists[i],d.wingWrists[i],.085,0,0,0,(i?1:-1)*1.8,-.18,0);});parts.length=count;return parts;
  }
  prepareCombat(){
   // Upload and render both weapons, the muzzle flash and both effect batches

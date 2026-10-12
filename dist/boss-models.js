@@ -1,6 +1,6 @@
 import * as T from './vendor/three.module.js';
-import {sculptSurface,mergeRigid} from './sculpt-surface.js?v=4.4.0';
-import {CHARACTER_DESIGNS} from './creature-design.js?v=4.4.0';
+import {sculptSurface,mergeRigid} from './sculpt-surface.js?v=4.5.0';
+import {CHARACTER_DESIGNS} from './creature-design.js?v=4.5.0';
 const cache=new Map(),clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const mesh=(parent,geo,mat,at=[0,0,0],scale=[1,1,1])=>{const m=new T.Mesh(geo,mat);m.position.set(...at);m.scale.set(...scale);m.castShadow=m.receiveShadow=true;parent.add(m);return m;};
 const tube=(parent,mat,points,r=.006)=>mesh(parent,new T.TubeGeometry(new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p))),Math.max(12,points.length*5),r,6,false),mat);
@@ -141,7 +141,7 @@ export function createBossModel(world,kind){
  const rig=makeRig(kind),{g,body,heads,arms,legs,spines}=rig,mats=materials(world,kind);
  const skin=new T.SkinnedMesh(bodyGeometry(kind,rig),mats);skin.castShadow=skin.receiveShadow=true;skin.frustumCulled=false;g.add(skin);g.updateMatrixWorld(true);skin.bind(new T.Skeleton(rig.bones));
  g.userData={kind,human:false,bossRig:true,body,head:heads[0],heads,arms,legs,skin,spines,phase:0,restSpine:BOSS_PROFILES[kind].spine,design:CHARACTER_DESIGNS[kind]||{skin:BOSS_PROFILES[kind].skin},identity:kind,detail:'sculpted muscle and scar tissue',jaws:[],eyes:[],faces:[],mouthCovers:[]};
- const ids=kind==='jakob'?['jakob','bobby']:[kind];heads.forEach((h,i)=>{const detail=head(world,h,ids[i],mats[0]);g.userData.faces.push(detail.face);g.userData.jaws.push(detail.jaw);g.userData.eyes.push(detail.eyes);g.userData.mouthCovers.push(detail.mouthCover);h.userData.identity=ids[i];});g.userData.face=g.userData.faces[0];g.userData.jaw=g.userData.jaws[0];
+ const ids=kind==='jakob'?['jakob','bobby']:[kind];heads.forEach((h,i)=>{const detail=head(world,h,ids[i],mats[0]);g.userData.faces.push(detail.face);g.userData.jaws.push(detail.jaw);g.userData.eyes.push(detail.eyes);g.userData.mouthCovers.push(detail.mouthCover);h.userData.identity=ids[i];h.userData.restHeadY=h.position.y;});g.userData.face=g.userData.faces[0];g.userData.jaw=g.userData.jaws[0];
  if(kind==='jakob'){g.userData.identities=ids;g.userData.twins=spines;spines.forEach((s,i)=>s.userData={...s.userData,design:CHARACTER_DESIGNS[ids[i]],identity:ids[i],head:heads[i]});}
  const tendon=new T.MeshStandardMaterial({color:kind==='zeb'?0x51392d:0x816d57,roughness:.76}),bone=new T.MeshStandardMaterial({color:0xb6aa8e,roughness:.61});
  arms.forEach((arm,i)=>{const fore=arm.userData.forearm,[wx,wy,wz]=fore.userData.wrist;for(let f=0;f<4;f++){const x=wx+(f-1.5)*.027,len=kind==='chris'&&i===1?.23:kind==='birdy'?.19:.13;tube(fore,mats[0],[[x,wy-.03,wz+.025],[x+(f-1.5)*.006,wy-len*.55,wz+.04],[x+(f-1.5)*.012,wy-len,wz+.07]],.010);tube(fore,bone,[[x+(f-1.5)*.012,wy-len,wz+.07],[x+(f-1.5)*.016,wy-len-.055,wz+.095]],.0045);}

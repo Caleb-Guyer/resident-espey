@@ -4,6 +4,14 @@
 
 Some places remember you. Some refuse to let you go.
 
+Version **4.5.0** gives every boss five stages and substantially more health: Chris 1,800, Jakob & Bobby 2,200, Zeb 2,800 and Lil Birdy 1,500 before difficulty scaling. Each stage has its own attack combinations, tells and recovery windows. New stages cannot be skipped by burst damage before the boss attacks or Ethan creates an opening. Five small HUD pips show progress. Boss damage, broken parts, completed phase scenes and mechanism cooldowns persist in checkpoints.
+
+Lil Birdy escalates from swoops and feather volleys to dives and a radial crosswind. A wing droops, then both wings crumple in a directed scene; he screams and fights on the ground with charges, talon combinations and a final frenzy. Jakob and Bobby force a chase through the Backrooms to an emergency press. Ethan must lure them beneath it and pull the lever. A piston fails: the tilted platen crushes Bobby's head and leaves Jakob alive. The scene returns to an enraged Jakob with heavier, chained charges; the HUD changes to **Jakob**. Shooting cannot bypass the trap, and pulling the lever too early allows another attempt.
+
+Chris combines charges, backhands and ground tears; colliding with a wall or opening the steam vent exposes him. Zeb summons prepared reinforcements, casts spreading bile and ruptures a growth before filling the arena with haze. His siphon restores health unless interrupted; the purge switch clears hazards, suppresses the siphon and exposes him. Extra ammunition and first aid support the longer encounters. Arena shutters close only after Ethan and the boss enter, and reopen when the creature falls.
+
+The performance pass caches and uploads the chapter's story stages and voice clips during loading, reuses hit geometry and hazard records, and moves checkpoint storage writes out of the immediate combat action. Creature screams are prepared once. Production gameplay no longer serializes a complete debug snapshot every frame. Background loading also has a bounded yield so browser frame throttling cannot stretch every preparation step. [4.5 playtest and limits](PLAYTEST_4.5.md).
+
 Version **4.4.0** replaces all four boss presentations with bespoke sculpted bodies, photographic facial albedo, contoured facial anatomy, moving jaws, corneal highlights, fingers and claws. Jakob and Bobby now share one continuous skinned body with 21 bones, independent necks, four arms and four legs. Lil Birdy has layered, articulated primary and secondary feathers. Chris carries an asymmetric heavy forearm; Zeb has a hunched back and breathing growths. Smooth turns, distinct strides, distinct attack anticipation, follow-through, recovery and death poses replace the shared idle cycle. Anatomical capsules make shots on animated limbs connect.
 
 Each boss has a unique voiced introduction in its actual arena: Chris's dragging claw, Jakob and Bobby waking separately, Zeb's heavy rise and shockwave, and Lil Birdy's wing reveal. Camera cuts, creature motion and recorded dialogue share a clock. Combat stops during the sequence; pause, skip and caption fallback work; the player receives a protected return to control. Introductions are remembered in the save so they do not repeat automatically. Packaged encounter dialogue and both rendering variants prepare during chapter loading.
@@ -91,6 +99,8 @@ GitHub Actions tests the campaign and publishes the `dist/` directory to GitHub 
 
 ## Project structure
 
+- `dist/boss-fights.js`: five-stage encounter rules, mandatory chase, damage windows and saved boss progress.
+- `dist/boss-arena.js`: the failed press, steam and purge controls, arena shutters and environmental phase changes.
 - `dist/levels.js`: three authored room sequences, shutters, stage encounters and spoken route cues.
 - `dist/reload.js`: reload state, mechanical cue timing and ammunition transfer.
 - `dist/scene-context.js`: memory time, place, kind and return framing.
