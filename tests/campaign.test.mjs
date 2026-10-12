@@ -47,7 +47,7 @@ test('The complete campaign still reaches the best ending through real progressi
  for(let chapter=0;chapter<3;chapter++){
   assert.equal(g.chapter,chapter);g.nearest=g.npc;g.interact();
   for(const item of g.items.filter(i=>i.kind==='page')){g.nearest=item;g.interact();}
-  for(const item of g.items.filter(i=>['fuse','seal','anchor'].includes(i.kind))){g.nearest=item;g.interact();}
+  for(const item of g.items.filter(i=>['fuse','seal','anchor'].includes(i.kind))){if(chapter===1&&item.stage===2){const birdy=g.enemies.find(e=>e.kind==='birdy');g.nearest=item;g.interact();assert.equal(item.used,false,'Birdy guards the last fragment');birdy.stageResolved=1;g.hurtEnemy(birdy,10000);}g.nearest=item;g.interact();}
   assert.equal(g.objectives,3);assert.equal(g.bossSpawned,false,'Boss waits for the arena entrance');const beat=g.level.beats.find(b=>b.boss);g.player.x=(beat.at[0]+.5)*TILE;g.player.z=(beat.at[1]+.5)*TILE;g.directRoute();assert.ok(g.bossSpawned);assert.equal(g.bossDead,false);
   g.boss.stageResolved=1;g.hurtEnemy(g.boss,10000);if(g.boss.kind==='jakob'){assert.equal(g.bossDead,false,'The chase cannot be skipped by damage');g.boss.phase=2;assert.equal(crushBobby(g.boss),true);g.boss.stageResolved=1;g.hurtEnemy(g.boss,10000);}assert.equal(g.bossDead,true);g.nearest={kind:'exit'};g.interact();
   if(chapter===1){assert.equal(puzzles,1);g.puzzleSolved=true;g.nextChapter();}

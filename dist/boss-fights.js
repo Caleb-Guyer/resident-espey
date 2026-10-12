@@ -53,9 +53,10 @@ export function crushBobby(e){
  if(e.kind!=='jakob'||e.dead||e.bobbyCrushed||(e.phase||0)!==2)return false;
  e.bobbyCrushed=true;e.hp=Math.min(e.hp,e.max*.46);e.windup=e.charge=0;e.attack=null;e.comboPattern=null;e.cool=2.4;e.recover=2.4;e.stagger=0;return true;
 }
-export function saveBossProgress(e){return {id:e.id,kind:e.kind,hp:e.hp,max:e.max,phase:e.phase||0,stageResolved:e.stageResolved||0,bobbyCrushed:!!e.bobbyCrushed,summoned:!!e.summoned,beatsDone:[...(e.beatsDone||[])],ventCool:e.ventCool||0,purged:e.purged||0};}
-export function restoreBossProgress(e,s){
+export function saveBossProgress(e){return {id:e.id,kind:e.kind,hp:e.hp,max:e.max,phase:e.phase||0,position:[e.x,e.z],alert:!!e.alert,stageResolved:e.stageResolved||0,bobbyCrushed:!!e.bobbyCrushed,summoned:!!e.summoned,beatsDone:[...(e.beatsDone||[])],ventCool:e.ventCool||0,purged:e.purged||0};}
+export function restoreBossProgress(e,s,canStand=()=>true){
  if(!s||s.kind!==e.kind||!Number.isFinite(s.hp)||!Number.isFinite(s.max)||s.max<=0)return false;
  e.hp=Math.max(1,Math.min(e.max,s.hp/s.max*e.max));e.phase=Number.isInteger(s.phase)?Math.max(0,Math.min(4,s.phase)):0;e.bobbyCrushed=e.kind==='jakob'&&s.bobbyCrushed===true;
- e.stageResolved=Math.max(0,Math.min(50,Number(s.stageResolved)||0));e.summoned=s.summoned===true;if(e.kind==='jakob'&&!e.bobbyCrushed)e.phase=Math.min(2,e.phase);e.phase=desiredPhase(e);e.beatsDone=new Set((Array.isArray(s.beatsDone)?s.beatsDone:[]).filter(n=>['chris-break','zeb-rupture','birdy-break','crusher'].includes(n)));e.ventCool=Math.max(0,Math.min(20,Number(s.ventCool)||0));e.purged=Math.max(0,Math.min(20,Number(s.purged)||0));return true;
+ e.stageResolved=Math.max(0,Math.min(50,Number(s.stageResolved)||0));e.summoned=s.summoned===true;if(e.kind==='jakob'&&!e.bobbyCrushed)e.phase=Math.min(2,e.phase);e.phase=desiredPhase(e);e.beatsDone=new Set((Array.isArray(s.beatsDone)?s.beatsDone:[]).filter(n=>['chris-break','zeb-rupture','birdy-break','crusher'].includes(n)));e.ventCool=Math.max(0,Math.min(20,Number(s.ventCool)||0));e.purged=Math.max(0,Math.min(20,Number(s.purged)||0));
+ if(Array.isArray(s.position)&&s.position.length===2&&s.position.every(Number.isFinite)&&canStand(...s.position))[e.x,e.z]=s.position;e.alert=s.alert===true||e.alert||e.phase>0||e.hp<e.max;return true;
 }

@@ -1,18 +1,19 @@
-import {painted} from './loading.js?v=4.5.0';
-import {BossArena} from './boss-arena.js?v=4.5.0';
-import {createAnatomy,animateCollapse} from './anatomy.js?v=4.5.0';
-import {reloadProgress} from './reload.js?v=4.5.0';
+import {painted} from './loading.js?v=4.5.1';
+import {BossArena} from './boss-arena.js?v=4.5.1';
+import {createAnatomy,animateCollapse} from './anatomy.js?v=4.5.1';
+import {reloadProgress} from './reload.js?v=4.5.1';
+import {ATTACKS,enemyRadius} from './enemy-director.js?v=4.5.1';
 import * as T from './vendor/three.module.js';
-import {TILE,seeded,solid,findPath} from './data.js?v=4.5.0';
-import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock} from './fps.js?v=4.5.0';
-import {CombatEffects} from './combat-effects.js?v=4.5.0';
-import {WallPlacement} from './wall-placement.js?v=4.5.0';
-import {createViewModel} from './viewmodel.js?v=4.5.0';
-import {createWeaponMotion,kickWeapon,stepWeaponMotion} from './weapon-motion.js?v=4.5.0';
-import {CHARACTER_DESIGNS,characterHair,dressBirdy,dressArchetype,cloneCharacter} from './creature-design.js?v=4.5.0';
-import {EnemyEffects} from './enemy-effects.js?v=4.5.0';
-import {BOSS_PROFILES,createBossModel} from './boss-models.js?v=4.5.0';
-import {animateBoss} from './boss-animation.js?v=4.5.0';
+import {TILE,seeded,solid,findPath} from './data.js?v=4.5.1';
+import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock,propsOcclude} from './fps.js?v=4.5.1';
+import {CombatEffects} from './combat-effects.js?v=4.5.1';
+import {WallPlacement} from './wall-placement.js?v=4.5.1';
+import {createViewModel} from './viewmodel.js?v=4.5.1';
+import {createWeaponMotion,kickWeapon,stepWeaponMotion} from './weapon-motion.js?v=4.5.1';
+import {CHARACTER_DESIGNS,characterHair,dressBirdy,dressArchetype,cloneCharacter} from './creature-design.js?v=4.5.1';
+import {EnemyEffects} from './enemy-effects.js?v=4.5.1';
+import {BOSS_PROFILES,createBossModel} from './boss-models.js?v=4.5.1';
+import {animateBoss} from './boss-animation.js?v=4.5.1';
 
 const BOX=bevelBox(1,1,1,.014),WALLBOX=new T.BoxGeometry(1,1,1),SPHERE=new T.SphereGeometry(1,20,14),CYL=new T.CylinderGeometry(1,1,1,16);
 const SHARED=new Set([BOX,WALLBOX,SPHERE,CYL]);
@@ -123,7 +124,8 @@ export class World{
   this.optimizeStatic();this.createGates();this.view.visible=true;this.combatEffects=new CombatEffects(this.root);this.enemyEffects=new EnemyEffects(this.root);this.bossArena=new BossArena(this,chapter);
  }
  blocked(x,z,r){return propsBlock(this.obstacles,x,z,r);}
- clearWalkPath(a,b){const len=Math.hypot(b.x-a.x,b.z-a.z);for(let t=.3;t<len;t+=.45)if(this.blocked(a.x+(b.x-a.x)*t/len,a.z+(b.z-a.z)*t/len,.38))return false;return true;}
+ clearSight(a,b,ay=1.5,by=1.5){return !propsOcclude(this.obstacles,a,b,ay,by);}
+ clearWalkPath(a,b,r=.38){const len=Math.hypot(b.x-a.x,b.z-a.z);for(let t=.3;t<len;t+=.45)if(this.blocked(a.x+(b.x-a.x)*t/len,a.z+(b.z-a.z)*t/len,r))return false;return true;}
  canPlace(x,z,w,d){
   for(const dx of[-w/2,0,w/2])for(const dz of[-d/2,0,d/2])if(solid(this.grid,x+dx,z+dz,.08)||this.protectedCells?.has(Math.floor((x+dx)/TILE)+","+Math.floor((z+dz)/TILE)))return false;
   const cells=[this.config.start,this.config.npc.at,this.config.exit,this.config.boss.at,...this.config.items.map(i=>i.at),...this.config.enemies.map(e=>e.slice(1))];return !cells.some(([cx,cz])=>Math.abs((cx+.5)*TILE-x)<w/2+1.7&&Math.abs((cz+.5)*TILE-z)<d/2+1.7);
@@ -612,8 +614,10 @@ export class World{
  }
  updateAttackMarker(e){
   const g=e.warning,a=e.attack;if(!g||!a)return;g.position.set(e.x,0,e.z);g.rotation.y=Math.atan2(e.chargeX,e.chargeZ);
-  const dash=['rush','bobby','swoop','pounce','crawl','stalk'].includes(a),r=a==='rupture'?6.2:a==='crush'?2.9:a==='rake'?3.1:dash?1.1:.85;
-  g.userData.ring.scale.setScalar(r);g.userData.line.visible=dash;const length=Math.min(9,Math.hypot(e.targetX-e.x,e.targetZ-e.z)+1);g.userData.line.scale.z=length;g.userData.line.position.z=length/2;
+  const attack=ATTACKS[a]||{},dash=!!attack.dash,r=attack.wave||attack.radius||.85;
+  g.userData.ring.scale.setScalar(r);g.userData.line.visible=dash;let length=dash?attack.dash*attack.duration:Math.min(9,Math.hypot(e.targetX-e.x,e.targetZ-e.z)+1);
+  if(dash&&this.grid)for(let t=.25;t<length;t+=.25)if(solid(this.grid,e.x+e.chargeX*t,e.z+e.chargeZ*t,enemyRadius(e))||this.blocked(e.x+e.chargeX*t,e.z+e.chargeZ*t,enemyRadius(e))){length=t;break;}
+  g.userData.line.scale.z=length;g.userData.line.position.z=length/2;
   g.userData.ring.material.opacity=.25+Math.sin(e.attackTime*12)*.06;
  }
  warning(x,z,r){const o=mesh(new T.RingGeometry(r-.12,r,48),new T.MeshBasicMaterial({color:0xd87748,transparent:true,opacity:.5,side:T.DoubleSide,depthWrite:false}),[1,1,1],[x,.04,z],this.root);o.rotation.x=-Math.PI/2;o.castShadow=false;return o;}

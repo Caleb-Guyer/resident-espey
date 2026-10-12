@@ -1,9 +1,10 @@
-import {VOICE_ASSETS} from './voice-assets.js?v=4.5.0';
-import {voiceKey} from './dialogue.js?v=4.5.0';
+import {VOICE_ASSETS} from './voice-assets.js?v=4.5.1';
+import {voiceKey} from './dialogue.js?v=4.5.1';
 
 export class Voice{
- constructor(sound,settings,{fetcher=globalThis.fetch?.bind(globalThis)}={}){this.sound=sound;this.settings=settings;this.fetcher=fetcher;this.buffers=new Map();this.queue=[];this.epoch=0;this.paused=true;this.scene=null;this.current=null;}
+ constructor(sound,settings,{fetcher=globalThis.fetch?.bind(globalThis),clock=()=>performance.now()/1000}={}){this.sound=sound;this.settings=settings;this.fetcher=fetcher;this.clock=clock;this.buffers=new Map();this.queue=[];this.epoch=0;this.paused=true;this.scene=null;this.current=null;}
  get context(){return this.sound.context;}
+ get now(){return this.context?.currentTime??this.clock();}
  init(){this.sound.init();if(!this.context)throw Error('Audio unavailable');if(!this.gain){this.gain=this.context.createGain();this.gain.connect(this.context.destination);}this.setVolume();}
  setVolume(master=this.settings.volume,dialogue=this.settings.dialogueVolume??1){this.master=Number.isFinite(master)?Math.max(0,Math.min(1,master)):.6;this.volume=Number.isFinite(dialogue)?Math.max(0,Math.min(1,dialogue)):1;if(this.gain)this.gain.gain.setTargetAtTime(this.master*this.volume*.9,this.context.currentTime,.03);}
  async load(key){
@@ -27,11 +28,11 @@ export class Voice{
  pause(p){
   if(this.paused===p)return;const radioOffset=this.radioTime;this.paused=p;
   if(this.scene){const s=this.scene;if(p){s.offset=this.sceneTime;s.paused=true;this.clearSceneSources();}else{s.paused=false;this.scheduleScene();}}
-  if(this.current){const c=this.current;if(p){c.offset=radioOffset;this.clearRadioSource();}else if(c.buffer)this.startRadio(c);else if(c.error)c.base=this.context.currentTime-c.offset;}
+  if(this.current){const c=this.current;if(p){c.offset=radioOffset;this.clearRadioSource();}else if(c.buffer)this.startRadio(c);else if(c.error)c.base=this.now-c.offset;}
   this.update();
  }
  clearSceneSources(){for(const source of this.scene?.sources||[]){try{source.stop();}catch{}source.cleanup?.();}if(this.scene)this.scene.sources=[];}
- get radioTime(){const c=this.current;if(!c)return 0;return Math.max(0,this.paused?c.offset:(c.source||c.error)&&this.context?this.context.currentTime-c.base:c.offset);}
+ get radioTime(){const c=this.current;if(!c)return 0;return Math.max(0,this.paused?c.offset:c.source||c.error?this.now-c.base:c.offset);}
  clearRadioSource(){const c=this.current;if(c?.source){c.source.onended=null;try{c.source.stop();}catch{}c.source.cleanup?.();c.source.disconnect();c.source=null;}}
  say(speaker,text,{radio=false}={}){
   if(this.scene)return;const key=voiceKey(speaker,text),entry=VOICE_ASSETS[key];if(!entry)return;
@@ -40,8 +41,8 @@ export class Voice{
  }
  next(){
   if(this.current||!this.queue.length||this.scene)return;const c=this.current=this.queue.shift(),epoch=this.epoch;
-  try{this.init();}catch{c.error=true;return;}
-  this.load(c.key).then(buffer=>{if(this.epoch!==epoch||this.current!==c)return;c.buffer=buffer;if(!this.paused)this.startRadio(c);}).catch(()=>{if(this.epoch===epoch&&this.current===c){c.error=true;c.base=this.context.currentTime;}});
+  try{this.init();}catch{c.error=true;c.base=this.now-c.offset;return;}
+  this.load(c.key).then(buffer=>{if(this.epoch!==epoch||this.current!==c)return;c.buffer=buffer;if(!this.paused)this.startRadio(c);}).catch(()=>{if(this.epoch===epoch&&this.current===c){c.error=true;c.base=this.now-c.offset;}});
  }
  startRadio(c){if(this.current!==c||this.paused||!c.buffer)return;if(c.offset>=c.buffer.duration){this.current=null;this.next();return;}c.base=this.context.currentTime-c.offset;const source=c.source=this.source(c.buffer,c.radio);source.start(0,c.offset);source.onended=()=>{source.cleanup?.();source.disconnect();if(this.current!==c||c.source!==source)return;this.current=null;this.next();this.update();};}
  update(){if(this.current?.error&&!this.paused&&this.radioTime>this.current.entry.duration+1){this.current=null;this.next();}const t=this.sceneTime,speaking=this.scene?this.scene.ready&&!this.paused&&this.scene.story.lines.some((l,i)=>t>=l.at&&t<l.at+this.scene.buffers[i].duration):!!this.current?.source&&!this.paused;this.sound.duck?.(speaking&&this.volume>0&&this.master>0);}

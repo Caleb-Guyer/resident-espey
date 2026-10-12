@@ -1,4 +1,4 @@
-import {isBoss,desiredPhase,encounterPattern,phaseRule} from './boss-fights.js?v=4.5.0';
+import {isBoss,desiredPhase,encounterPattern,phaseRule} from './boss-fights.js?v=4.5.1';
 // Targets commit during a readable tell. Every combo has a fresh warning and a
 // dodge window; a wall collision cancels the combo and exposes the creature.
 export const ATTACKS=Object.freeze({
@@ -31,6 +31,11 @@ export const ATTACKS=Object.freeze({
 });
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 export const phaseFor=desiredPhase;
+export const enemyRadius=e=>e.kind==='zeb'?.72:e.kind==='brute'?.5:.4;
+export function navigationGoal(grid,target,canReach=()=>true,tile=2.4){
+ const cx=Math.floor(target.x/tile),cz=Math.floor(target.z/tile);if(grid[cz]?.[cx]===0)return target;let best=null,score=Infinity;
+ for(let z=cz-2;z<=cz+2;z++)for(let x=cx-2;x<=cx+2;x++){if(grid[z]?.[x]!==0)continue;const p={x:(x+.5)*tile,z:(z+.5)*tile},d=(p.x-target.x)**2+(p.z-target.z)**2;if(d<score&&canReach(p,target)){score=d;best=p;}}return best;
+}
 export function chooseAttack(e,dist){
  const rule=encounterPattern(e,dist);if(rule)return rule[0];
  switch(e.kind){case 'spitter':return 'acid';case 'brute':return 'crush';case 'crawler':return 'crawl';case 'stalker':return 'stalk';case 'runner':case 'zsiga':return dist>2.3?'pounce':'bite';default:return 'bite';}

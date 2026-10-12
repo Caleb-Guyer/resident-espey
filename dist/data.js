@@ -1,4 +1,4 @@
-import {LEVELS,makeLevelGrid} from './levels.js?v=4.5.0';
+import {LEVELS,makeLevelGrid} from './levels.js?v=4.5.1';
 export const TILE=2.4;
 export const SAVE_KEY='resident-espey-v1';
 export const DIFFICULTIES={story:{label:'Story',damage:.65,power:1.35,enemySpeed:.85},survivor:{label:'Survivor',damage:1,power:1,enemySpeed:1},nightmare:{label:'Nightmare',damage:1.35,power:.9,enemySpeed:1.12}};
@@ -33,5 +33,10 @@ export function solid(grid,x,z,r=.34){for(const dx of [-r,r])for(const dz of [-r
 export function sight(grid,a,b){const n=Math.ceil(distance(a,b)/.65);for(let i=1;i<n;i++){const t=i/n;if(solid(grid,a.x+(b.x-a.x)*t,a.z+(b.z-a.z)*t,.08))return false;}return true;}
 export function findPath(grid,from,to){const start=[Math.floor(from.x/TILE),Math.floor(from.z/TILE)],end=[Math.floor(to.x/TILE),Math.floor(to.z/TILE)];const key=p=>p[0]+','+p[1],q=[start],prev=new Map([[key(start),null]]);for(let i=0;i<q.length;i++){const p=q[i];if(key(p)===key(end)){const result=[];let cur=p;while(cur){result.push({x:(cur[0]+.5)*TILE,z:(cur[1]+.5)*TILE});cur=prev.get(key(cur));}return result.reverse().slice(1);}for(const [dx,dz]of [[1,0],[-1,0],[0,1],[0,-1]]){const n=[p[0]+dx,p[1]+dz],k=key(n);if(grid[n[1]]?.[n[0]]===0&&!prev.has(k)){prev.set(k,p);q.push(n);}}}return [];}
 export function seeded(seed){return()=>{seed=(Math.imul(seed,1664525)+1013904223)|0;return(seed>>>0)/4294967296;};}
-export function validSave(v){return !!v&&v.version===1&&Number.isInteger(v.chapter)&&v.chapter>=0&&v.chapter<3&&Array.isArray(v.pages)&&v.pages.every(n=>Number.isInteger(n)&&n>=0&&n<6)&&Array.isArray(v.allies)&&v.allies.every(n=>Number.isInteger(n)&&n>=0&&n<3)&&Object.hasOwn(DIFFICULTIES,v.difficulty)&&Number.isFinite(v.ammo)&&v.ammo>=0&&v.ammo<=12&&Number.isFinite(v.reserve)&&v.reserve>=0&&v.reserve<=999&&Number.isFinite(v.meds)&&v.meds>=0&&v.meds<=99;}
+export function validSave(v){return !!v&&v.version===1&&Number.isInteger(v.chapter)&&v.chapter>=0&&v.chapter<3&&Array.isArray(v.pages)&&v.pages.length<=6&&v.pages.every(n=>Number.isInteger(n)&&n>=0&&n<6)&&Array.isArray(v.allies)&&v.allies.length<=3&&v.allies.every(n=>Number.isInteger(n)&&n>=0&&n<3)&&Object.hasOwn(DIFFICULTIES,v.difficulty)&&Number.isInteger(v.ammo)&&v.ammo>=0&&v.ammo<=12&&Number.isInteger(v.reserve)&&v.reserve>=0&&v.reserve<=999&&Number.isInteger(v.meds)&&v.meds>=0&&v.meds<=99;}
+export function normalizeSave(v){
+ const c=CHAPTERS[v.chapter],ids=(a,max)=>Array.isArray(a)?[...new Set(a.filter(n=>Number.isInteger(n)&&n>=0&&n<max))]:[],finite=(n,min,max,fallback)=>Number.isFinite(n)?Math.max(min,Math.min(max,n)):fallback;
+ const stats={};for(const key of ['kills','shots','hits','deaths','seconds'])stats[key]=finite(v.stats?.[key],0,1e9,0);
+ return {...v,pages:ids(v.pages,6),allies:ids(v.allies,3),collected:ids(v.collected,c.items.length),killed:ids(v.killed,103),beats:Array.isArray(v.beats)?v.beats.filter(s=>c.level.beats.some(b=>b.id===s)):[],scenes:Array.isArray(v.scenes)?v.scenes.filter(s=>typeof s==='string').slice(0,32):[],bossProgress:Array.isArray(v.bossProgress)?v.bossProgress.slice(0,4):[],position:Array.isArray(v.position)&&v.position.length===2&&v.position.every(Number.isFinite)?v.position:null,yaw:finite(v.yaw,-1e6,1e6,0),pitch:finite(v.pitch,-1.35,1.35,0),hp:finite(v.hp,1,100,100),bossSpawned:v.bossSpawned===true||v.bossDead===true,bossDead:v.bossDead===true,puzzle:v.puzzle===true,stats};
+}
 export function endingFor(pages,allies,choice){if(choice==='seal')return 'alone';return new Set(pages).size>=4&&new Set(allies).size===3?'home':'echoes';}

@@ -24,5 +24,5 @@ export class Sound{
   o.connect(filter);filter.connect(g);g.connect(stereo);stereo.connect(this.master);o.start();mod.start();o.stop(t+.9);mod.stop(t+.9);
   o.onended=()=>{o.disconnect();mod.disconnect();depth.disconnect();filter.disconnect();g.disconnect();stereo.disconnect();};
  }
- pause(p){this.active=!p;if(this.ambient)this.ambient.gain.setTargetAtTime(p?.02:.13,this.context.currentTime,.5);}
+ pause(p){this.active=!p;if(!p&&this.context?.state==='suspended')this.context.resume().catch(()=>{});if(this.ambient)this.ambient.gain.setTargetAtTime(p?.02:.13,this.context.currentTime,.5);}
 }

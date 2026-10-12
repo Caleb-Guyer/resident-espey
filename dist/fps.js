@@ -1,4 +1,4 @@
-import {solid} from './data.js?v=4.5.0';
+import {solid} from './data.js?v=4.5.1';
 
 export const EYE_HEIGHT=1.64;
 export const CEILING=3.35;
@@ -28,15 +28,24 @@ function boxIntersection(origin,direction,min,max){
 function sphereIntersection(origin,direction,center,r){
  const x=origin.x-center.x,y=origin.y-center.y,z=origin.z-center.z;
  const b=x*direction.x+y*direction.y+z*direction.z,c=x*x+y*y+z*z-r*r,d=b*b-c;
- if(d<0)return Infinity;
+ if(c<=0)return 0;if(d<0)return Infinity;
  const t=-b-Math.sqrt(d);return t>=0?t:Infinity;
 }
 export function capsuleIntersection(origin,direction,a,b,r){
  const ba={x:b.x-a.x,y:b.y-a.y,z:b.z-a.z},oa={x:origin.x-a.x,y:origin.y-a.y,z:origin.z-a.z},dot=(u,v)=>u.x*v.x+u.y*v.y+u.z*v.z;
  const baba=dot(ba,ba),bard=dot(ba,direction),baoa=dot(ba,oa),rdoa=dot(direction,oa),oaoa=dot(oa,oa),A=baba-bard*bard,B=baba*rdoa-baoa*bard,C=baba*oaoa-baoa*baoa-r*r*baba,H=B*B-A*C;
+ if(baba>1e-8&&baoa>=0&&baoa<=baba&&oaoa-baoa*baoa/baba<=r*r)return 0;
  let best=Math.min(sphereIntersection(origin,direction,a,r),sphereIntersection(origin,direction,b,r));
  if(H>=0&&A>1e-8){const t=(-B-Math.sqrt(H))/A,y=baoa+t*bard;if(t>=0&&y>0&&y<baba)best=Math.min(best,t);}
  return best;
+}
+export function propsOcclude(props,a,b,ay=1.5,by=1.5){
+ const dx=b.x-a.x,dy=by-ay,dz=b.z-a.z,len=Math.hypot(dx,dy,dz);if(len<1e-6)return false;
+ boxes:for(const p of props){if(p.active===false)continue;let near=0,far=1;
+  for(let axis=0;axis<3;axis++){const o=axis===0?a.x:axis===1?ay:a.z,d=axis===0?dx:axis===1?dy:dz,lo=axis===0?p.x-p.w/2:axis===1?0:p.z-p.d/2,hi=axis===0?p.x+p.w/2:axis===1?p.h:p.z+p.d/2;
+   if(Math.abs(d)<1e-7){if(o<lo||o>hi)continue boxes;}else{const t1=(lo-o)/d,t2=(hi-o)/d;near=Math.max(near,Math.min(t1,t2));far=Math.min(far,Math.max(t1,t2));if(near>far)continue boxes;}
+  }if(near<1-.04/len)return true;
+ }return false;
 }
 
 // The ballistic ray uses height as well as direction. Shooting the floor or ceiling

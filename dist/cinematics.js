@@ -1,10 +1,10 @@
-import {painted} from './loading.js?v=4.5.0';
-import {sceneContext,MEMORY_LEAD_IN} from './scene-context.js?v=4.5.0';
-import {dialogueFrame,speakingActor,speechMotion} from './cinematic-direction.js?v=4.5.0';
+import {painted} from './loading.js?v=4.5.1';
+import {sceneContext,MEMORY_LEAD_IN} from './scene-context.js?v=4.5.1';
+import {dialogueFrame,speakingActor,speechMotion} from './cinematic-direction.js?v=4.5.1';
 import * as T from './vendor/three.module.js';
-import {SCENES,StoryClock} from './story.js?v=4.5.0';
-import {voicedScene} from './voice-timeline.js?v=4.5.0';
-import {BossIntroduction,displayName} from './boss-introductions.js?v=4.5.0';
+import {SCENES,StoryClock} from './story.js?v=4.5.1';
+import {voicedScene} from './voice-timeline.js?v=4.5.1';
+import {BossIntroduction,displayName} from './boss-introductions.js?v=4.5.1';
 const $=s=>document.querySelector(s);
 
 // A separate, lit stage prevents cinematic actors from touching combat or save state.
@@ -23,6 +23,8 @@ export class Cinematics{
   $('#scene-transition').hidden=false;$('#scene-transition').style.opacity=1;this.update(0);
  }
  playEncounter(enemy,complete,beat=null){if(this.active)this.cancel();this.arena??=new BossIntroduction(this);this.arena.play(enemy,complete,beat);}
+ get isPaused(){return this.arena?.active?this.arena.paused:this.paused;}
+ pause(p=true){if(this.active&&this.isPaused!==p)this.togglePause();}
  togglePause(){if(this.arena?.active){this.arena.togglePause();return;}if(!this.active)return;this.paused=!this.paused;$('#pause-scene').textContent=this.paused?'Resume':'Pause';this.game.sound.pause(this.paused);this.game.voice?.pause(this.paused||this.leadIn>0||this.returnTime!==null);}
  text(text,at,w=2,h=.35,color='#d4ceae',parent=this.stage){const prior=this.world.root;this.world.root=parent;const o=this.world.sign(text,at,w,h,color);this.world.root=prior;return o;}
  build(type){
@@ -109,7 +111,7 @@ export class Cinematics{
  clearPrepared(){for(const p of this.stageCache?.values()||[])this.world.disposeObject(p.fields.scene);this.stageCache?.clear();}
  async prewarm(ids){
   const w=this.world,r=w.renderer,camera=w.camera,position=camera.position.clone(),rotation=camera.quaternion.clone(),fov=camera.fov,target=r.getRenderTarget(),autoClear=r.autoClear,warm=new T.WebGLRenderTarget(16,16);let savedId=this.id,savedStory=this.story;
-  try{r.autoClear=true;if(this.game.voice)await Promise.allSettled(ids.flatMap(id=>voicedScene(SCENES[id]).lines.map(l=>this.game.voice.load(l.key))));for(const id of ids){await painted();this.id=id;this.story=voicedScene(SCENES[id]);this.build(this.story.stage);const visibility=[],culling=[];this.scene.traverse(o=>{if(!o.visible){visibility.push(o);o.visible=true;}if(o.isMesh){culling.push([o,o.frustumCulled]);o.frustumCulled=false;}});
+  try{r.autoClear=true;if(this.game.voice?.context)await Promise.allSettled(ids.flatMap(id=>voicedScene(SCENES[id]).lines.map(l=>this.game.voice.load(l.key))));for(const id of ids){await painted();this.id=id;this.story=voicedScene(SCENES[id]);this.build(this.story.stage);const visibility=[],culling=[];this.scene.traverse(o=>{if(!o.visible){visibility.push(o);o.visible=true;}if(o.isMesh){culling.push([o,o.frustumCulled]);o.frustumCulled=false;}});
    try{if(r.compileAsync)await r.compileAsync(this.scene,camera);r.setRenderTarget(warm);if(r.compileAsync)await r.compileAsync(this.scene,camera);r.render(this.scene,camera);r.setRenderTarget(target);if(target===null)r.render(this.scene,camera);}finally{visibility.forEach(o=>o.visible=false);for(const[o,v]of culling)o.frustumCulled=v;}
   }}finally{r.setRenderTarget(target);r.autoClear=autoClear;warm.dispose();camera.position.copy(position);camera.quaternion.copy(rotation);camera.fov=fov;camera.updateProjectionMatrix();this.id=savedId;this.story=savedStory;this.scene=null;}
  }
