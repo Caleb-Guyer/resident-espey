@@ -1,4 +1,4 @@
-import {solid} from './data.js?v=4.6.0';
+import {solid} from './data.js?v=4.6.1';
 
 export const EYE_HEIGHT=1.64;
 export const CEILING=3.35;
@@ -32,8 +32,8 @@ function sphereIntersection(origin,direction,center,r){
  const t=-b-Math.sqrt(d);return t>=0?t:Infinity;
 }
 export function capsuleIntersection(origin,direction,a,b,r){
- const ba={x:b.x-a.x,y:b.y-a.y,z:b.z-a.z},oa={x:origin.x-a.x,y:origin.y-a.y,z:origin.z-a.z},dot=(u,v)=>u.x*v.x+u.y*v.y+u.z*v.z;
- const baba=dot(ba,ba),bard=dot(ba,direction),baoa=dot(ba,oa),rdoa=dot(direction,oa),oaoa=dot(oa,oa),A=baba-bard*bard,B=baba*rdoa-baoa*bard,C=baba*oaoa-baoa*baoa-r*r*baba,H=B*B-A*C;
+ const bx=b.x-a.x,by=b.y-a.y,bz=b.z-a.z,ox=origin.x-a.x,oy=origin.y-a.y,oz=origin.z-a.z;
+ const baba=bx*bx+by*by+bz*bz,bard=bx*direction.x+by*direction.y+bz*direction.z,baoa=bx*ox+by*oy+bz*oz,rdoa=direction.x*ox+direction.y*oy+direction.z*oz,oaoa=ox*ox+oy*oy+oz*oz,A=baba-bard*bard,B=baba*rdoa-baoa*bard,C=baba*oaoa-baoa*baoa-r*r*baba,H=B*B-A*C;
  if(baba>1e-8&&baoa>=0&&baoa<=baba&&oaoa-baoa*baoa/baba<=r*r)return 0;
  let best=Math.min(sphereIntersection(origin,direction,a,r),sphereIntersection(origin,direction,b,r));
  if(H>=0&&A>1e-8){const t=(-B-Math.sqrt(H))/A,y=baoa+t*bard;if(t>=0&&y>0&&y<baba)best=Math.min(best,t);}
@@ -41,8 +41,8 @@ export function capsuleIntersection(origin,direction,a,b,r){
 }
 export function propsOcclude(props,a,b,ay=1.5,by=1.5){
  const dx=b.x-a.x,dy=by-ay,dz=b.z-a.z,len=Math.hypot(dx,dy,dz);if(len<1e-6)return false;
- boxes:for(const p of props){if(p.active===false)continue;let near=0,far=1;
-  for(let axis=0;axis<3;axis++){const o=axis===0?a.x:axis===1?ay:a.z,d=axis===0?dx:axis===1?dy:dz,lo=axis===0?p.x-p.w/2:axis===1?0:p.z-p.d/2,hi=axis===0?p.x+p.w/2:axis===1?p.h:p.z+p.d/2;
+ boxes:for(const p of props){if(p.active===false&&!p.blocksShots)continue;let near=0,far=1;
+  for(let axis=0;axis<3;axis++){const o=axis===0?a.x:axis===1?ay:a.z,d=axis===0?dx:axis===1?dy:dz,lo=axis===0?p.x-p.w/2:axis===1?(p.minY||0):p.z-p.d/2,hi=axis===0?p.x+p.w/2:axis===1?p.h:p.z+p.d/2;
    if(Math.abs(d)<1e-7){if(o<lo||o>hi)continue boxes;}else{const t1=(lo-o)/d,t2=(hi-o)/d;near=Math.max(near,Math.min(t1,t2));far=Math.min(far,Math.max(t1,t2));if(near>far)continue boxes;}
   }if(near<1-.04/len)return true;
  }return false;
@@ -57,19 +57,21 @@ export function traceShot(grid,origin,enemies,direction,props=[],maxDistance=24)
   if(y<=.03||y>=CEILING-.03||solid(grid,origin.x+direction.x*t,origin.z+direction.z*t,.025)){limit=t;break;}
  }
  for(const p of props){
-  if(p.active===false)continue;
-  const t=boxIntersection(origin,direction,{x:p.x-p.w/2,y:0,z:p.z-p.d/2},{x:p.x+p.w/2,y:p.h,z:p.z+p.d/2});
+  if(p.active===false&&!p.blocksShots)continue;
+  const t=boxIntersection(origin,direction,{x:p.x-p.w/2,y:p.minY||0,z:p.z-p.d/2},{x:p.x+p.w/2,y:p.h,z:p.z+p.d/2});
   if(t<limit)limit=t;
  }
- let enemy=null,headshot=false,headIndex=null;
+ let enemy=null,headshot=false,headIndex=null;const fallbackHead={x:0,y:0,z:0},min={x:0,y:0,z:0},max={x:0,y:0,z:0};
  for(const e of enemies){
   if(e.dead||e.dormant)continue;
   const [wide,tall]=BODY_SCALE[e.kind]||[1,1];
-  const heads=e.hitHeads?.length?e.hitHeads:[{x:e.x,y:1.64*tall,z:e.z}];
-  const hits=heads.map(h=>sphereIntersection(origin,direction,h,e.kind==='jakob'?.24:.24*wide));const head=Math.min(...hits);
-  const body=e.hitParts?.length?Math.min(...e.hitParts.map(p=>capsuleIntersection(origin,direction,p.a,p.b,p.r))):boxIntersection(origin,direction,{x:e.x-.34*wide,y:e.kind==='crawler'?.04:.25,z:e.z-.34*wide},{x:e.x+.34*wide,y:e.kind==='crawler'?.78:1.48*tall,z:e.z+.34*wide});
+  let head=Infinity,nearestHead=0,body=Infinity;const r=e.kind==='jakob'?.24:.24*wide;
+  if(e.hitHeads?.length){for(let i=0;i<e.hitHeads.length;i++){const t=sphereIntersection(origin,direction,e.hitHeads[i],r);if(t<head){head=t;nearestHead=i;}}}
+  else {fallbackHead.x=e.x;fallbackHead.y=1.64*tall;fallbackHead.z=e.z;head=sphereIntersection(origin,direction,fallbackHead,r);}
+  if(e.hitParts?.length){for(const part of e.hitParts){const t=capsuleIntersection(origin,direction,part.a,part.b,part.r);if(t<body)body=t;}}
+  else {min.x=e.x-.34*wide;min.y=e.kind==='crawler'?.04:.25;min.z=e.z-.34*wide;max.x=e.x+.34*wide;max.y=e.kind==='crawler'?.78:1.48*tall;max.z=e.z+.34*wide;body=boxIntersection(origin,direction,min,max);}
   const t=Math.min(head,body);
-  if(t<limit){limit=t;enemy=e;headshot=head<=body;headIndex=headshot?hits.indexOf(head):null;}
+  if(t<limit){limit=t;enemy=e;headshot=head<=body;headIndex=headshot?nearestHead:null;}
  }
  return {enemy,headshot,headIndex,distance:limit,end:{x:origin.x+direction.x*limit,y:origin.y+direction.y*limit,z:origin.z+direction.z*limit}};
 }

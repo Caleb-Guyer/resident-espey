@@ -4,6 +4,12 @@
 
 Some places remember you. Some refuse to let you go.
 
+Version **4.6.1** fixes reload interruption, moving shutters, graphics changes and paused cutscenes. Magazine rounds transfer when seated and survive a dodge, melee attack or weapon switch; empty reloads keep the bolt open until chambering. Shotgun top-ups preserve the live round and skip the empty-reload pump cycle. Mixed pellet hits retain the body armor multiplier instead of granting headshot armor penetration to every pellet.
+
+Shutter collision follows the visible opening, bullets and sight lines respect the raised bottom edge, and navigation refreshes when the opening becomes passable. Boss encounters begin sealing their arena before their introduction, and shutters continue moving during those sequences. Lil Birdy's wing clearance uses his full span.
+
+Loading uploads hidden nested boss parts, including oral geometry. Graphics preset changes warm their rendering variants while gameplay and rendering are suspended; failed changes restore the old preset. Applying only audio/FOV settings keeps unchanged graphics buffers intact. Paused scenes redraw after resize and continue updating audio readiness/failure controls without submitting unchanged 3D frames. Ballistics and nearest-light selection avoid repeated temporary arrays and vectors. [4.6.1 verification](PLAYTEST_4.6.1.md).
+
 Version **4.6.0** adds a pump shotgun and automatic carbine with independent ammunition, route pickups, keyboard/wheel/touch switching and compatible checkpoint storage. The shotgun fires eight distributed pellets with distance falloff, cycles its pump, ejects spent shells, and loads one shell at a time. Firing interrupts a shell reload while preserving loaded rounds. The carbine has a 30-round magazine, faster handling and separate bolt/magazine animation. All three sight lines settle at the reticle.
 
 The sidearm now has a closed, chamfered slide, recessed ejection port, machining wear, detailed grip and improved skin and cloth materials. New original surface scans provide skin pores, scarring, metal grain and feather detail. Boss anatomy has subtler ribs, facial contours, rigged scars, tendon detail and mouths that open for speech and attacks. Black skin and brown hair character designs remain intact.

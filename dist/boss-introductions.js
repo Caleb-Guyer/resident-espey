@@ -1,8 +1,8 @@
 import * as T from './vendor/three.module.js';
-import {StoryClock} from './story.js?v=4.6.0';
-import {voicedScene} from './voice-timeline.js?v=4.6.0';
-import {solid} from './data.js?v=4.6.0';
-import {speechMotion} from './cinematic-direction.js?v=4.6.0';
+import {StoryClock} from './story.js?v=4.6.1';
+import {voicedScene} from './voice-timeline.js?v=4.6.1';
+import {solid} from './data.js?v=4.6.1';
+import {speechMotion} from './cinematic-direction.js?v=4.6.1';
 export const BOSS_NAMES=Object.freeze({chris:'Chris',jakob:'Jakob & Bobby',zeb:'Zeb',birdy:'Lil Birdy'});
 export function displayName(name){return ({'Coach Hall':'Hall','Joel Honeycutt':'Joel','Landon Chapa':'Landon','Earl Britt':'Earl','Nathan Nunley':'Nathan','Zebene Martine':'Zeb'})[name]||name;}
 const shot=(at,from,to,look,fov=54)=>({at,from,to,look,end:look,fov});
@@ -40,7 +40,7 @@ export class BossIntroduction{
   if(!this.active)return;const {game,world,enemy,cinema}=this,voice=game.voice,state=voice?.scene;
   const advance=this.paused?0:cinema.captionFallback?dt:state?Math.max(0,voice.sceneTime-this.clock.time):dt,{sample,events,done}=this.clock.tick(advance),t=this.story.sourceTime(this.clock.time);
   for(const e of events){if(e.sound)game.sound.play(e.sound);if(e.scream)game.sound.scream?.(e.scream);if(e.shockwave)world.enemyEffects?.wave(enemy,5.6,0);}
-  world.enemyEffects?.update(this.paused?0:dt,game);world.combatEffects?.update(this.paused?0:dt);
+  world.advanceGates?.(this.paused?0:advance);world.enemyEffects?.update(this.paused?0:dt,game);world.combatEffects?.update(this.paused?0:dt);
   enemy.model.position.x=this.origin.x;enemy.model.position.z=this.origin.z;world.animateCharacter(enemy.model,t,false,this.beat?{...enemy,beat:{id:this.beat,time:t},wingSpace:true}:{intro:{time:t},wingSpace:true});world.bossArena?.updateBeat(enemy,this.beat,t);
   const local=sample.position,pos=new T.Vector3(this.origin.x+local[0],local[1],this.origin.z+local[2]);
   // Thin passages cannot place a closeup camera behind their walls. Fall back

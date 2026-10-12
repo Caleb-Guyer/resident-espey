@@ -1,4 +1,4 @@
-import {weaponFor} from './weapons.js?v=4.6.0';
+import {weaponFor} from './weapons.js?v=4.6.1';
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const smooth=x=>{x=clamp(x,0,1);return x*x*x*(x*(x*6-15)+10);};
 const mix=(a,b,t)=>a+(b-a)*t;
@@ -54,8 +54,8 @@ export function stepWeaponMotion(s,dt,p,{reduced=false,walk=0,aspect=1.6,progres
  const lagScale=reduced?0:1-s.ads*.93;dampSpring(s.lagX,-vx*.004*lagScale,24,dt);dampSpring(s.lagY,vy*.003*lagScale,24,dt);
  s.shotAge+=dt;const age=s.shotAge;
  const cycle=age<.022?fade(age,0,.022):age<.09?1-fade(age,.022,.09):0;
- const lock=p.ammo===0&&(!(p.reloading>0)||progress<.88)?1:0;
- const bob=(reduced?0:s.move.x)*(1-s.ads*.92),kick=s.kick.x,long=w.id!=='sidearm',equip=Math.min(1,(p.equipping||0)/.24),pump=w.id==='shotgun'?(p.reloading>0&&p.reloading<.45?Math.sin((.45-p.reloading)/.45*Math.PI)*.087:age>.22&&age<.70?Math.sin((age-.22)/.48*Math.PI)*.087:0):0;
+ const lock=(p.reloading>0?!!p.reloadEmpty&&progress<.88:p.ammo===0)?1:0;
+ const bob=(reduced?0:s.move.x)*(1-s.ads*.92),kick=s.kick.x,long=w.id!=='sidearm',equip=Math.min(1,(p.equipping||0)/.24),pump=w.id==='shotgun'?(p.reloadEmpty&&p.reloading>0&&p.reloading<.45?Math.sin((.45-p.reloading)/.45*Math.PI)*.087:age>.22&&age<.70?Math.sin((age-.22)/.48*Math.PI)*.087:0):0;
  return {
   pump,shell:w.id==='shotgun'&&p.reloading>0&&reload.grasp>.35,ads:s.ads,headBob:(reduced?0:s.move.x)*Math.sin(walk*7)*.009*(1-s.ads*.8),
   position:[.16*(1-s.ads)*Math.min(1,aspect/1.3)+s.lagX.x*.3-reload.present*.06,(long?-.178:-.145)+((long?.178:.145)-w.sightHeight*viewScale)*s.ads+Math.sin(walk*7)*.004*bob-reload.lower-s.sprint.x*.055-equip*.22,(long?-.40:-.45)+.03*s.ads+kick*.32-reload.pullback],

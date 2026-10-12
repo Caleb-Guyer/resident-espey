@@ -32,6 +32,10 @@ function game(){
  g.player={x:6,z:6,yaw:0,pitch:0,hp:100,stamina:100,ammo:12,reserve:24,meds:1,inv:0,cooldown:0,melee:0,dash:0,reloading:0};g.grid=Array.from({length:24},()=>Array(30).fill(0));g.world={root:new T.Group(),ready:Promise.resolve(),character:()=>new T.Group(),disposeObject(){},setView(){},update(){},prepareCombatAsync:async()=>{},blocked:()=>false,clearWalkPath:()=>true,clearSight:()=>true,animateCharacter(){},faceCharacter(){},effect(){},tracer(){}};g.sound={init(){},pause(){},play(){}};g.cinema={active:false,cancel(){},clearPrepared(){},prewarm:async()=>{}};g.ui={isOpen:()=>false,pause(){g.setPaused(true);},death(){},showGame(){},updateContinue(){}};g.capturePointer=()=>{};g.save=()=>{};g.toast=()=>{};g.radio=()=>{};return g;
 }
 
+test('Birdy folds his full wingspan when either wing tip reaches a wall',()=>environment(()=>{
+ for(const column of [4,7]){const g=game(),e=creature('birdy');e.x=14.3;e.z=13.2;e.introduced=true;e.recover=1;e.model.userData.wingspan=6.8;g.player.x=e.x;g.player.z=e.z;g.enemies=[e];g.grid[5][column]=1;g.updateEnemies(0);assert.equal(e.wingSpace,false);g.grid[5][column]=0;g.updateEnemies(0);assert.equal(e.wingSpace,true);}
+}));
+
 test('Invalid saved options keep the camera and volume finite while retaining valid preferences',()=>{
  const s=normalizeSettings({fov:'broken',dialogueVolume:'broken',sensitivity:null,volume:0,motion:'false',subtitles:false,quality:'unknown'},true);assert.equal(s.fov,76);assert.equal(s.dialogueVolume,1);assert.equal(s.sensitivity,1);assert.equal(s.volume,0);assert.equal(s.motion,true);assert.equal(s.subtitles,false);assert.equal(s.quality,'high');assert.equal(normalizeSettings({fov:900,volume:3}).fov,95);assert.equal(normalizeSettings({fov:60}).fov,60);
 });
@@ -105,4 +109,19 @@ test('A glancing charge impact cancels the rush and exposes the boss instead of 
 }));
 test('Older checkpoints with Jakob already active still restore him and require Birdy before the seal',()=>environment(()=>{
  const g=game(),e=creature('birdy');g.chapter=1;g.config=CHAPTERS[1];g.level=g.config.level;g.enemies=[e];g.objectives=3;g.bossSpawned=true;g.spawnBoss(false);assert.equal(g.boss.kind,'jakob');assert.equal(g.boss.dead,false);g.boss.dead=g.bossDead=true;g.nearest={kind:'exit'};let seals=0;g.ui.puzzle=()=>seals++;g.interact();assert.equal(seals,0);e.dead=true;g.interact();assert.equal(seals,1);
+}));
+
+test('A resized paused cutscene redraws exactly once without advancing its story clock',()=>environment(()=>{
+ const g=game();let draws=0;g.paused=true;g.cinema={active:true,isPaused:true,update(){draws++;}};g.frame(1040);g.frame(1080);assert.equal(draws,1);g.world.needsPausedRender=true;g.frame(1120);assert.equal(draws,2);assert.equal(g.world.needsPausedRender,false);g.frame(1160);assert.equal(draws,2);assert.equal(g.time,7);
+}));
+test('Navigation refreshes once when a moving shutter becomes passable',()=>environment(()=>{
+ const g=game();let rebuilds=0;g.rebuildNavigation=()=>{rebuilds++;g.world.navigationDirty=false;};g.proximity=g.directRoute=()=>{};g.world.navigationDirty=true;g.frame(1040);g.frame(1080);assert.equal(rebuilds,1);g.world.navigationDirty=true;g.frame(1120);assert.equal(rebuilds,2);
+}));
+
+test('Paused cutscenes reveal audio readiness and failure actions without advancing or redrawing the scene',()=>environment(({doc})=>{
+ const g=game(),c=Object.create(Cinematics.prototype);c.game=g;c.active=true;c.paused=true;c.arena={active:false};c.leadIn=0;c.returnTime=null;c.captionFallback=false;let draws=0;c.update=()=>draws++;g.cinema=c;g.paused=true;g.voice={scene:{ready:false,error:false},update(){}};g.frame(1040);assert.equal(doc.querySelector('#scene-loading').hidden,false);g.voice.scene.error=true;g.frame(1080);assert.equal(doc.querySelector('#scene-audio-actions').hidden,false);assert.equal(doc.querySelector('#scene-loading-message').textContent,'Dialogue could not load.');g.voice.scene={ready:true,error:false};g.frame(1120);assert.equal(doc.querySelector('#scene-loading').hidden,true);assert.equal(draws,1);assert.equal(g.time,7);
+}));
+
+test('Applying graphics suspends gameplay and rendering while hidden warmup variants are exposed',()=>environment(()=>{
+ const g=game();let draws=0;g.world.update=()=>draws++;g.proximity=g.directRoute=()=>{};g.applyingGraphics=true;g.world.needsPausedRender=true;g.mouse.down=true;g.frame(1040);assert.equal(draws,0);assert.equal(g.time,7);assert.equal(g.stats.shots,0);g.mouse.down=false;g.applyingGraphics=false;g.frame(1080);assert.equal(draws,1);assert.ok(g.time>7);
 }));

@@ -1,22 +1,22 @@
-import {WEAPONS,weaponFor} from './weapons.js?v=4.6.0';
-import {createLongGun} from './longguns.js?v=4.6.0';
-import {scannedMaterial,microTexture} from './surface-materials.js?v=4.6.0';
-import {painted} from './loading.js?v=4.6.0';
-import {BossArena} from './boss-arena.js?v=4.6.0';
-import {createAnatomy,animateCollapse} from './anatomy.js?v=4.6.0';
-import {reloadProgress} from './reload.js?v=4.6.0';
-import {ATTACKS,enemyRadius} from './enemy-director.js?v=4.6.0';
+import {WEAPONS,weaponFor} from './weapons.js?v=4.6.1';
+import {createLongGun} from './longguns.js?v=4.6.1';
+import {scannedMaterial,microTexture} from './surface-materials.js?v=4.6.1';
+import {painted} from './loading.js?v=4.6.1';
+import {BossArena} from './boss-arena.js?v=4.6.1';
+import {createAnatomy,animateCollapse} from './anatomy.js?v=4.6.1';
+import {reloadProgress} from './reload.js?v=4.6.1';
+import {ATTACKS,enemyRadius} from './enemy-director.js?v=4.6.1';
 import * as T from './vendor/three.module.js';
-import {TILE,seeded,solid,findPath} from './data.js?v=4.6.0';
-import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock,propsOcclude} from './fps.js?v=4.6.0';
-import {CombatEffects} from './combat-effects.js?v=4.6.0';
-import {WallPlacement} from './wall-placement.js?v=4.6.0';
-import {createViewModel,createHands} from './viewmodel.js?v=4.6.0';
-import {createWeaponMotion,kickWeapon,stepWeaponMotion} from './weapon-motion.js?v=4.6.0';
-import {CHARACTER_DESIGNS,characterHair,dressBirdy,dressArchetype,cloneCharacter} from './creature-design.js?v=4.6.0';
-import {EnemyEffects} from './enemy-effects.js?v=4.6.0';
-import {BOSS_PROFILES,createBossModel} from './boss-models.js?v=4.6.0';
-import {animateBoss} from './boss-animation.js?v=4.6.0';
+import {TILE,seeded,solid,findPath} from './data.js?v=4.6.1';
+import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock,propsOcclude} from './fps.js?v=4.6.1';
+import {CombatEffects} from './combat-effects.js?v=4.6.1';
+import {WallPlacement} from './wall-placement.js?v=4.6.1';
+import {createViewModel,createHands} from './viewmodel.js?v=4.6.1';
+import {createWeaponMotion,kickWeapon,stepWeaponMotion} from './weapon-motion.js?v=4.6.1';
+import {CHARACTER_DESIGNS,characterHair,dressBirdy,dressArchetype,cloneCharacter} from './creature-design.js?v=4.6.1';
+import {EnemyEffects} from './enemy-effects.js?v=4.6.1';
+import {BOSS_PROFILES,createBossModel} from './boss-models.js?v=4.6.1';
+import {animateBoss} from './boss-animation.js?v=4.6.1';
 
 const BOX=bevelBox(1,1,1,.014),WALLBOX=new T.BoxGeometry(1,1,1),SPHERE=new T.SphereGeometry(1,20,14),CYL=new T.CylinderGeometry(1,1,1,16);
 const SHARED=new Set([BOX,WALLBOX,SPHERE,CYL]);
@@ -102,7 +102,7 @@ export class World{
  }
  load(chapter,grid){
   for(const m of this.weaponModels?.values()||[])resetWeaponParts(m);this.weaponMotion=createWeaponMotion();this.ads=this.recoil=this.walk=this.flashTimer=this.knifeTimer=0;this.currentAds=false;
-  this.disposeLevel();this.finisherHands?.forEach(h=>{h.visible=false;this.scene.add(h);});this.bossArena=null;this.grid=grid;this.config=chapter;this.theme=chapter.theme;this.level=chapter.level;this.gates=[];this.blackoutUntil=0;this.protectedCells=new Set();for(const route of [this.level.route,...chapter.items.map(i=>[chapter.start,i.at])])for(let i=1;i<route.length;i++)for(const p of findPath(grid,{x:(route[i-1][0]+.5)*TILE,z:(route[i-1][1]+.5)*TILE},{x:(route[i][0]+.5)*TILE,z:(route[i][1]+.5)*TILE}))this.protectedCells.add(Math.floor(p.x/TILE)+","+Math.floor(p.z/TILE));this.lamps=[];this.obstacles=[];this.portal=null;this.gent=null;this.mist=[];
+  this.disposeLevel();this.finisherHands?.forEach(h=>{h.visible=false;this.scene.add(h);});this.bossArena=null;this.grid=grid;this.config=chapter;this.theme=chapter.theme;this.level=chapter.level;this.gates=[];this.blackoutUntil=0;this.protectedCells=new Set();for(const route of [this.level.route,...chapter.items.map(i=>[chapter.start,i.at])])for(let i=1;i<route.length;i++)for(const p of findPath(grid,{x:(route[i-1][0]+.5)*TILE,z:(route[i-1][1]+.5)*TILE},{x:(route[i][0]+.5)*TILE,z:(route[i][1]+.5)*TILE}))this.protectedCells.add(Math.floor(p.x/TILE)+","+Math.floor(p.z/TILE));this.lamps=[];this.nearestLamps=null;this.obstacles=[];this.portal=null;this.gent=null;this.mist=[];
   const yellow=this.theme==='backrooms',breach=this.theme==='breach';this.scene.background=new T.Color(yellow?0x1b1910:0x090e11);this.scene.fog=new T.FogExp2(yellow?0x25231a:0x0c1419,yellow?.026:.032);this.root=new T.Group();this.scene.add(this.root);
   this.scene.environment=this.viewScene.environment;this.scene.environmentIntensity=.16;
   this.scene.add(new T.HemisphereLight(yellow?0xd5cba0:0x9fbab7,0x1a201d,yellow?.46:.36));
@@ -163,7 +163,10 @@ export class World{
    mergeParts(shutter);mergeParts(g);this.gates.push({...gate,shutter,lampMaterial,obstacle,target:0});
   }
  }
- syncGates(stage,immediate=false){for(const g of this.gates){const open=stage>=g.requires&&!g.forcedClosed;g.obstacle.active=!open;g.target=open?3.18:0;g.lampMaterial.color.setHex(open?0x77ad94:0xbc5038);if(immediate)g.shutter.position.y=g.target;}}
+ syncGates(stage,immediate=false){for(const g of this.gates){const open=stage>=g.requires&&!g.forcedClosed;g.target=open?3.18:0;g.lampMaterial.color.setHex(open?0x77ad94:0xbc5038);if(immediate)g.shutter.position.y=g.target;this.gateCollision(g);}}
+ gateCollision(g){const before=g.obstacle.active;g.obstacle.minY=g.shutter.position.y;g.obstacle.blocksShots=true;g.obstacle.active=g.shutter.position.y<1.95;if(before!==g.obstacle.active)this.navigationDirty=true;}
+ advanceGates(dt){if(!(dt>0))return;for(const g of this.gates){g.shutter.position.y+=(g.target-g.shutter.position.y)*(1-Math.exp(-dt*5));if(Math.abs(g.target-g.shutter.position.y)<.005)g.shutter.position.y=g.target;this.gateCollision(g);}}
+
  wallLabel(m,text,y,w,h,color,background=null,dx=0,depth=.018){return this.sign(text,[m.x+m.nz*dx+m.nx*depth,y,m.z-m.nx*dx+m.nz*depth],w,h,color,background,m.yaw);}
  wallSign(room,text,y,width,height,color,background=null,options={}){
   const m=this.wallPlacement.place(room.bounds,{kind:'sign',room:room.name,width,height,y,depth:.02,...options});
@@ -514,13 +517,13 @@ export class World{
   }
   await painted();this.prepareCombat();await painted();
  }
- headPositions(g){
-  g.updateMatrixWorld(true);this.headVector??=new T.Vector3();const d=g.userData,heads=d.heads||[d.head],out=d.hitHeadsCache||=([]);let count=0;
+ headPositions(g,refresh=true){
+  if(refresh)g.updateMatrixWorld(true);this.headVector??=new T.Vector3();const d=g.userData,heads=d.heads||[d.head],out=d.hitHeadsCache||=([]);let count=0;
   for(let i=0;i<heads.length;i++){if(i===1&&d.crushedBobby)continue;const h=heads[i],v=this.headVector.set(0,.02,0).applyMatrix4(h.matrixWorld),point=out[count]||=( {} );point.x=v.x;point.y=v.y;point.z=v.z;count++;}out.length=count;return out;
  }
  faceCharacter(g,yaw,dt){if(g.userData?.bossRig){const delta=Math.atan2(Math.sin(yaw-g.rotation.y),Math.cos(yaw-g.rotation.y));g.rotation.y+=delta*(1-Math.exp(-dt*8));}else g.rotation.y=yaw;}
- bossHitParts(g){
-  g.updateMatrixWorld(true);const d=g.userData,p=BOSS_PROFILES[d.kind],parts=d.hitPartsCache||=([]);this.hitVector??=new T.Vector3();let count=0;
+ bossHitParts(g,refresh=true){
+  if(refresh)g.updateMatrixWorld(true);const d=g.userData,p=BOSS_PROFILES[d.kind],parts=d.hitPartsCache||=([]);this.hitVector??=new T.Vector3();let count=0;
   const point=(out,bone,x=0,y=0,z=0)=>{const v=this.hitVector.set(x,y,z).applyMatrix4(bone.matrixWorld);out.x=v.x;out.y=v.y;out.z=v.z;},part=(a,b,r,ax=0,ay=0,az=0,bx=0,by=0,bz=0)=>{const q=parts[count]||=( {a:{},b:{}} );q.r=r;point(q.a,a,ax,ay,az);point(q.b,b,bx,by,bz);count++;};
   for(const spine of d.spines){const cy=spine===d.body?p.spine:p.spine+.08;part(spine,spine,d.kind==='zeb'?.34:d.kind==='birdy'?.18:.24,0,p.hip-cy,0,0,p.shoulder-.1-cy,0);}
   d.arms.forEach((arm,i)=>{const fore=arm.userData.forearm;part(arm,fore,d.kind==='zeb'?.15:.09);part(fore,fore,d.kind==='chris'&&i===1?.14:d.kind==='zeb'?.11:.075,0,0,0,...fore.userData.wrist);});
@@ -535,7 +538,7 @@ export class World{
   const enemyBatches=this.enemyEffects?[this.enemyEffects.projectiles,this.enemyEffects.stains,this.enemyEffects.rings]:[],enemyCounts=enemyBatches.map(m=>m.count);
   const particles=this.combatEffects.particles.count,tracers=this.combatEffects.tracers.geometry.drawRange.count,casings=this.combatEffects.casings.count;
   const hidden=[],culling=[];for(const h of this.finisherHands||[])if(!h.visible){hidden.push(h);h.visible=true;}this.scene?.traverse(o=>{
-   if(o.userData?.kind&&!o.visible){hidden.push(o);o.visible=true;}
+   if(!o.visible){hidden.push(o);o.visible=true;}
    // Upload the entire authored level. The cinematic camera can be nowhere
    // near the player, and later rooms must not allocate buffers during a fight.
    if(o.isMesh||o.isPoints){culling.push([o,o.frustumCulled]);o.frustumCulled=false;}
@@ -636,14 +639,20 @@ export class World{
   g.userData.ring.material.opacity=.25+Math.sin(e.attackTime*12)*.06;
  }
  warning(x,z,r){const o=mesh(new T.RingGeometry(r-.12,r,48),new T.MeshBasicMaterial({color:0xd87748,transparent:true,opacity:.5,side:T.DoubleSide,depthWrite:false}),[1,1,1],[x,.04,z],this.root);o.rotation.x=-Math.PI/2;o.castShadow=false;return o;}
+ selectLamps(x,z,t){
+  if(this.nearestLamps&&t>=this.lampTime&&t-this.lampTime<.18&&(x-this.lampX)**2+(z-this.lampZ)**2<.16)return this.nearestLamps;
+  const count=this.lightPool.length,chosen=this.nearestLamps||=(new Array(count)),scores=this.lampScores||=(new Float64Array(count));chosen.fill(null);scores.fill(Infinity);
+  for(const lamp of this.lamps){const d=(lamp.x-x)**2+(lamp.z-z)**2;for(let i=0;i<count;i++)if(d<scores[i]){for(let j=count-1;j>i;j--){scores[j]=scores[j-1];chosen[j]=chosen[j-1];}scores[i]=d;chosen[i]=lamp;break;}}
+  this.lampX=x;this.lampZ=z;this.lampTime=t;return chosen;
+ }
  update(dt,t,p,aim,shake){
   this.setView(p,p.yaw||0,p.pitch||0,t,p.aiming);if(p.moving)this.walk+=dt*(p.sprinting?1.45:1);
   if(shake&&!this.settings.motion){const weight=shake*(p.aiming?.15:1);this.camera.position.y+=Math.sin(t*11)*weight*.006;this.camera.rotation.x+=Math.sin(t*17)*weight*.005;this.camera.rotation.z=Math.sin(t*13)*weight*.007;}
-  const d=viewDirection(p.yaw||0,p.pitch||0);this.flashlight.position.copy(this.camera.position);this.flashlight.position.y-=.1;this.flashlight.target.position.copy(this.camera.position).add(new T.Vector3(d.x,d.y,d.z).multiplyScalar(12));this.flashlight.intensity=this.settings.flashlight===false?0:115;
+  const d=viewDirection(p.yaw||0,p.pitch||0);this.flashlight.position.copy(this.camera.position);this.flashlight.position.y-=.1;this.flashlight.target.position.copy(this.camera.position).add((this.flashTargetVector||=new T.Vector3()).set(d.x,d.y,d.z).multiplyScalar(12));this.flashlight.intensity=this.settings.flashlight===false?0:115;
   this.playerLight.position.copy(this.camera.position);this.shotLight.position.copy(this.camera.position);this.shotLight.intensity=this.flashTimer>0?28:0;
-  for(const g of this.gates)g.shutter.position.y+=(g.target-g.shutter.position.y)*Math.min(1,dt*3.5);
-  const dark=t<this.blackoutUntil;const lamps=[...this.lamps].sort((a,b)=>Math.hypot(a.x-p.x,a.z-p.z)-Math.hypot(b.x-p.x,b.z-p.z));
-  this.lightPool.forEach((l,i)=>{const v=lamps[i];if(!v)return;l.position.set(v.x,CEILING-.33,v.z);l.color.set(v.color);l.intensity=(dark?0:v.base)*(Math.sin(t*1.3+v.offset)>-.995?1:.12);});
+  this.advanceGates(dt);
+  const dark=t<this.blackoutUntil,lamps=this.selectLamps(p.x,p.z,t);
+  for(let i=0;i<this.lightPool.length;i++){const l=this.lightPool[i],v=lamps[i];if(!v){l.intensity=0;continue;}l.position.set(v.x,CEILING-.33,v.z);l.color.set(v.color);l.intensity=(dark?0:v.base)*(Math.sin(t*1.3+v.offset)>-.995?1:.12);}
   if(this.dust)this.dust.position.y=Math.sin(t*.13)*.08;if(this.portal){this.portal.rotation.z=t*.14;this.portal.material.color.setHSL(.025,.6,.36+Math.sin(t)*.06);}
   for(const o of this.mist){o.quaternion.copy(this.camera.quaternion);o.material.opacity=.13+Math.sin(t+o.position.y)*.06;}
   this.combatEffects?.update(dt);

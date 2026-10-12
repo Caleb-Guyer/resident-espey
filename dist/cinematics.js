@@ -1,15 +1,15 @@
-import {painted} from './loading.js?v=4.6.0';
-import {sceneContext,MEMORY_LEAD_IN} from './scene-context.js?v=4.6.0';
-import {dialogueFrame,speakingActor,speechMotion} from './cinematic-direction.js?v=4.6.0';
+import {painted} from './loading.js?v=4.6.1';
+import {sceneContext,MEMORY_LEAD_IN} from './scene-context.js?v=4.6.1';
+import {dialogueFrame,speakingActor,speechMotion} from './cinematic-direction.js?v=4.6.1';
 import * as T from './vendor/three.module.js';
-import {SCENES,StoryClock} from './story.js?v=4.6.0';
-import {voicedScene} from './voice-timeline.js?v=4.6.0';
-import {BossIntroduction,displayName} from './boss-introductions.js?v=4.6.0';
+import {SCENES,StoryClock} from './story.js?v=4.6.1';
+import {voicedScene} from './voice-timeline.js?v=4.6.1';
+import {BossIntroduction,displayName} from './boss-introductions.js?v=4.6.1';
 const $=s=>document.querySelector(s);
 
 // A separate, lit stage prevents cinematic actors from touching combat or save state.
 export class Cinematics{
- constructor(game){this.game=game;this.world=game.world;this.active=false;$('#skip-scene').onclick=()=>this.finish();$('#pause-scene').onclick=()=>this.togglePause();$('#retry-scene-audio').onclick=()=>{if(this.arena?.active){const e=this.arena.enemy,done=this.arena.complete,beat=this.arena.beat;this.arena.cancel();this.arena.play(e,done,beat);}else this.play(this.id,this.complete);};$('#caption-scene').onclick=()=>{this.game.voice?.stop();this.captionFallback=true;$('#scene-loading').hidden=true;};}
+ constructor(game){this.game=game;this.world=game.world;this.active=false;$('#skip-scene').onclick=()=>this.finish();$('#pause-scene').onclick=()=>this.togglePause();$('#retry-scene-audio').onclick=()=>{if(this.arena?.active){const e=this.arena.enemy,done=this.arena.complete,beat=this.arena.beat;this.arena.cancel();this.arena.play(e,done,beat);}else this.play(this.id,this.complete);};$('#caption-scene').onclick=()=>{this.game.voice?.stop();this.captionFallback=true;this.world.needsPausedRender=true;$('#scene-loading').hidden=true;};}
  play(id,complete=()=>{}){
   if(this.active)this.cancel();let story=SCENES[id];if(!story){complete();return;}story=voicedScene(story);
   this.id=id;this.story=story;this.complete=complete;this.clock=new StoryClock(story);this.active=true;this.paused=false;this.finished=false;this.context=sceneContext(id);this.leadIn=this.context.kind==='present'?1.5:MEMORY_LEAD_IN;this.returnTime=null;
@@ -118,6 +118,10 @@ export class Cinematics{
  event(e){if(e.sound)this.game.sound.play(e.sound);if(e.door!==undefined&&this.door)this.doorTarget=e.door;if(e.serum&&this.vial){const fore=this.actors.get('hall')?.userData.arms?.[0]?.userData.forearm;if(fore){fore.add(this.vial);this.vial.position.set(0,-.39,.03);this.vial.rotation.z=.7;}else this.vial.visible=false;}if(e.collapse&&this.crater)this.crater.visible=true;
   if(e.maze&&this.mazeStage){this.mazeStage.visible=true;for(const g of this.actors.values())g.visible=false;const landon=this.actors.get('landon');if(landon){landon.visible=true;landon.position.set(.7,0,0);}this.key.color.set(0xffe0a1);}
   if(e.ring!==undefined&&this.rings?.[e.ring])this.rings[e.ring].material.emissive.set(0x725525);
+ }
+ refreshAudioState(){
+  const state=this.game.voice?.scene,transition=this.arena?.active?false:this.leadIn>0||this.returnTime!==null;
+  $('#scene-loading').hidden=transition||this.captionFallback||!state||state.ready;$('#scene-loading-message').textContent=state?.error?'Dialogue could not load.':'Preparing audio…';$('#scene-audio-actions').hidden=!state?.error;
  }
  update(dt){
   if(this.arena?.active){this.arena.update(dt);return;}
