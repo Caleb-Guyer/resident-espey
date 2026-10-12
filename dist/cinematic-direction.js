@@ -1,4 +1,4 @@
-const ids={'Ethan':'ethan','Joel':'joel','Coach Hall':'hall','Earl':'earl','Landon':'landon','The Gentleman':'gent','Calen':'calen','Benny':'benny'};
+const ids={'Ethan':'ethan','Joel':'joel','Coach Hall':'hall','Earl':'earl','Earl Britt':'earl','Landon':'landon','The Gentleman':'gent','Calen':'calen','Benny':'benny'};
 export function speakingActor(scene,line){const id=ids[line?.speaker];return scene.actors?.find(a=>a.id===id)?.id||null;}
 export function dialogueFrame(scene,sample,time){
  const id=speakingActor(scene,sample.line),a=sample.actors.find(a=>a.id===id),original=scene.sourceTime?.(time)??time;

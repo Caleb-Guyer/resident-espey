@@ -1,13 +1,14 @@
-import {sceneContext,MEMORY_LEAD_IN} from './scene-context.js?v=4.3.0';
-import {dialogueFrame,speakingActor,speechMotion} from './cinematic-direction.js?v=4.3.0';
+import {sceneContext,MEMORY_LEAD_IN} from './scene-context.js?v=4.4.0';
+import {dialogueFrame,speakingActor,speechMotion} from './cinematic-direction.js?v=4.4.0';
 import * as T from './vendor/three.module.js';
-import {SCENES,StoryClock} from './story.js?v=4.3.0';
-import {voicedScene} from './voice-timeline.js?v=4.3.0';
+import {SCENES,StoryClock} from './story.js?v=4.4.0';
+import {voicedScene} from './voice-timeline.js?v=4.4.0';
+import {BossIntroduction,displayName} from './boss-introductions.js?v=4.4.0';
 const $=s=>document.querySelector(s);
 
 // A separate, lit stage prevents cinematic actors from touching combat or save state.
 export class Cinematics{
- constructor(game){this.game=game;this.world=game.world;this.active=false;$('#skip-scene').onclick=()=>this.finish();$('#pause-scene').onclick=()=>this.togglePause();$('#retry-scene-audio').onclick=()=>this.play(this.id,this.complete);$('#caption-scene').onclick=()=>{this.game.voice?.stop();this.captionFallback=true;$('#scene-loading').hidden=true;};}
+ constructor(game){this.game=game;this.world=game.world;this.active=false;$('#skip-scene').onclick=()=>this.finish();$('#pause-scene').onclick=()=>this.togglePause();$('#retry-scene-audio').onclick=()=>{if(this.arena?.active){const e=this.arena.enemy,done=this.arena.complete;this.arena.cancel();this.arena.play(e,done);}else this.play(this.id,this.complete);};$('#caption-scene').onclick=()=>{this.game.voice?.stop();this.captionFallback=true;$('#scene-loading').hidden=true;};}
  play(id,complete=()=>{}){
   if(this.active)this.cancel();let story=SCENES[id];if(!story){complete();return;}story=voicedScene(story);
   this.id=id;this.story=story;this.complete=complete;this.clock=new StoryClock(story);this.active=true;this.paused=false;this.finished=false;this.context=sceneContext(id);this.leadIn=this.context.kind==='present'?1.5:MEMORY_LEAD_IN;this.returnTime=null;
@@ -20,7 +21,8 @@ export class Cinematics{
   $('#scene-transition-title').textContent=this.context.title||story.label;$('#scene-transition-place').textContent=this.context.place||story.when;$('#scene-transition-object').textContent=this.context.object||'';
   $('#scene-transition').hidden=false;$('#scene-transition').style.opacity=1;this.update(0);
  }
- togglePause(){if(!this.active)return;this.paused=!this.paused;$('#pause-scene').textContent=this.paused?'Resume':'Pause';this.game.sound.pause(this.paused);this.game.voice?.pause(this.paused||this.leadIn>0||this.returnTime!==null);}
+ playEncounter(enemy,complete){if(this.active)this.cancel();this.arena??=new BossIntroduction(this);this.arena.play(enemy,complete);}
+ togglePause(){if(this.arena?.active){this.arena.togglePause();return;}if(!this.active)return;this.paused=!this.paused;$('#pause-scene').textContent=this.paused?'Resume':'Pause';this.game.sound.pause(this.paused);this.game.voice?.pause(this.paused||this.leadIn>0||this.returnTime!==null);}
  text(text,at,w=2,h=.35,color='#d4ceae',parent=this.stage){const prior=this.world.root;this.world.root=parent;const o=this.world.sign(text,at,w,h,color);this.world.root=prior;return o;}
  build(type){
   this.portal=this.endingMic=this.door=this.vial=this.crater=this.mazeStage=this.rings=null;this.doorTarget=undefined;this.footbeat=undefined;
@@ -71,7 +73,7 @@ export class Cinematics{
     for(let y=.3;y<2.7;y+=.55){box(metal,[1.1,.055,2.8],[3.2,y,-.7]);for(let i=0;i<5;i++)box(i%2?wood:paper,[.18,.28,.3],[3+(i%2)*.25,y+.16,-1.7+i*.45]);}
     for(const x of[2.68,3.72])for(const z of[-2, .6])box(metal,[.035,2.8,.035],[x,1.4,z]);
     box(red,[.28,.65,.2],[3.85,1.1,2.7]);cyl(metal,[.06,.2,.06],[3.85,1.48,2.7]);
-    this.text(breach?'P.A. / 204':type==='closet'?'SUPPLIES / KEEP CLOSED':'CS / SANCTUARY',[0,2.85,-2.05],2.5,.3);
+    this.text(breach?'ROOM 204':type==='closet'?'SUPPLIES':'CS SANCTUARY',[0,2.85,-2.05],2.5,.3);
    }
    if(['school','closet'].includes(type)){
     const z=type==='closet'?2.8:-2.4;for(const x of[-2.7,2.7])box(wall,[2.6,3.3,.14],[x,1.65,z]);box(wall,[2.8,.55,.15],[0,3.02,z]);
@@ -100,6 +102,7 @@ export class Cinematics{
   if(e.ring!==undefined&&this.rings?.[e.ring])this.rings[e.ring].material.emissive.set(0x725525);
  }
  update(dt){
+  if(this.arena?.active){this.arena.update(dt);return;}
   if(!this.active)return;
   if(this.leadIn>0&&!this.paused){this.leadIn=Math.max(0,this.leadIn-dt);if(this.leadIn===0)this.game.voice?.pause(false);}
   if(this.returnTime!==null&&!this.paused){this.returnTime+=dt;if(this.returnTime>=1.65){this.finish();return;}}
@@ -119,7 +122,7 @@ export class Cinematics{
   if(this.endingMic)this.endingMic.visible=originalTime<12;
   if(!this.game.settings.motion&&this.story.stage==='road'&&originalTime>10&&originalTime<12)camera.position.y+=Math.sin(t*41)*.045;
   if(this.portal)this.portal.rotation.z=t*.09;this.key.intensity=180*(.98+Math.sin(t*2.1)*.02);
-  $('#scene-speaker').textContent=sample.line?.speaker||'';$('#scene-subtitle').textContent=sample.line?.text||'';$('#scene-captions').hidden=transition||!sample.line||(!this.captionFallback&&this.game.settings.subtitles===false);
+  $('#scene-speaker').textContent=sample.line?displayName(sample.line.speaker):'';$('#scene-subtitle').textContent=sample.line?.text||'';$('#scene-captions').hidden=transition||!sample.line||(!this.captionFallback&&this.game.settings.subtitles===false);
   const speakerId=speakingActor(this.story,sample.line),speaker=this.actors.get(speakerId),mouth=speechMotion(sample.line,t);
   for(const [id,g]of this.actors){const d=g.userData;if(d.face)d.face.morphTargetInfluences[0]=id===speakerId?mouth:0;if(!d.human)continue;
    d.head.rotation.x+=Math.sin(t*2.8+(d.phase||0))*.012;d.body.rotation.y=Math.sin(t*.7+(d.phase||0))*.008;
@@ -137,6 +140,6 @@ export class Cinematics{
   this.game.voice?.stop();this.active=false;$('#cinematic').hidden=true;$('#scene-loading').hidden=true;document.body.classList.remove('memory-scene','premonition-scene');$('#scene-transition').hidden=true;this.world.camera.fov=this.savedFov;this.world.camera.updateProjectionMatrix();
   this.world.disposeObject(this.scene);this.scene=null;this.actors.clear();this.game.sound.pause(true);
  }
- finish(){if(!this.active||this.finished)return;this.finished=true;const complete=this.complete;this.release();complete();}
- cancel(){if(!this.active)return;this.finished=true;this.release();}
+ finish(){if(this.arena?.active){this.arena.finish();return;}if(!this.active||this.finished)return;this.finished=true;const complete=this.complete;this.release();complete();}
+ cancel(){if(this.arena?.active){this.arena.cancel();return;}if(!this.active)return;this.finished=true;this.release();}
 }

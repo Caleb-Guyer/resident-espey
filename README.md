@@ -4,6 +4,12 @@
 
 Some places remember you. Some refuse to let you go.
 
+Version **4.4.0** replaces all four boss presentations with bespoke sculpted bodies, photographic facial albedo, contoured facial anatomy, moving jaws, corneal highlights, fingers and claws. Jakob and Bobby now share one continuous skinned body with 21 bones, independent necks, four arms and four legs. Lil Birdy has layered, articulated primary and secondary feathers. Chris carries an asymmetric heavy forearm; Zeb has a hunched back and breathing growths. Smooth turns, distinct strides, distinct attack anticipation, follow-through, recovery and death poses replace the shared idle cycle. Anatomical capsules make shots on animated limbs connect.
+
+Each boss has a unique voiced introduction in its actual arena: Chris's dragging claw, Jakob and Bobby waking separately, Zeb's heavy rise and shockwave, and Lil Birdy's wing reveal. Camera cuts, creature motion and recorded dialogue share a clock. Combat stops during the sequence; pause, skip and caption fallback work; the player receives a protected return to control. Introductions are remembered in the save so they do not repeat automatically. Packaged encounter dialogue and both rendering variants prepare during chapter loading.
+
+Boss names are simply **Chris**, **Jakob & Bobby**, **Zeb**, and **Lil Birdy**. The HUD uses brief objectives and a chapter numeral; radio speaker names and the weapon label are shorter. Narrative flashback dates and location cues remain readable. Original boss facial texture atlas generated for this game; the source is saved in the repository.
+
 Version **4.3.0** expands the campaign from 15 to 42 staged encounters and adds crawlers, spitters, armored brutes and flanking stalkers. The bosses have distinct committed attacks, visible tells, recovery windows and second phases: Chris crashes into walls, Jakob and Bobby alternate two fused bodies, Zeb casts bile and expanding ruptures, and Birdy swoops and sheds feather volleys. Headshots interrupt specific tells; targeting the speaking head silences the Joined. Temporary acid pools and shockwaves use bounded graphics batches and respect cover.
 
 Birdy has thin brown hair and a 6.8-meter span of articulated, veined wings that fold through narrow passages. Earl and Zeb have Black skin tones, including their faces. Jakob has straight brown hair; Bobby has curly brown hair, with separate heads and four animated arms joined by scarred tissue. Character rigs and textures are cached, with independent bones and materials for every instance.

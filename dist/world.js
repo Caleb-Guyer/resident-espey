@@ -1,14 +1,16 @@
-import {createAnatomy,animateCollapse} from './anatomy.js?v=4.3.0';
-import {reloadProgress} from './reload.js?v=4.3.0';
+import {createAnatomy,animateCollapse} from './anatomy.js?v=4.4.0';
+import {reloadProgress} from './reload.js?v=4.4.0';
 import * as T from './vendor/three.module.js';
-import {TILE,seeded,solid,findPath} from './data.js?v=4.3.0';
-import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock} from './fps.js?v=4.3.0';
-import {CombatEffects} from './combat-effects.js?v=4.3.0';
-import {WallPlacement} from './wall-placement.js?v=4.3.0';
-import {createViewModel} from './viewmodel.js?v=4.3.0';
-import {createWeaponMotion,kickWeapon,stepWeaponMotion} from './weapon-motion.js?v=4.3.0';
-import {CHARACTER_DESIGNS,characterHair,dressBirdy,dressArchetype,cloneCharacter} from './creature-design.js?v=4.3.0';
-import {EnemyEffects} from './enemy-effects.js?v=4.3.0';
+import {TILE,seeded,solid,findPath} from './data.js?v=4.4.0';
+import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock} from './fps.js?v=4.4.0';
+import {CombatEffects} from './combat-effects.js?v=4.4.0';
+import {WallPlacement} from './wall-placement.js?v=4.4.0';
+import {createViewModel} from './viewmodel.js?v=4.4.0';
+import {createWeaponMotion,kickWeapon,stepWeaponMotion} from './weapon-motion.js?v=4.4.0';
+import {CHARACTER_DESIGNS,characterHair,dressBirdy,dressArchetype,cloneCharacter} from './creature-design.js?v=4.4.0';
+import {EnemyEffects} from './enemy-effects.js?v=4.4.0';
+import {BOSS_PROFILES,createBossModel} from './boss-models.js?v=4.4.0';
+import {animateBoss} from './boss-animation.js?v=4.4.0';
 
 const BOX=bevelBox(1,1,1,.014),WALLBOX=new T.BoxGeometry(1,1,1),SPHERE=new T.SphereGeometry(1,20,14),CYL=new T.CylinderGeometry(1,1,1,16);
 const SHARED=new Set([BOX,WALLBOX,SPHERE,CYL]);
@@ -51,7 +53,7 @@ export class World{
   this.lamps=[];this.obstacles=[];this.recoil=0;this.ads=0;this.walk=0;this.assets={};this.characterTemplates=new Map();this.characterResources=new Set();
   const loader=new T.TextureLoader();this.ready=Promise.all([['floor','floor'],['wall','plaster'],['skin','infected-skin'],['face','infected-face'],['ethan','ethan-face'],['survivor','survivor-face']].map(([name,file])=>new Promise((resolve,reject)=>{
    const t=loader.load(new URL(`./assets/${file}.webp`,import.meta.url).href,resolve,undefined,reject);t.wrapS=t.wrapT=T.RepeatWrapping;t.colorSpace=T.SRGBColorSpace;t.anisotropy=8;this.assets[name]=t;
-  })));this.ready.catch(()=>{});
+  })));const portrait=new Promise((resolve,reject)=>{const t=loader.load(new URL('./assets/boss-faces-v2.png',import.meta.url).href,resolve,undefined,reject);t.colorSpace=T.SRGBColorSpace;t.anisotropy=8;this.assets.boss=t;});this.ready=Promise.all([this.ready,portrait]);this.ready.catch(()=>{});
   // Let the title paint and textures arrive before the detailed hands are built.
   this.ready=this.ready.then(async()=>{await new Promise(requestAnimationFrame);this.createWeapon();this.resize();});this.ready.catch(()=>{});this.resize();
  }
@@ -347,13 +349,7 @@ export class World{
   return cloneCharacter(this.characterTemplates.get(key));
  }
  buildCharacter(kind,color,identity=kind){
-  if(kind==='jakob'){
-   const g=new T.Group(),twins=['jakob','bobby'].map((id,i)=>{const half=this.buildCharacter('jakobHalf',i?0x4d4236:color,id);half.position.x=i?.255:-.255;half.rotation.z=i?-.075:.075;half.scale.set(.92,1.43,.92);g.add(half);return half;});
-   const a=twins[0].userData,b=twins[1].userData;g.userData={...a,kind:'jakob',human:false,twins,heads:[a.head,b.head],faces:[a.face,b.face],arms:[...a.arms,...b.arms],legs:[...a.legs,...b.legs],identities:['jakob','bobby']};
-   const flesh=this.surface('skin',0x927b67,[2,2],.008,.64),raw=material(0x45271e,.52);
-   mesh(SPHERE,flesh,[.39,.39,.19],[0,1.55,-.035],g);for(let i=0;i<9;i++)tube(g,raw,[[-.34,1.22+i*.055,.17],[0,1.26+i*.053,.23],[.34,1.24+i*.05,.16]],.009);
-   return g;
-  }
+  if(BOSS_PROFILES[kind])return createBossModel(this,kind);
   const human=kind==='npc'||kind==='player',player=kind==='player',gent=kind==='gentleman',bare=['zsiga','jakobHalf','zeb','crawler','stalker'].includes(kind),design=CHARACTER_DESIGNS[identity];
   const skin=human?material(design?.skin??0xc2a68c,.78):this.surface('skin',design?.skin??(kind==='zsiga'?0x899b94:0xadb3a0),[2,2],.006,.68);
   const cloth=material(color??(player?0x495b43:0x46574f),.96);cloth.map=this.procedural(human?'fabric':'infectedcloth');cloth.bumpMap=cloth.map;cloth.bumpScale=.0015;
@@ -418,6 +414,7 @@ export class World{
   mergeParts(body);mergeParts(head);mergeParts(jaw);return g;
  }
  animateCharacter(g,t,moving,mood={}){
+  if(g.userData.bossRig)return animateBoss(g,t,moving,mood);
   const kind=g.userData.kind,phase=g.userData.phase||0;if(mood.dead){animateCollapse(g,mood.deathTime||0);return;}
   g.userData.body.rotation.set(0,0,0);g.userData.head.rotation.set(0,0,0);if(g.userData.face)g.userData.face.morphTargetInfluences[0]=0;
   if(g.userData.twins){g.userData.twins.forEach((half,i)=>{this.animateCharacter(half,t+i*.7,moving,{...mood,windup:mood.activeHead===i?mood.windup:0});half.userData.head.rotation.y+=(i?-.25:.25);});return;}
@@ -492,11 +489,23 @@ export class World{
  ejectCasing(origin,yaw,p){if(p&&this.gun)this.combatEffects?.eject(this.weaponPoint(p,[.024,.052,-.024]),yaw,true);else this.combatEffects?.eject(origin,yaw);}
  swingKnife(){this.knifeTimer=.46;}
  async prepareCombatAsync(){
-  if(this.renderer.compileAsync){await this.renderer.compileAsync(this.scene,this.camera);await this.renderer.compileAsync(this.viewScene,this.viewCamera);}
+  if(this.renderer.compileAsync){
+   const hidden=[],target=this.renderer.getRenderTarget(),warm=new T.WebGLRenderTarget(16,16);
+   this.root?.traverse(o=>{if(o.userData?.kind&&!o.visible){hidden.push(o);o.visible=true;}});this.viewScene.traverse(o=>{if(!o.visible){hidden.push(o);o.visible=true;}});
+   try{await this.renderer.compileAsync(this.scene,this.camera);await this.renderer.compileAsync(this.viewScene,this.viewCamera);this.renderer.setRenderTarget(warm);await this.renderer.compileAsync(this.scene,this.camera);await this.renderer.compileAsync(this.viewScene,this.viewCamera);}
+   finally{for(const o of hidden)o.visible=false;this.renderer.setRenderTarget(target);warm.dispose();}
+  }
   await new Promise(requestAnimationFrame);this.prepareCombat();await new Promise(requestAnimationFrame);
  }
  headPositions(g){
   this.headVector??=new T.Vector3();return (g.userData.heads||[g.userData.head]).map(h=>{const v=h.getWorldPosition(this.headVector);return {x:v.x,y:v.y+.02,z:v.z};});
+ }
+ faceCharacter(g,yaw,dt){if(g.userData?.bossRig){const delta=Math.atan2(Math.sin(yaw-g.rotation.y),Math.cos(yaw-g.rotation.y));g.rotation.y+=delta*(1-Math.exp(-dt*8));}else g.rotation.y=yaw;}
+ bossHitParts(g){
+  const d=g.userData,p=BOSS_PROFILES[d.kind],v=new T.Vector3(),parts=[],world=(bone,point=[0,0,0])=>{bone.updateWorldMatrix(true,false);v.set(...point).applyMatrix4(bone.matrixWorld);return {x:v.x,y:v.y,z:v.z};};
+  for(const spine of d.spines){const cy=spine===d.body?p.spine:p.spine+.08;parts.push({a:world(spine,[0,p.hip-cy,0]),b:world(spine,[0,p.shoulder-.1-cy,0]),r:d.kind==='zeb'?.34:d.kind==='birdy'?.18:.24});}
+  d.arms.forEach((arm,i)=>{const fore=arm.userData.forearm;parts.push({a:world(arm),b:world(fore),r:d.kind==='zeb'?.15:.09});parts.push({a:world(fore),b:world(fore,fore.userData.wrist),r:d.kind==='chris'&&i===1?.14:d.kind==='zeb'?.11:.075});});
+  d.legs.forEach(l=>{const calf=l.userData.calf;parts.push({a:world(l),b:world(calf),r:d.kind==='zeb'?.16:.1});parts.push({a:world(calf),b:world(calf,[0,-p.hip*.43,0]),r:.085});});return parts;
  }
  prepareCombat(){
   // Upload and render both weapons, the muzzle flash and both effect batches

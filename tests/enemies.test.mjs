@@ -75,7 +75,7 @@ test('Jakob and Bobby are two fused animated people with distinct brown hair and
  w.disposeObject(g);
 });
 test('Earl and Zeb use consistent Black skin tones in character and face materials',()=>{
- const w=modelWorld();for(const [kind,id]of [['npc','earl'],['zeb','zeb']]){const g=w.character(kind,0x433d32,id);assert.equal(g.userData.design.ethnicity,'Black');assert.equal(g.userData.skin.material[0].color.getHex(),CHARACTER_DESIGNS[id].skin);assert.equal(g.userData.face.material.color.getHex(),CHARACTER_DESIGNS[id].face);assert.ok(g.userData.face.material.onBeforeCompile.toString().includes('frontBlend'));w.disposeObject(g);}
+ const w=modelWorld();for(const [kind,id]of [['npc','earl'],['zeb','zeb']]){const g=w.character(kind,0x433d32,id);assert.equal(g.userData.design.ethnicity,'Black');assert.equal(g.userData.skin.material[0].color.getHex(),CHARACTER_DESIGNS[id].skin);if(id==='earl')assert.equal(g.userData.face.material.color.getHex(),CHARACTER_DESIGNS[id].face);else {assert.equal(g.userData.face.material.color.getHex(),0xffffff);assert.ok(g.userData.face.material.onBeforeCompile.toString().includes('portrait'));}w.disposeObject(g);}
 });
 test('Preparation yields between tasks and advances progress only after each task completes',async()=>{
  const events=[];await prepareTasks([()=>events.push('first'),async()=>events.push('second')],p=>events.push(p),async()=>events.push('paint'));

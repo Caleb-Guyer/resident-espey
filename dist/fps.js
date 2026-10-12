@@ -1,4 +1,4 @@
-import {solid} from './data.js?v=4.3.0';
+import {solid} from './data.js?v=4.4.0';
 
 export const EYE_HEIGHT=1.64;
 export const CEILING=3.35;
@@ -31,6 +31,13 @@ function sphereIntersection(origin,direction,center,r){
  if(d<0)return Infinity;
  const t=-b-Math.sqrt(d);return t>=0?t:Infinity;
 }
+export function capsuleIntersection(origin,direction,a,b,r){
+ const ba={x:b.x-a.x,y:b.y-a.y,z:b.z-a.z},oa={x:origin.x-a.x,y:origin.y-a.y,z:origin.z-a.z},dot=(u,v)=>u.x*v.x+u.y*v.y+u.z*v.z;
+ const baba=dot(ba,ba),bard=dot(ba,direction),baoa=dot(ba,oa),rdoa=dot(direction,oa),oaoa=dot(oa,oa),A=baba-bard*bard,B=baba*rdoa-baoa*bard,C=baba*oaoa-baoa*baoa-r*r*baba,H=B*B-A*C;
+ let best=Math.min(sphereIntersection(origin,direction,a,r),sphereIntersection(origin,direction,b,r));
+ if(H>=0&&A>1e-8){const t=(-B-Math.sqrt(H))/A,y=baoa+t*bard;if(t>=0&&y>0&&y<baba)best=Math.min(best,t);}
+ return best;
+}
 
 // The ballistic ray uses height as well as direction. Shooting the floor or ceiling
 // cannot damage a creature, and furniture occludes shots just like the walls.
@@ -51,7 +58,7 @@ export function traceShot(grid,origin,enemies,direction,props=[]){
   const [wide,tall]=BODY_SCALE[e.kind]||[1,1];
   const heads=e.hitHeads?.length?e.hitHeads:[{x:e.x,y:1.64*tall,z:e.z}];
   const hits=heads.map(h=>sphereIntersection(origin,direction,h,e.kind==='jakob'?.24:.24*wide));const head=Math.min(...hits);
-  const body=boxIntersection(origin,direction,{x:e.x-.34*wide,y:e.kind==='crawler'?.04:.25,z:e.z-.34*wide},{x:e.x+.34*wide,y:e.kind==='crawler'?.78:1.48*tall,z:e.z+.34*wide});
+  const body=e.hitParts?.length?Math.min(...e.hitParts.map(p=>capsuleIntersection(origin,direction,p.a,p.b,p.r))):boxIntersection(origin,direction,{x:e.x-.34*wide,y:e.kind==='crawler'?.04:.25,z:e.z-.34*wide},{x:e.x+.34*wide,y:e.kind==='crawler'?.78:1.48*tall,z:e.z+.34*wide});
   const t=Math.min(head,body);
   if(t<limit){limit=t;enemy=e;headshot=head<=body;headIndex=headshot?hits.indexOf(head):null;}
  }

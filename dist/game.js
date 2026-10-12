@@ -1,16 +1,17 @@
-import {prepareTasks,painted} from './loading.js?v=4.3.0';
-import {ATTACKS,stepEnemy,damageScale,interruptAttack} from './enemy-director.js?v=4.3.0';
-import {settleWeapon,shotDirection,applyRecoil} from './gunplay.js?v=4.3.0';
-import {CAMPAIGN_REVISION,roomAt,stageFor} from './levels.js?v=4.3.0';
-import {beginReload,advanceReload,cancelReload,reloadProgress} from './reload.js?v=4.3.0';
-import {World} from './world.js?v=4.3.0';
-import {EYE_HEIGHT,viewDirection,relativeMove,traceShot} from './fps.js?v=4.3.0';
-import {Sound} from './audio.js?v=4.3.0';
-import {CHAPTERS,ENEMY_STATS,TILE,SAVE_KEY,DIFFICULTIES,makeGrid,solid,sight,findPath,distance,validSave,endingFor} from './data.js?v=4.3.0';
-import {Cinematics} from './cinematics.js?v=4.3.0';
-import {MEMORY_LABELS,SCENES} from './story.js?v=4.3.0';
-import {Voice} from './voice.js?v=4.3.0';
-import {RADIO,characterId} from './dialogue.js?v=4.3.0';
+import {BOSS_NAMES,BOSS_INTROS,displayName} from './boss-introductions.js?v=4.4.0';
+import {prepareTasks,painted} from './loading.js?v=4.4.0';
+import {ATTACKS,stepEnemy,damageScale,interruptAttack} from './enemy-director.js?v=4.4.0';
+import {settleWeapon,shotDirection,applyRecoil} from './gunplay.js?v=4.4.0';
+import {CAMPAIGN_REVISION,roomAt,stageFor} from './levels.js?v=4.4.0';
+import {beginReload,advanceReload,cancelReload,reloadProgress} from './reload.js?v=4.4.0';
+import {World} from './world.js?v=4.4.0';
+import {EYE_HEIGHT,viewDirection,relativeMove,traceShot} from './fps.js?v=4.4.0';
+import {Sound} from './audio.js?v=4.4.0';
+import {CHAPTERS,ENEMY_STATS,TILE,SAVE_KEY,DIFFICULTIES,makeGrid,solid,sight,findPath,distance,validSave,endingFor} from './data.js?v=4.4.0';
+import {Cinematics} from './cinematics.js?v=4.4.0';
+import {MEMORY_LABELS,SCENES} from './story.js?v=4.4.0';
+import {Voice} from './voice.js?v=4.4.0';
+import {RADIO,characterId,voiceKey} from './dialogue.js?v=4.4.0';
 const $=s=>document.querySelector(s);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export class Game{
@@ -89,6 +90,7 @@ export class Game{
   try{
    await this.world.ready;progress(.1);const c=CHAPTERS[n],recipes=[...new Map([...c.enemies.map(([kind])=>[kind,ENEMY_STATS[kind].color,kind]),[c.boss.kind,ENEMY_STATS[c.boss.kind].color,c.boss.kind],['npc',n===0?0x6c644c:n===1?0x6b7971:0x3e6554,['joel','landon','hall'][n]],...(['opening','closet','serum','descent','road','seal','return','sacrifice','promise','home','echoes','alone'].filter(id=>({opening:0,closet:0,serum:0,descent:1,road:1,seal:1,return:2,sacrifice:2,promise:2,home:2,echoes:2,alone:2})[id]===n).flatMap(id=>SCENES[id].actors.map(a=>[a.kind,a.color,a.id])))].map(a=>[a.join('/'),a])).values()];
    await prepareTasks(recipes.map(a=>()=>{const g=this.world.character(...a);this.world.disposeObject(g);}),p=>progress(.1+p*.45));
+   if(this.voice){this.voice.init();await Promise.allSettled([c.boss.kind,...(n===1?['birdy']:[])].flatMap(kind=>BOSS_INTROS[kind].lines.map(l=>this.voice.load(voiceKey(l.speaker,l.text)))));}
    await painted();run();progress(.7);this.world.setView(this.player,this.player.yaw,this.player.pitch,this.time);await this.world.prepareCombatAsync();this.world.update(0,this.time,this.player,this.aim,0);
    if(this.cinema.active){if(this.world.renderer.compileAsync)await this.world.renderer.compileAsync(this.cinema.scene,this.world.camera);this.cinema.update(0);}
    progress(1);await painted();this.preparation={chapter:n,models:recipes.length,ms:Math.round(performance.now()-started)};
@@ -107,7 +109,11 @@ export class Game{
  spawn(kind,cx,cz,boss=false,id){const stat=ENEMY_STATS[kind],max=stat.hp*(this.difficulty==='story'?.85:1),reserved=this.reinforcements?.get(id);const e={id:id??this.enemies.length,kind,x:(cx+.5)*TILE,z:(cz+.5)*TILE,hp:max,max,speed:stat.speed*this.diff.enemySpeed,damage:stat.damage*this.diff.damage,range:stat.range,boss,dead:false,alert:boss,cool:1.5,path:[],pathTimer:0,stagger:0,windup:0,charge:0,phase:0};e.model=reserved?.kind===kind?reserved.model:boss&&this.warmedBoss?.userData?.kind===kind?this.warmedBoss:this.world.character(kind,stat.color);if(boss&&e.model===this.warmedBoss)this.warmedBoss=null;e.model.visible=true;e.model.position.set(e.x,0,e.z);this.world.root.add(e.model);e.pathTimer=(e.id%11)*.08;
   e.warning=reserved?.kind===kind?reserved.warning:boss&&this.warmedBossMarker?this.warmedBossMarker:this.world.attackMarker?.();if(boss)this.warmedBossMarker=null;if(e.warning)e.warning.visible=false;
   this.reinforcements?.delete(id);this.enemies.push(e);return e;}
- spawnBoss(announce=true){const b=this.config.boss;this.boss=this.spawn(b.kind,...b.at,true,99);this.bossSpawned=true;if(announce){this.sound.play('boss');this.toast('The bell has called something back.');const speech=RADIO.bosses[this.chapter];this.radio(...speech,6);this.save();}}
+ spawnBoss(announce=true){const b=this.config.boss;this.boss=this.spawn(b.kind,...b.at,true,99);this.bossSpawned=true;this.boss.introduced=!announce;if(announce){this.save();if(!this.introduceBoss(this.boss)){this.sound.play('boss');this.radio(...RADIO.bosses[this.chapter],6);}}}
+ introduceBoss(e){
+  const id='encounter-'+e.kind;if(!this.cinema?.playEncounter||this.seenScenes?.has(id)){e.introduced=true;return false;}
+  e.introduced=true;this.cinema.playEncounter(e,()=>{this.seenScenes?.add(id);if(e.kind==='birdy')this.birdySpoke=true;e.cool=Math.max(1.6,e.cool);this.player.inv=Math.max(2,this.player.inv);this.save();this.ui.showGame();this.setPaused(false);this.setHUD();});return true;
+ }
  setPaused(p){
   this.paused=p;this.keys.clear();this.mouse.down=this.mouse.aiming=this.mouse.drag=false;this.touch.fire=this.touch.aiming=false;this.touch.x=this.touch.z=0;
   this.sound.pause(p);this.voice?.pause(p);$('#crosshair').hidden=p;$('#look-hint').hidden=p;
@@ -120,7 +126,7 @@ export class Game{
  }
  shoot(){
   const p=this.player;if(p.cooldown>0||p.reloading>0||p.dash>0||p.melee>0)return;
-  if(p.ammo<=0){p.cooldown=.3;this.sound.play('empty');if(p.reserve)this.reload();else this.toast('No rounds. Use F / KNIFE, then dodge.');return;}
+  if(p.ammo<=0){p.cooldown=.3;this.sound.play('empty');if(p.reserve)this.reload();else this.toast('No rounds. Use the knife, then dodge.');return;}
   p.ammo--;p.cooldown=.28;this.stats.shots++;this.sound.play('shot');this.shake=.035;this.world.fireWeapon?.(p.aiming);
   const yaw=Number.isFinite(p.yaw)?p.yaw:Math.atan2(p.x-this.aim.x,p.z-this.aim.z),direction=shotDirection(p,yaw,p.pitch||0);
   const origin={x:p.x,y:p.crouching?1.14:EYE_HEIGHT,z:p.z};const hit=traceShot(this.grid,origin,this.enemies,direction,this.world.obstacles||[]);
@@ -148,6 +154,7 @@ export class Game{
    const visible=dist<15&&this.canSee(e,p);if(dist<9&&visible)e.alert=true;
    if(!e.alert||dist>32){if(dist<22)this.world.animateCharacter(e.model,this.time,false);continue;}
    if(dist<13&&this.time>(e.nextGrowl||0)){e.nextGrowl=this.time+5+(e.id%5);const side=Math.cos(p.yaw||0)*(e.x-p.x)-Math.sin(p.yaw||0)*(e.z-p.z);this.sound.growl?.(side/(dist||1),Math.max(.12,1-dist/16));}
+   if(e.kind==='birdy'&&!e.introduced&&visible&&dist<11&&this.introduceBoss(e))return;
    if(e.kind==='birdy'&&!this.birdySpoke){this.birdySpoke=true;this.radio(...RADIO.birdy,5);}
    const result=stepEnemy(e,dt,{player:p,visible,wallHit:e.wallHit});e.wallHit=false;
    for(const event of result.events)this.enemyEvent(e,event);
@@ -165,14 +172,14 @@ export class Game{
      if(result.mode==='retreat'){dx=-dx;dz=-dz;}if(result.mode==='strafe'){const side=e.id%2?1:-1;[dx,dz]=[-dz*side,dx*side];}
      if(e.kind==='stalker'&&visible&&dist>3&&dist<8){const side=e.id%2?1:-1;[dx,dz]=[dx*.75-dz*.45*side,dz*.75+dx*.45*side];}
      this.move(e,dx*e.speed*dt*(e.phase?1.13:1),dz*e.speed*dt*(e.phase?1.13:1),.38);
-     e.model.rotation.y=Math.atan2(target.x-e.x,target.z-e.z);
+     this.world.faceCharacter(e.model,Math.atan2(target.x-e.x,target.z-e.z),dt);
     }
    }
-   if(e.windup>0||e.charge>0)e.model.rotation.y=Math.atan2(e.chargeX,e.chargeZ);
+   if(e.windup>0||e.charge>0)this.world.faceCharacter(e.model,Math.atan2(e.chargeX,e.chargeZ),dt);
    if(e.warning){e.warning.visible=e.windup>0;this.world.updateAttackMarker?.(e);}
    if(e.kind==='birdy'){const yaw=e.model.rotation.y;e.wingSpace=!solid(this.grid,e.x+Math.cos(yaw)*2.3,e.z-Math.sin(yaw)*2.3,.1)&&!solid(this.grid,e.x-Math.cos(yaw)*2.3,e.z+Math.sin(yaw)*2.3,.1);}
    e.model.position.x=e.x;e.model.position.z=e.z;this.world.animateCharacter(e.model,this.time,result.mode==='chase'||result.mode==='charge',e);
-   if(['jakob','birdy','crawler'].includes(e.kind))e.hitHeads=this.world.headPositions(e.model);
+   if(e.model.userData?.bossRig||e.kind==='crawler')e.hitHeads=this.world.headPositions(e.model);if(e.model.userData?.bossRig)e.hitParts=this.world.bossHitParts(e.model);
    e.model.traverse(o=>{if(o.material?.emissive)o.material.emissive.multiplyScalar(.88);});
   }
  }
@@ -217,11 +224,11 @@ export class Game{
  nextChapter(){const n=this.chapter+1,run=()=>{this.player.hp=100;this.player.ammo=12;this.player.reserve=Math.max(48,this.player.reserve);this.player.meds=Math.max(2,this.player.meds);this.loadChapter(n);this.save();this.ui.intro(this.config);};if(this.ui.load)return this.ui.load(n,run);run();}
  finish(choice){this.setPaused(true);const ending=endingFor([...this.pages],[...this.allies],choice);this.sound.play('bell');this.ui.ending(ending);this.running=false;try{localStorage.setItem('resident-espey-completed',JSON.stringify({ending,stats:this.stats,pages:this.pages.size}));}catch{}}
  radio(name,text,seconds=6){if(this.voice){const id=characterId(name),remote=id==='nathan'||id==='hall'&&!CHAPTERS.some(c=>c.npc.lines.includes(text));this.voice.say(name,text,{radio:remote});this.updateDialogue();}else if(this.settings.subtitles!==false){$('#speaker').textContent=name;$('#radio-text').textContent=text;$('#radio').style.opacity=1;this.radioUntil=this.time+seconds;}}
- updateDialogue(){if(!this.voice)return;const c=this.voice.current,show=c&&(this.settings.subtitles!==false||c.error);$('#radio').style.opacity=show?1:0;if(show){$('#speaker').textContent=c.entry.speaker;$('#radio-text').textContent=c.entry.text;}if(c?.error&&!c.notified){c.notified=true;this.toast('Dialogue audio could not load. Captions are shown.');}}
+ updateDialogue(){if(!this.voice)return;const c=this.voice.current,show=c&&(this.settings.subtitles!==false||c.error);$('#radio').style.opacity=show?1:0;if(show){$('#speaker').textContent=displayName(c.entry.speaker);$('#radio-text').textContent=c.entry.text;}if(c?.error&&!c.notified){c.notified=true;this.toast('Dialogue audio could not load. Captions are shown.');}}
 
  toast(text){$('#toast').textContent=text;$('#toast').style.opacity=1;this.toastUntil=this.time+3.5;}
- proximity(){const p=this.player,candidates=this.items.filter(i=>!i.used&&(!Number.isInteger(i.stage)||i.stage===this.objectives));candidates.push(this.npc,{kind:'exit',x:(this.config.exit[0]+.5)*TILE,z:(this.config.exit[1]+.5)*TILE});let nearest=null,best=2.65;for(const c of candidates){const d=distance(p,c);const forward=viewDirection(p.yaw||0,0),angle=((c.x-p.x)*forward.x+(c.z-p.z)*forward.z)/(d||1);if(d<best&&(angle>.2||d<1.1)&&this.canSee(p,c)){nearest=c;best=d;}}this.nearest=nearest;const el=$('#interaction');el.hidden=!nearest;if(nearest){const names={ammo:'Take sidearm rounds',med:'Take first aid',page:MEMORY_LABELS[nearest?.page]||'Examine memory',fuse:'Recover power fuse',seal:'Recover seal fragment',anchor:'Restore anchor generator',save:'Save / restore vitals',exit:this.config.exitLabel};el.querySelector('span').textContent=nearest===this.npc?'Talk to '+nearest.name:nearest.label||names[nearest.kind];}}
- setHUD(){const p=this.player;if(!p)return;$('#chapter-label').textContent=`CHAPTER ${this.config.number} / ${this.config.name}`;$('#location-label').textContent=roomAt(this.level,p.x,p.z)?.name||'Service passage';$('#objective').textContent=this.bossDead?(this.chapter===2?'Reach the PA. Decide who gets to come home.':this.config.exitLabel+'.'):this.level.tasks[this.objectives];$('#health-fill').style.width=p.hp+'%';$('#health-fill').style.background=p.hp<30?'#b95b46':p.hp<60?'#c6a75d':'#87b2a2';$('#health-state').textContent=p.hp<30?'DANGER':p.hp<60?'CAUTION':'FINE';$('#health-state').style.color=p.hp<30?'#e07a62':p.hp<60?'#d5ba76':'#87b2a2';$('#stamina-fill').style.width=p.stamina+'%';$('#world').dataset.state=JSON.stringify(this.snapshot());$('#ammo').textContent=p.ammo;$('#reserve').textContent=' / '+p.reserve;$('#meds').textContent=p.meds;$('#reload-progress').hidden=p.reloading<=0;const progress=reloadProgress(p);$('#reload-progress').style.setProperty('--reload',progress*100+'%');$('#reload-progress').querySelector('span').textContent=progress<.63?'Changing magazine':progress<.88?'Seating magazine':'Chambering round';const threat=this.boss&&!this.boss.dead?this.boss:this.enemies.find(e=>!e.dead&&!e.dormant&&e.kind==='birdy'&&distance(e,p)<14&&e.alert);$('#boss-hud').hidden=!threat;if(threat){$('#boss-name').textContent=threat.kind==='birdy'?'LIL BIRDY / THE BORROWED VOICE':this.config.boss.name;$('#boss-fill').style.width=Math.max(0,threat.hp/threat.max*100)+'%';}}
+ proximity(){const p=this.player,candidates=this.items.filter(i=>!i.used&&(!Number.isInteger(i.stage)||i.stage===this.objectives));candidates.push(this.npc,{kind:'exit',x:(this.config.exit[0]+.5)*TILE,z:(this.config.exit[1]+.5)*TILE});let nearest=null,best=2.65;for(const c of candidates){const d=distance(p,c);const forward=viewDirection(p.yaw||0,0),angle=((c.x-p.x)*forward.x+(c.z-p.z)*forward.z)/(d||1);if(d<best&&(angle>.2||d<1.1)&&this.canSee(p,c)){nearest=c;best=d;}}this.nearest=nearest;const el=$('#interaction');el.hidden=!nearest;if(nearest){const names={ammo:'Take sidearm rounds',med:'Take first aid',page:MEMORY_LABELS[nearest?.page]||'Examine memory',fuse:'Recover power fuse',seal:'Recover seal fragment',anchor:'Restore anchor generator',save:'Save and recover',exit:this.config.exitLabel};el.querySelector('span').textContent=nearest===this.npc?'Talk to '+displayName(nearest.name):nearest.label||names[nearest.kind];}}
+ setHUD(){const p=this.player;if(!p)return;$('#chapter-label').textContent=this.config.number;$('#location-label').textContent=roomAt(this.level,p.x,p.z)?.name||'Service passage';$('#objective').textContent=this.bossDead?(this.chapter===2?'Reach the PA. Decide who gets to come home.':this.config.exitLabel+'.'):this.level.tasks[this.objectives];$('#health-fill').style.width=p.hp+'%';$('#health-fill').style.background=p.hp<30?'#b95b46':p.hp<60?'#c6a75d':'#87b2a2';$('#health-state').textContent=p.hp<30?'DANGER':p.hp<60?'CAUTION':'FINE';$('#health-state').style.color=p.hp<30?'#e07a62':p.hp<60?'#d5ba76':'#87b2a2';$('#stamina-fill').style.width=p.stamina+'%';$('#world').dataset.state=JSON.stringify(this.snapshot());$('#ammo').textContent=p.ammo;$('#reserve').textContent=' / '+p.reserve;$('#meds').textContent=p.meds;$('#reload-progress').hidden=p.reloading<=0;const progress=reloadProgress(p);$('#reload-progress').style.setProperty('--reload',progress*100+'%');$('#reload-progress').querySelector('span').textContent=progress<.63?'Changing magazine':progress<.88?'Seating magazine':'Chambering round';const threat=this.boss&&!this.boss.dead?this.boss:this.enemies.find(e=>!e.dead&&!e.dormant&&e.kind==='birdy'&&distance(e,p)<14&&e.alert);$('#boss-hud').hidden=!threat;if(threat){$('#boss-name').textContent=BOSS_NAMES[threat.kind]||this.config.boss.name;$('#boss-fill').style.width=Math.max(0,threat.hp/threat.max*100)+'%';}}
  frame(now){
   const dt=Math.min((now-this.last)/1000||.016,.045);this.frameMs=now-this.last;this.last=now;this.time+=dt;this.voice?.update();
   if(this.loading){requestAnimationFrame(this.frame);return;}
@@ -240,7 +247,7 @@ export class Game{
     if(p.dash>0){p.dash-=dt;dx=p.dashX;dz=p.dashZ;len=1;speed=15;}
     if(len)this.move(p,dx/len*speed*dt,dz/len*speed*dt,.32);p.moving=len>0;
     settleWeapon(p,dt);const d=viewDirection(p.yaw,p.pitch);this.aim={x:p.x+d.x*12,z:p.z+d.z*12};this.world.setView(p,p.yaw,p.pitch,this.time,p.aiming);
-    if(this.mouse.down||this.touch.fire)this.shoot();this.updateEnemies(dt);this.proximity();this.directRoute();
+    if(this.mouse.down||this.touch.fire)this.shoot();this.updateEnemies(dt);if(!this.cinema.active){this.proximity();this.directRoute();}if(this.cinema.active){requestAnimationFrame(this.frame);return;}
     if(len&&Math.floor(this.time*(p.sprinting?3.5:2.2))!==this.lastStep){this.lastStep=Math.floor(this.time*(p.sprinting?3.5:2.2));this.sound.play('step');}
     if(this.time>this.nextRadio&&!this.specialRadio&&this.chapter===1){this.specialRadio=true;this.radio(...RADIO.chalk,6);}
     for(const i of this.items)if(!i.used&&i.model?.userData.ring)i.model.userData.ring.material.opacity=.25+Math.sin(this.time*2+i.id)*.1;
@@ -255,5 +262,5 @@ export class Game{
    this.world.update(dt,this.time,p,this.aim,this.settings.motion?0:this.shake);this.setHUD();
   }requestAnimationFrame(this.frame);
  }
- snapshot(){return{fps:Math.round(1000/(this.frameMs||16)),drawCalls:this.world?.worldCalls,perspective:'first-person',version:'4.3.0',voice:this.voice?.status,props:this.world?.obstacles?.length,pointerLocked:this.pointerLocked,running:this.running,paused:this.paused,loading:!!this.loading,preparation:this.preparation,chapter:this.chapter,player:this.player?{x:this.player.x,z:this.player.z,yaw:this.player.yaw,pitch:this.player.pitch,hp:this.player.hp,ammo:this.player.ammo,reserve:this.player.reserve,meds:this.player.meds}:null,objectives:this.objectives,pages:this.pages.size,allies:this.allies.size,scenes:[...(this.seenScenes||[])],bossDead:this.bossDead,enemies:this.enemies?.filter(e=>!e.dead&&!e.dormant).length,nearest:this.nearest?.kind||this.nearest?.name,route:this.level?.tasks?.[this.objectives],room:this.level?roomAt(this.level,this.player.x,this.player.z)?.name:null,gates:this.world?.gates?.filter(g=>g.obstacle.active).length,reloading:this.player?.reloading,beats:[...(this.beats||[])],stats:{...this.stats}};}
+ snapshot(){return{fps:Math.round(1000/(this.frameMs||16)),drawCalls:this.world?.worldCalls,perspective:'first-person',version:'4.4.0',voice:this.voice?.status,props:this.world?.obstacles?.length,pointerLocked:this.pointerLocked,running:this.running,paused:this.paused,loading:!!this.loading,preparation:this.preparation,chapter:this.chapter,player:this.player?{x:this.player.x,z:this.player.z,yaw:this.player.yaw,pitch:this.player.pitch,hp:this.player.hp,ammo:this.player.ammo,reserve:this.player.reserve,meds:this.player.meds}:null,objectives:this.objectives,pages:this.pages.size,allies:this.allies.size,scenes:[...(this.seenScenes||[])],bossDead:this.bossDead,enemies:this.enemies?.filter(e=>!e.dead&&!e.dormant).length,nearest:this.nearest?.kind||this.nearest?.name,route:this.level?.tasks?.[this.objectives],room:this.level?roomAt(this.level,this.player.x,this.player.z)?.name:null,gates:this.world?.gates?.filter(g=>g.obstacle.active).length,reloading:this.player?.reloading,beats:[...(this.beats||[])],stats:{...this.stats}};}
 }

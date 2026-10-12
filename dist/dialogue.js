@@ -1,6 +1,6 @@
-import {LEVELS} from './levels.js?v=4.3.0';
-import {SCENES} from './story.js?v=4.3.0';
-import {CHAPTERS} from './data.js?v=4.3.0';
+import {LEVELS} from './levels.js?v=4.4.0';
+import {SCENES} from './story.js?v=4.4.0';
+import {CHAPTERS} from './data.js?v=4.4.0';
 
 // The same script drives production audio and gameplay; keys survive timing edits.
 export const RADIO={

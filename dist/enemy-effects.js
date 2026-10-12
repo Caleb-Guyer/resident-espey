@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {solid} from './data.js?v=4.3.0';
+import {solid} from './data.js?v=4.4.0';
 
 // Fixed batches prevent an acid volley or a wing attack from allocating new
 // meshes in combat. Pools and waves are temporary hazards, never obstacles.

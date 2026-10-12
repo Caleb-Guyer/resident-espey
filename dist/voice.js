@@ -1,5 +1,5 @@
-import {VOICE_ASSETS} from './voice-assets.js?v=4.3.0';
-import {voiceKey} from './dialogue.js?v=4.3.0';
+import {VOICE_ASSETS} from './voice-assets.js?v=4.4.0';
+import {voiceKey} from './dialogue.js?v=4.4.0';
 
 export class Voice{
  constructor(sound,settings,{fetcher=globalThis.fetch?.bind(globalThis)}={}){this.sound=sound;this.settings=settings;this.fetcher=fetcher;this.buffers=new Map();this.queue=[];this.epoch=0;this.paused=true;this.scene=null;this.current=null;}
@@ -19,7 +19,7 @@ export class Voice{
  }
  get sceneTime(){const s=this.scene;if(!s?.ready)return 0;return Math.min(s.story.duration,Math.max(0,s.paused?s.offset:this.context.currentTime-s.base));}
  scheduleScene(){const s=this.scene;if(!s?.ready||s.paused)return;s.base=this.context.currentTime+.06-s.offset;
-  s.story.lines.forEach((line,i)=>{const buffer=s.buffers[i],offset=Math.max(0,s.offset-line.at);if(offset>=buffer.duration)return;const source=this.source(buffer,false);source.start(Math.max(this.context.currentTime+.06,s.base+line.at),offset);s.sources.push(source);});
+  s.story.lines.forEach((line,i)=>{const buffer=s.buffers[i],offset=Math.max(0,s.offset-line.at);if(offset>=buffer.duration)return;const source=this.source(buffer,!!line.radio);source.start(Math.max(this.context.currentTime+.06,s.base+line.at),offset);s.sources.push(source);});
  }
  source(buffer,radio){const source=this.context.createBufferSource();source.buffer=buffer;
   if(radio){const high=this.context.createBiquadFilter(),low=this.context.createBiquadFilter();high.type='highpass';high.frequency.value=320;low.type='lowpass';low.frequency.value=3400;source.connect(high);high.connect(low);low.connect(this.gain);source.onended=()=>{high.disconnect();low.disconnect();source.disconnect();};source.cleanup=()=>{high.disconnect();low.disconnect();source.disconnect();};}else{source.connect(this.gain);source.onended=()=>source.disconnect();}return source;
