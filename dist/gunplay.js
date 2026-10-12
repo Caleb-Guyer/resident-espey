@@ -1,4 +1,5 @@
-import {viewDirection} from './fps.js?v=4.5.1';
+import {weaponFor} from './weapons.js?v=4.6.0';
+import {viewDirection} from './fps.js?v=4.6.0';
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export function settleWeapon(p,dt){
  if(!Number.isFinite(dt)||dt<0)return;
@@ -12,8 +13,8 @@ export function shotDirection(p,yaw,pitch,random=Math.random){
  return viewDirection(yaw+Math.cos(angle)*radius,pitch+Math.sin(angle)*radius);
 }
 export function applyRecoil(p){
- p.bloom=clamp((p.bloom||0)+.28,0,1);
- p.pitch=clamp((p.pitch||0)+(p.aiming?.0055:.012),-1.35,1.35);
+ const w=weaponFor(p);p.bloom=clamp((p.bloom||0)+.28*w.recoil,0,1);
+ p.pitch=clamp((p.pitch||0)+(p.aiming?.0055:.012)*w.recoil,-1.35,1.35);
  // A small consistent drift avoids the old alternating left/right vibration.
- p.recoilShot=(p.recoilShot||0)+1;p.yaw=(p.yaw||0)+(p.aiming?.00035:.0008);
+ p.recoilShot=(p.recoilShot||0)+1;p.yaw=(p.yaw||0)+(p.aiming?.00035:.0008)*w.recoil;
 }

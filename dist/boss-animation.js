@@ -1,5 +1,5 @@
-import {BOSS_PROFILES} from './boss-models.js?v=4.5.1';
-import {ATTACKS} from './enemy-director.js?v=4.5.1';
+import {BOSS_PROFILES} from './boss-models.js?v=4.6.0';
+import {ATTACKS} from './enemy-director.js?v=4.6.0';
 const clamp=n=>Math.max(0,Math.min(1,n)),ease=n=>{n=clamp(n);return n*n*(3-2*n);};
 export function animateBoss(g,t,moving,mood={}){
  const d=g.userData,kind=d.kind,p=BOSS_PROFILES[kind],seed=d.phase||0,pace=kind==='chris'?6.8:kind==='zeb'?2.7:kind==='birdy'?4.2:4.4,cycle=t*pace+seed,walk=moving?1:0,breathe=Math.sin(t*1.65+seed);
@@ -24,7 +24,7 @@ export function animateBoss(g,t,moving,mood={}){
   if(['rupture','groundtear'].includes(mood.attack)){d.arms.forEach(a=>{a.rotation.x-=wind*2.25;a.userData.forearm.rotation.x-=wind*.6;});d.body.rotation.x-=wind*.08;d.body.position.y-=swing*.12;d.body.rotation.x+=swing*.4;}
   d.bileSacs?.forEach(s=>s.scale.set(.075,.13*(1+wind*.18+breathe*.035),.055*(1+wind*.18)));
  }else if(kind==='birdy'){
-  const fold=mood.wingSpace===false?1.45:mood.recover>0?.9:.24,flap=Math.sin(t*(mood.charge>0?7.5:1.8))*(mood.charge>0?.24:.035);
+  const fold=mood.wingSpace===false?1.45:mood.recover>0?.40:.10,flap=Math.sin(t*(mood.charge>0?7.5:1.8))*(mood.charge>0?.24:.035);
   d.wings.forEach((w,i)=>{const side=i?1:-1;w.rotation.set(0,side*fold,side*(.13+flap-wind*.24));d.wingWrists[i].rotation.set(0,side*(mood.charge>0?.05:.16),side*(flap*.5));});
   if(mood.charge>0){g.position.y=.29+Math.sin(t*7.5)*.018;d.body.rotation.x=.32;d.head.rotation.x=-.30;d.legs.forEach(l=>{l.rotation.x=.85;l.userData.calf.rotation.x=1.22;});d.arms.forEach(a=>a.rotation.x=-.95);mouth=.25;}
   else if(mood.windup>0){d.head.rotation.x=-.16;mouth+=wind*.19;}
@@ -53,11 +53,17 @@ export function animateBoss(g,t,moving,mood={}){
   if(beat?.id==='crusher'&&beat.time>4){d.heads[0].rotation.x=-.26;d.heads[0].rotation.z=-.15;d.jaws[0].rotation.x=.34;d.faces[0].morphTargetInfluences[0]=.75;d.arms[0].rotation.x=-.8;d.arms[1].rotation.x=-1.2;}
  }
  if(kind==='birdy'){
-  const broken=beat?.id==='birdy-break'?ease((beat.time-.7)/2.0):phase>=3?1:0;
-  d.wingWrists.forEach(w=>w.scale.set(1-broken*.5,1-broken*.34,1));
-  if(phase===2&&!broken){d.wings[0].rotation.z-=.43;d.wingWrists[0].rotation.z-=.55;}
-  if(broken){d.wings.forEach((w,i)=>{const side=i?1:-1;w.rotation.y+=(side*1.3-w.rotation.y)*broken;w.rotation.z+=(-side*.55-w.rotation.z)*broken;d.wingWrists[i].rotation.y+=(side*1.55-d.wingWrists[i].rotation.y)*broken;w.rotation.x=.3*broken;d.wingWrists[i].rotation.z=-side*.2*broken;d.wingWrists[i].rotation.x=.3*broken;});g.position.y*=1-broken;d.legs.forEach((l,i)=>{l.rotation.x=Math.sin(cycle+i*Math.PI)*.36*walk;l.userData.calf.rotation.x=Math.max(0,-Math.sin(cycle+i*Math.PI))*.4*walk;});d.body.rotation.x=.23;}
-  if(beat?.id==='birdy-break'){const t=beat.time;d.body.position.y-=Math.sin(Math.min(1,t/4)*Math.PI)*.25;d.head.rotation.x=-.12-ease((t-2.6)/.6)*.26;d.jaw.rotation.x=.08+ease((t-2.6)/.6)*.34;d.faces[0].morphTargetInfluences[0]=ease((t-2.6)/.6)*.8;}
+  // The damaged wings are torn away by Ethan, one at each transition.
+  const tearing=beat?.id==='birdy-left'||beat?.id==='birdy-break',side=beat?.id==='birdy-left'?0:1,rip=tearing?ease((beat.time-2.7)/.46):0,torn=phase>=3?2:phase>=2?1:0;
+  for(let i=0;i<2;i++){
+   const gone=tearing?(i<side||i===side&&rip>.72):i<torn,w=d.wings[i],stump=d.wingStumps[i],loose=d.detachedWings[i];
+   w.visible=!gone;stump.visible=gone;d.wingWrists[i].scale.set(gone?.5:1,gone?.66:1,1);
+   if(i===side&&tearing){w.rotation.y+=(i?1:-1)*rip*.35;w.position.x=(i?1:-1)*(.22+rip*.24);w.rotation.z+=(i?1:-1)*rip*.30;}else w.position.x=(i?1:-1)*.22;
+   if(!loose.userData.landed){loose.visible=gone;loose.scale.setScalar(gone?1:0);const fall=tearing&&i===side?ease((beat.time-3)/1.25):1;loose.position.set((i?1:-1)*(1.0+fall*.4),1.65*(1-fall)+.05,fall*.32);loose.rotation.set(-fall*Math.PI/2,(i?1:-1)*(.10+fall*.30),(i?1:-1)*fall*.18);if(!gone)loose.position.set(0,0,0);}
+  }
+  if(phase===2){d.wings[1].rotation.z+=.16;d.wingWrists[1].rotation.z+=.30;d.body.rotation.z=-.075;}
+  if(phase>=3){g.position.y=0;d.legs.forEach((l,i)=>{l.rotation.x=Math.sin(cycle+i*Math.PI)*.36*walk;l.userData.calf.rotation.x=Math.max(0,-Math.sin(cycle+i*Math.PI))*.4*walk;});d.body.rotation.x=.23;}
+  if(tearing){const u=ease(beat.time/1.1);d.body.position.y-=.20*u;d.body.rotation.x=.18+Math.sin(rip*Math.PI)*.18;d.head.rotation.x=-.10-rip*.27;d.jaw.rotation.x=.05+rip*.37;d.faces[0].morphTargetInfluences[0]=rip*.8;d.arms.forEach(a=>a.rotation.x=-.22);}
   if(['groundRush','scream'].includes(mood.attack)){d.head.rotation.x-=wind*.28;d.jaw.rotation.x=.12+wind*.3;d.faces[0].morphTargetInfluences[0]=wind*.85;}
   if(mood.attack==='talons'){d.arms.forEach((arm,i)=>{arm.rotation.x-=wind*.7+swing*.7;arm.rotation.z+=(i?1:-1)*wind*.3;});}
  }
@@ -66,5 +72,5 @@ export function animateBoss(g,t,moving,mood={}){
   if(beat?.id==='zeb-rupture'){const u=ease((beat.time-.8)/2);d.bileSacs[1].scale.set(.075,.13*(1-u)+.043*u,.055*(1-u)+.018*u);d.arms.forEach((arm,i)=>arm.rotation.z=(i?1:-1)*(.1+Math.sin(u*Math.PI)*.2));d.jaw.rotation.x=.12+u*.24;}
  }
  if(mood.dead){const u=ease((mood.deathTime||0)/1.1);g.position.y=.10*u;g.rotation.x=-Math.PI*.47*u;d.heads.forEach(h=>h.rotation.x=.3*u);d.arms.forEach((arm,i)=>{arm.rotation.x=.26*u;arm.rotation.z=(i%2?1:-1)*.38*u;});d.legs.forEach(l=>l.userData.calf.rotation.x=.42*u);}
- d.mouthCovers.forEach((cover,i)=>cover.visible=d.jaws[i].rotation.x<.13);return g;
+ d.mouthCovers.forEach((cover,i)=>{const open=d.jaws[i].rotation.x>=.13;cover.visible=!open;d.jaws[i].visible=open;d.oralParts?.[i]?.forEach(o=>o.visible=open);});return g;
 }

@@ -4,6 +4,14 @@
 
 Some places remember you. Some refuse to let you go.
 
+Version **4.6.0** adds a pump shotgun and automatic carbine with independent ammunition, route pickups, keyboard/wheel/touch switching and compatible checkpoint storage. The shotgun fires eight distributed pellets with distance falloff, cycles its pump, ejects spent shells, and loads one shell at a time. Firing interrupts a shell reload while preserving loaded rounds. The carbine has a 30-round magazine, faster handling and separate bolt/magazine animation. All three sight lines settle at the reticle.
+
+The sidearm now has a closed, chamfered slide, recessed ejection port, machining wear, detailed grip and improved skin and cloth materials. New original surface scans provide skin pores, scarring, metal grain and feather detail. Boss anatomy has subtler ribs, facial contours, rigged scars, tendon detail and mouths that open for speech and attacks. Black skin and brown hair character designs remain intact.
+
+Lil Birdy begins with both enormous articulated wings. Ethan grabs and tears away the first at the third stage and the second before the grounded fourth stage. Two close-up sequences show the grip, strain, severing and falling wing; permanent stumps and dropped wings remain afterward. Removed wings lose their bullet hit volumes. His final stages retain the enraged charge, talons and scream patterns. Old phase checkpoints restore the corresponding wing state.
+
+Weapon models, damaged wing variants, finisher hands, effects and shader variants are prepared during loading. Switching, shooting and wing removal reuse these resources. [4.6 verification](PLAYTEST_4.6.md) · [Texture source and generation prompt](ASSET_MATERIALS.md).
+
 Version **4.5.1** fixes combat, checkpoints, menus and scene control. Point-blank shots connect inside head and limb hit volumes. Enemy phase speed applies equally in every direction, large creatures use consistent collision footprints, glancing wall impacts stop charges, and late charge/wave warnings show their actual range. Low furniture no longer hides a standing player from an enemy; navigation can approach someone standing beside a blocked cell. Settled corpses stop rebuilding their poses.
 
 Lil Birdy now guards the last Backrooms fragment and must fall before Jakob's encounter begins. He grants the boss ammunition reward and saves his defeat without completing Jakob's fight. Boss checkpoints retain valid positions, alertness, damage and phases. Invalid optional save fields and damaged settings use safe defaults; retries save their death count. Focus loss keeps story and boss scenes paused, gameplay timers freeze during menus and scenes, new boss instructions become visible again, and a fatal hit cannot start another encounter.

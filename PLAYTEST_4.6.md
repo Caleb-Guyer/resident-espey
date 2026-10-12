@@ -1,0 +1,13 @@
+# Resident Espey 4.6.0 verification
+
+October 12, 2026. Desktop browser checks used a separate local preview with master and dialogue volume at zero. The user's existing game tab and audio preferences were preserved.
+
+- 151 automated tests pass, including the existing campaign, input, collision, checkpoint, phase, voice and rendering regressions. Syntax checks cover all 34 runtime modules.
+- New checks cover independent weapon ammunition, legacy checkpoint migration, ammunition stashing, shell-by-shell reload interruptions, partial magazine reserves, eight normalized pellet directions, distance falloff, combined pellet damage reactions, weapon pickup placement, long-gun geometry, frame-independent recoil, centered sights, and individual wing removal with matching hit-volume changes. Closed-mouth patch normals are verified to prevent unlit black faces.
+- Browser pickup checks collected the shotgun and carbine through actual proximity/interact actions and restored their checkpoints. Shotgun restored 8/16, carbine 30/60, with the selected gun preserved.
+- Browser firing and reload checks exercised 48 shots per weapon, interrupted shotgun loading, magazine loading and inventory serialization. No geometry or shader count growth occurred during firing. Shotgun damage is applied once per creature per shell, so eight pellets do not manufacture eight headshot counters or knockback reactions.
+- All five phases of Chris, Jakob, Zeb and Lil Birdy released their distinct attacks. The Jakob chase and press separated Bobby, enraged Jakob continued fighting, and defeated arenas reopened. Both Birdy transition scenes completed and his final phases stayed grounded.
+- Visual review covered the new shotgun, wing span, wing grab framing, face materials, and damage state. Weapon and creature textures are original generated assets with their full source prompt documented in ASSET_MATERIALS.md.
+- Loading prepares all weapon models, hidden oral geometry, both severed-wing variants and finisher hands. Texture shaders use one atlas sample for guns/feathers and continuous triplanar mapping for skin. Paused gameplay and paused scenes keep a static frame instead of continuously submitting the same image.
+
+The heavy all-boss rendering stress run still exhibited GPU/driver stalls on this desktop (roughly 40 ms 95th-percentile submission time and occasional longer outliers), despite sub-millisecond enemy updates. This release does not claim that every stutter is eliminated or that measured CPU submission time is a GPU frame-time measurement. The scripted fight checks use invulnerability and do not constitute a human difficulty/balance playthrough.

@@ -1,4 +1,4 @@
-import {solid} from './data.js?v=4.5.1';
+import {solid} from './data.js?v=4.6.0';
 
 export const EYE_HEIGHT=1.64;
 export const CEILING=3.35;
@@ -50,8 +50,8 @@ export function propsOcclude(props,a,b,ay=1.5,by=1.5){
 
 // The ballistic ray uses height as well as direction. Shooting the floor or ceiling
 // cannot damage a creature, and furniture occludes shots just like the walls.
-export function traceShot(grid,origin,enemies,direction,props=[]){
- let limit=24;
+export function traceShot(grid,origin,enemies,direction,props=[],maxDistance=24){
+ let limit=Number.isFinite(maxDistance)?Math.max(.1,Math.min(50,maxDistance)):24;
  for(let t=.08;t<limit;t+=.08){
   const y=origin.y+direction.y*t;
   if(y<=.03||y>=CEILING-.03||solid(grid,origin.x+direction.x*t,origin.z+direction.z*t,.025)){limit=t;break;}

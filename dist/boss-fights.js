@@ -23,7 +23,7 @@ export const BOSS_FIGHTS=Object.freeze({
  birdy:{health:1500,phases:[
   phase(1,[['swoop'],['gale']]),
   phase(.80,[['gale','swoop'],['crosswind']]),
-  phase(.58,[['skydive','gale'],['crosswind','swoop']]),
+  phase(.58,[['skydive','gale'],['crosswind','swoop']],{beat:'birdy-left'}),
   phase(.36,[['groundRush'],['talons','talons']],{beat:'birdy-break',grounded:true,speed:1.25}),
   phase(.15,[['groundRush','groundRush'],['scream','talons','groundRush']],{grounded:true,speed:1.40})]}
 });
@@ -57,6 +57,6 @@ export function saveBossProgress(e){return {id:e.id,kind:e.kind,hp:e.hp,max:e.ma
 export function restoreBossProgress(e,s,canStand=()=>true){
  if(!s||s.kind!==e.kind||!Number.isFinite(s.hp)||!Number.isFinite(s.max)||s.max<=0)return false;
  e.hp=Math.max(1,Math.min(e.max,s.hp/s.max*e.max));e.phase=Number.isInteger(s.phase)?Math.max(0,Math.min(4,s.phase)):0;e.bobbyCrushed=e.kind==='jakob'&&s.bobbyCrushed===true;
- e.stageResolved=Math.max(0,Math.min(50,Number(s.stageResolved)||0));e.summoned=s.summoned===true;if(e.kind==='jakob'&&!e.bobbyCrushed)e.phase=Math.min(2,e.phase);e.phase=desiredPhase(e);e.beatsDone=new Set((Array.isArray(s.beatsDone)?s.beatsDone:[]).filter(n=>['chris-break','zeb-rupture','birdy-break','crusher'].includes(n)));e.ventCool=Math.max(0,Math.min(20,Number(s.ventCool)||0));e.purged=Math.max(0,Math.min(20,Number(s.purged)||0));
+ e.stageResolved=Math.max(0,Math.min(50,Number(s.stageResolved)||0));e.summoned=s.summoned===true;if(e.kind==='jakob'&&!e.bobbyCrushed)e.phase=Math.min(2,e.phase);e.phase=desiredPhase(e);e.beatsDone=new Set((Array.isArray(s.beatsDone)?s.beatsDone:[]).filter(n=>['chris-break','zeb-rupture','birdy-left','birdy-break','crusher'].includes(n)));e.ventCool=Math.max(0,Math.min(20,Number(s.ventCool)||0));e.purged=Math.max(0,Math.min(20,Number(s.purged)||0));
  if(Array.isArray(s.position)&&s.position.length===2&&s.position.every(Number.isFinite)&&canStand(...s.position))[e.x,e.z]=s.position;e.alert=s.alert===true||e.alert||e.phase>0||e.hp<e.max;return true;
 }

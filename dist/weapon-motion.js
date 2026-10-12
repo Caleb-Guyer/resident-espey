@@ -1,3 +1,4 @@
+import {weaponFor} from './weapons.js?v=4.6.0';
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const smooth=x=>{x=clamp(x,0,1);return x*x*x*(x*(x*6-15)+10);};
 const mix=(a,b,t)=>a+(b-a)*t;
@@ -11,7 +12,7 @@ export function dampSpring(s,target,omega,dt){
  if(Math.abs(s.x-target)<1e-7&&Math.abs(s.v)<1e-7){s.x=target;s.v=0;}return s.x;
 }
 export function createWeaponMotion(){return {ads:0,move:{x:0,v:0},sprint:{x:0,v:0},kick:{x:0,v:0},lagX:{x:0,v:0},lagY:{x:0,v:0},shotAge:10,shots:0,lastYaw:null,lastPitch:0};}
-export function kickWeapon(s,aiming){s.kick.v=Math.min(aiming?3.6:5.2,s.kick.v+(aiming?2.8:4.1));s.shotAge=0;s.shots++;}
+export function kickWeapon(s,aiming,power=1){s.kick.v=Math.min((aiming?3.6:5.2)*power,s.kick.v+(aiming?2.8:4.1)*power);s.shotAge=0;s.shots++;}
 
 const keys=[
  // progress, weapon tilt, support hand displacement, hand rotation, magazine displacement
@@ -39,9 +40,13 @@ export function reloadPose(progress,empty=false){
  const present=window(p,.02,.15,.75,.96);
  return {rotation,hand,handRotation,magazine,magazineVisible:p<.405||p>.475,grasp:window(p,.07,.14,.90,.96),lower:-present*.185,present,pullback:present*.09,adsBlock:window(p,.01,.12,.78,.97)};
 }
-export function stepWeaponMotion(s,dt,p,{reduced=false,walk=0,aspect=1.6,progress=0}={}){
+export function stepWeaponMotion(s,dt,p,{reduced=false,walk=0,aspect=1.6,progress=0,viewScale=1.08}={}){
  dt=Number.isFinite(dt)?clamp(dt,0,1):0;
- const reload=p.reloading>0?reloadPose(progress,!!p.reloadEmpty):reloadPose(0),yaw=p.yaw||0,pitch=p.pitch||0;
+ const w=weaponFor(p),reload=p.reloading>0?reloadPose(progress,!!p.reloadEmpty):reloadPose(0),yaw=p.yaw||0,pitch=p.pitch||0;
+ if(w.id==='shotgun'&&p.reloading>0){
+  const elapsed=p.reloadDuration-p.reloading,u=Math.max(0,(elapsed-.45)/.62)%1,load=elapsed>.45&&elapsed<.45+(p.reloadShells||1)*.62,reach=load?Math.sin(u*Math.PI):0,envelope=Math.max(0,Math.min(1,progress/.10,(1-progress)/.12));
+  reload.rotation=[.18*envelope,-.08*envelope,.38*envelope];reload.hand=[.035*reach,-.12*(1-reach)*envelope,.28*reach];reload.handRotation=[-.30*reach,.12*reach,.7*reach];reload.magazine=[0,0,0];reload.magazineVisible=false;reload.grasp=.75*reach;reload.lower=-.035*envelope;reload.pullback=.035*envelope;reload.present=.2*envelope;
+ }else if(w.id==='carbine'){reload.hand[2]+=.17*reload.present;reload.hand[0]+=.02*reload.present;}
  const aim=Number(!!p.aiming&&!p.sprinting)*(1-reload.adsBlock),blend=1-Math.exp(-dt*14);s.ads=mix(s.ads,aim,blend);if(Math.abs(s.ads-aim)<1e-6)s.ads=aim;
  dampSpring(s.kick,0,28,dt);dampSpring(s.move,Number(!!p.moving),14,dt);dampSpring(s.sprint,Number(!!p.sprinting),12,dt);
  const vx=dt&&s.lastYaw!==null?clamp(wrap(yaw-s.lastYaw)/dt,-4,4):0,vy=dt&&s.lastYaw!==null?clamp((pitch-s.lastPitch)/dt,-3,3):0;
@@ -50,12 +55,12 @@ export function stepWeaponMotion(s,dt,p,{reduced=false,walk=0,aspect=1.6,progres
  s.shotAge+=dt;const age=s.shotAge;
  const cycle=age<.022?fade(age,0,.022):age<.09?1-fade(age,.022,.09):0;
  const lock=p.ammo===0&&(!(p.reloading>0)||progress<.88)?1:0;
- const bob=(reduced?0:s.move.x)*(1-s.ads*.92),kick=s.kick.x;
+ const bob=(reduced?0:s.move.x)*(1-s.ads*.92),kick=s.kick.x,long=w.id!=='sidearm',equip=Math.min(1,(p.equipping||0)/.24),pump=w.id==='shotgun'?(p.reloading>0&&p.reloading<.45?Math.sin((.45-p.reloading)/.45*Math.PI)*.087:age>.22&&age<.70?Math.sin((age-.22)/.48*Math.PI)*.087:0):0;
  return {
-  ads:s.ads,headBob:(reduced?0:s.move.x)*Math.sin(walk*7)*.009*(1-s.ads*.8),
-  position:[.16*(1-s.ads)*Math.min(1,aspect/1.3)+s.lagX.x*.3-reload.present*.06,-.145+.05536*s.ads+Math.sin(walk*7)*.004*bob-reload.lower-s.sprint.x*.055,-.45+.03*s.ads+kick*.32-reload.pullback],
-  rotation:[kick+reload.rotation[0]+s.lagY.x,.16*(1-s.ads)+reload.rotation[1]+s.lagX.x,reload.rotation[2]+Math.sin(walk*3.5)*.004*bob-s.sprint.x*.10],
-  slide:Math.max(cycle,lock)*.028,trigger:age<.12?window(age,0,.016,.06,.12):0,
-  reload,fovOffset:-s.ads*14+(reduced?0:s.sprint.x*2)
+  pump,shell:w.id==='shotgun'&&p.reloading>0&&reload.grasp>.35,ads:s.ads,headBob:(reduced?0:s.move.x)*Math.sin(walk*7)*.009*(1-s.ads*.8),
+  position:[.16*(1-s.ads)*Math.min(1,aspect/1.3)+s.lagX.x*.3-reload.present*.06,(long?-.178:-.145)+((long?.178:.145)-w.sightHeight*viewScale)*s.ads+Math.sin(walk*7)*.004*bob-reload.lower-s.sprint.x*.055-equip*.22,(long?-.40:-.45)+.03*s.ads+kick*.32-reload.pullback],
+  rotation:[equip*.38+kick+reload.rotation[0]+s.lagY.x,.16*(1-s.ads)+reload.rotation[1]+s.lagX.x,reload.rotation[2]+Math.sin(walk*3.5)*.004*bob-s.sprint.x*.10],
+  slide:w.id==='shotgun'?0:Math.max(cycle,lock)*(w.id==='carbine'?.042:.028),trigger:age<.12?window(age,0,.016,.06,.12):0,
+  reload,fovOffset:-s.ads*w.ads+(reduced?0:s.sprint.x*2)
  };
 }

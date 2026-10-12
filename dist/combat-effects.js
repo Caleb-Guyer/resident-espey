@@ -19,14 +19,15 @@ export class CombatEffects{
   this.tracers=new T.LineSegments(geometry,new T.LineBasicMaterial({vertexColors:true,transparent:true,opacity:.45,depthWrite:false}));
   this.tracers.frustumCulled=false;root.add(this.tracers);
   this.casingCapacity=48;this.casingCount=0;this.casingData=Array.from({length:this.casingCapacity},()=>({}));
-  this.casings=new T.InstancedMesh(new T.CylinderGeometry(.005,.005,.023,8),new T.MeshStandardMaterial({color:0xb79851,roughness:.29,metalness:.76}),this.casingCapacity);this.casings.instanceMatrix.setUsage(T.DynamicDrawUsage);this.casings.count=0;this.casings.frustumCulled=false;root.add(this.casings);this.casingTransform=new T.Object3D();
+  this.casings=new T.InstancedMesh(new T.CylinderGeometry(.005,.005,.023,8),new T.MeshStandardMaterial({color:0xb79851,roughness:.29,metalness:.76}),this.casingCapacity);this.casings.instanceMatrix.setUsage(T.DynamicDrawUsage);this.casings.instanceColor=new T.InstancedBufferAttribute(new Float32Array(this.casingCapacity*3).fill(1),3).setUsage(T.DynamicDrawUsage);this.casings.count=0;this.casings.frustumCulled=false;root.add(this.casings);this.casingTransform=new T.Object3D();
  }
  get active(){return this.particleCount+this.tracerCount+this.casingCount;}
  eject(origin,yaw,atPort=false){
   if(![origin.x,origin.y,origin.z,yaw].every(Number.isFinite)||this.casingCount===this.casingCapacity)return;
   const c=this.casingData[this.casingCount++],rightX=Math.cos(yaw),rightZ=-Math.sin(yaw);
-  Object.assign(c,{x:origin.x+(atPort?0:rightX*.16-Math.sin(yaw)*.35),y:origin.y-(atPort?0:.19),z:origin.z+(atPort?0:rightZ*.16-Math.cos(yaw)*.35),vx:rightX*1.8,vz:rightZ*1.8,vy:1.4,spin:Math.random()*6,life:3.2,bounces:0});
+  Object.assign(c,{x:origin.x+(atPort?0:rightX*.16-Math.sin(yaw)*.35),y:origin.y-(atPort?0:.19),z:origin.z+(atPort?0:rightZ*.16-Math.cos(yaw)*.35),vx:rightX*1.8,vz:rightZ*1.8,vy:1.4,spin:Math.random()*6,life:3.2,bounces:0,shell:false});
  }
+ shellLast(){if(this.casingCount)this.casingData[this.casingCount-1].shell=true;}
  burst(x,z,color=0xe6b25e,count=8,y=1.1){
   if(![x,y,z,count].every(Number.isFinite))return;
   this.color.setHex(color);const {r,g,b}=this.color;
@@ -71,7 +72,7 @@ export class CombatEffects{
   this.tracers.geometry.setDrawRange(0,this.tracerCount*2);
   if(this.tracerCount){position.needsUpdate=true;color.needsUpdate=true;}
   for(let i=this.casingCount-1;i>=0;i--){const c=this.casingData[i];c.life-=dt;if(c.life<=0){this.casingData[i]=this.casingData[--this.casingCount];this.casingData[this.casingCount]=c;continue;}c.x+=c.vx*dt;c.z+=c.vz*dt;c.y+=c.vy*dt;c.vy-=dt*9.8;if(c.y<.023){c.y=.023;c.vy=c.bounces++<2?Math.abs(c.vy)*.28:0;c.vx*=.6;c.vz*=.6;}if(c.y>.023)c.spin+=dt*13;}
-  for(let i=0;i<this.casingCount;i++){const c=this.casingData[i];this.casingTransform.position.set(c.x,c.y,c.z);this.casingTransform.rotation.set(c.y<=.023?Math.PI/2:c.spin,0,c.spin*.7);this.casingTransform.updateMatrix();this.casings.setMatrixAt(i,this.casingTransform.matrix);}this.casings.count=this.casingCount;if(this.casingCount)this.casings.instanceMatrix.needsUpdate=true;
+  for(let i=0;i<this.casingCount;i++){const c=this.casingData[i];this.casingTransform.position.set(c.x,c.y,c.z);this.casingTransform.rotation.set(c.y<=.023?Math.PI/2:c.spin,0,c.spin*.7);this.casingTransform.scale.set(c.shell?1.7:1,c.shell?1.9:1,c.shell?1.7:1);this.color.setHex(c.shell?0x9b3528:0xffffff);this.casings.setColorAt(i,this.color);this.casingTransform.updateMatrix();this.casings.setMatrixAt(i,this.casingTransform.matrix);}this.casings.count=this.casingCount;if(this.casingCount){this.casings.instanceMatrix.needsUpdate=true;this.casings.instanceColor.needsUpdate=true;}
  }
  dispose(){
   this.particles.dispose();this.casings.dispose();

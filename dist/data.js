@@ -1,4 +1,4 @@
-import {LEVELS,makeLevelGrid} from './levels.js?v=4.5.1';
+import {LEVELS,makeLevelGrid} from './levels.js?v=4.6.0';
 export const TILE=2.4;
 export const SAVE_KEY='resident-espey-v1';
 export const DIFFICULTIES={story:{label:'Story',damage:.65,power:1.35,enemySpeed:.85},survivor:{label:'Survivor',damage:1,power:1,enemySpeed:1},nightmare:{label:'Nightmare',damage:1.35,power:.9,enemySpeed:1.12}};
@@ -26,6 +26,7 @@ for(const c of CHAPTERS){
  const extras={school:[['ammo',6,14],['ammo',23,16],['med',17,7]],backrooms:[['ammo',16,17],['ammo',23,8],['med',18,3]],breach:[['ammo',9,15],['ammo',20,10],['med',27,22]]};
  c.items.push(...extras[c.theme].map(([kind,x,z])=>({kind,at:[x,z]})));
  const caches={school:[[22,5],[26,4],[27,6]],backrooms:[[18,6],[10,7],[5,6],[11,3]],breach:[[13,6],[20,6],[18,3]]};c.items.push(...caches[c.theme].map(at=>({kind:'ammo',at,amount:48})),{kind:'med',at:c.theme==='school'?[21,3]:c.theme==='backrooms'?[5,7]:[13,3]});
+ const arsenal={school:[{kind:'weapon',weapon:'shotgun',at:[6,11],label:'Take shotgun'},{kind:'ammo',weapon:'shotgun',at:[16,6],amount:12,label:'Take shells'},{kind:'ammo',weapon:'shotgun',at:[22,4],amount:16,label:'Take shells'}],backrooms:[{kind:'weapon',weapon:'carbine',at:[24,19],label:'Take carbine'},{kind:'ammo',weapon:'carbine',at:[20,7],amount:60,label:'Take carbine rounds'},{kind:'ammo',weapon:'shotgun',at:[19,5],amount:16,label:'Take shells'},{kind:'ammo',weapon:'carbine',at:[6,4],amount:60,label:'Take carbine rounds'}],breach:[{kind:'weapon',weapon:'shotgun',at:[7,20],label:'Take shotgun'},{kind:'weapon',weapon:'carbine',at:[8,19],label:'Take carbine'},{kind:'ammo',weapon:'shotgun',at:[19,6],amount:20,label:'Take shells'},{kind:'ammo',weapon:'carbine',at:[14,5],amount:90,label:'Take carbine rounds'}]};c.items.push(...arsenal[c.theme]);
 }
 export function makeGrid(theme){return makeLevelGrid(theme);}
 export const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);

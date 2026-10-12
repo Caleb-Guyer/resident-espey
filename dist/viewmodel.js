@@ -60,20 +60,43 @@ function handGeometry(side){
  const morph=g.attributes.position.clone();for(let i=0;i<morph.count;i++){const x=morph.getX(i),y=morph.getY(i),z=morph.getZ(i);if(side===1){const w=Math.exp(-(((y+.028)/.013)**2))*clamp((.030-z)/.04,0,1);morph.setZ(i,z+w*.0035);}else{const w=clamp((.022-z)/.060,0,1)*clamp((-.02-y)/.025,0,1);morph.setX(i,x-w*.006);morph.setZ(i,z+w*.012);}}
  g.morphAttributes.position=[morph];g.computeBoundingSphere();handCache.set(side,g);return g.clone();
 }
+export function createHands(m,root){
+ const hands=[],skins=[];
+ for(const side of[1,-1]){
+  const rest=side===1?[.020,-.115,.085]:[-.037,-.111,.060],hand=group(root,rest);hand.userData.rest=rest;const geo=handGeometry(side),translation=new T.Matrix4().makeTranslation(...rest.map(v=>-v));geo.applyMatrix4(translation);geo.morphAttributes.position[0].applyMatrix4(translation);geo.computeBoundingSphere();const skin=add(hand,geo,m.skin);skin.frustumCulled=false;skins.push(skin);
+  const local=p=>p.map((v,i)=>v-rest[i]);
+  const armPoints=(side===1?[[.020,-.115,.085],[.026,-.140,.095],[.058,-.175,.119],[.082,-.213,.136]]:[[-.037,-.112,.060],[-.046,-.141,.073],[-.061,-.178,.088],[-.082,-.213,.110]]).map(local);
+  add(hand,sweep(armPoints,[[.019,.019],[.022,.021],[.026,.024],[.032,.029]]),m.skin);
+  const clothPoints=[[side*.082,-.213,side===1?.136:.110],[side*.145,-.320,.18],[side*.235,-.50,.32]].map(local);
+  add(hand,sweep(clothPoints,[[.034,.031],[.047,.040],[.058,.05]],.065),m.sleeve);
+  const cuff=add(hand,new T.TorusGeometry(.033,.003,12,48),m.sleeve,local(clothPoints[0].map((v,i)=>v+rest[i])));cuff.quaternion.setFromUnitVectors(new T.Vector3(0,0,1),new T.Vector3(...clothPoints[1]).sub(new T.Vector3(...clothPoints[0])).normalize());cuff.scale.y=.92;
+  if(side===1)add(hand,sphere,m.nail,local([-.040,-.016,.018]),[.001,.0045,.0055]);else add(hand,sphere,m.nail,local([-.045,-.014,-.045]),[.0012,.0048,.0055]);
+  if(side===1){
+   for(let f=0;f<3;f++){const y=-.046-f*.018;add(hand,sphere,m.skin,local([.041,y,.041]),[.0065,.0048,.006]);}
+   const vein=new T.CatmullRomCurve3([[.046,-.094,.064],[.043,-.066,.063],[.037,-.032,.057]].map(p=>new T.Vector3(...local(p))));add(hand,new T.TubeGeometry(vein,30,.00055,8,false),m.skin);
+  }
+  hands.push(hand);
+ }
+
+ return {hands,skins};
+}
 export function createViewModel(m){
  const root=new T.Group(),gun=group(root),slide=group(gun);
  // A continuous frame silhouette includes a real opening in the trigger guard.
  const outline=new T.Shape();outline.moveTo(.053,.023);outline.lineTo(-.150,.030);outline.quadraticCurveTo(-.169,.030,-.165,.004);outline.lineTo(-.086,-.003);outline.quadraticCurveTo(-.078,-.059,-.027,-.059);outline.lineTo(.010,-.057);outline.lineTo(.030,-.124);outline.quadraticCurveTo(.050,-.135,.074,-.119);outline.lineTo(.054,.023);
  const hole=new T.Path();hole.moveTo(-.071,-.012);hole.quadraticCurveTo(-.068,-.047,-.031,-.048);hole.lineTo(-.006,-.048);hole.lineTo(-.006,-.013);hole.closePath();outline.holes.push(hole);add(gun,sideShape(outline,.034),m.frame);
  add(gun,rounded(.039,.014,.098,.003),m.frame,[0,.030,-.10]);
- // Open top slide: narrow profiled cheeks leave the rounded barrel visible.
+ // Broad radiused shoulders, a recessed ejection port, and machined edges.
+ add(slide,rounded(.038,.032,.209,.0055),m.metal,[0,.055,-.064]);
+ add(slide,rounded(.025,.003,.190,.001),m.steel,[0,.071,-.064]);
+ add(slide,rounded(.0008,.013,.037,.002),m.dark,[.0193,.053,-.051]);
+ add(slide,rounded(.0011,.006,.031,.001),m.steel,[.0195,.049,-.051]);
+ add(slide,rounded(.0012,.003,.039,.001),m.metal,[.0199,.060,-.051]);
  for(const side of[-1,1]){
-  const rail=new T.Shape();rail.moveTo(.045,.038);rail.lineTo(-.166,.038);rail.quadraticCurveTo(-.177,.046,-.165,.064);rail.lineTo(-.098,.066);rail.quadraticCurveTo(-.054,.051,-.027,.066);rail.lineTo(.038,.066);rail.quadraticCurveTo(.050,.060,.045,.038);
-  const o=add(slide,sideShape(rail,.006),m.metal,[side*.019,0,0]);
-  for(let i=0;i<9;i++){const ridge=add(slide,rounded(.0008,.017,.0015,.0003),m.dark,[side*.0223,.050,.004+i*.0033]);ridge.rotation.x=-.16;}
+  for(let i=0;i<10;i++){const ridge=add(slide,rounded(.0007,.022,.0012,.0003),m.dark,[side*.0194,.052,.006+i*.003]);ridge.rotation.x=-.24;}
+  for(let i=0;i<5;i++)add(slide,rounded(.0007,.018,.001,.0003),m.dark,[side*.0194,.052,-.124-i*.003]);
+  add(slide,rounded(.001,.006,.022,.001),m.steel,[side*.0195,.052,.024]);
  }
- add(slide,rounded(.034,.025,.059,.003),m.metal,[0,.052,.012]);add(slide,rounded(.032,.009,.05,.002),m.metal,[0,.067,.013]);
- add(slide,rounded(.034,.01,.016,.002),m.metal,[0,.067,-.160]);add(slide,rounded(.030,.006,.015,.001),m.metal,[0,.074,.033]);
  add(gun,cyl,m.steel,[0,.054,-.089],[.0073,.202,.0073]).rotation.x=Math.PI/2;
  add(gun,new T.TorusGeometry(.0066,.0011,12,48),m.steel,[0,.054,-.191]);add(gun,new T.CircleGeometry(.0054,48),m.dark,[0,.054,-.192]).rotation.y=Math.PI;
  add(gun,rounded(.019,.009,.017,.002),m.steel,[0,.066,-.032]);
@@ -90,22 +113,15 @@ export function createViewModel(m){
   add(slide,rounded(.002,.006,.023,.001),m.frame,[side*.023,.052,.024]).rotation.x=.18;
  }
  add(gun,rounded(.003,.005,.03,.001),m.steel,[-.020,.017,-.021]);
+ for(const side of[-1,1]){
+  for(let y=-.046;y<.043;y+=.0055)for(let z=-.019;z<.023;z+=.0055)add(grip,sphere,m.dark,[side*.0230,y,z],[.0005,.00065,.00065]);
+  add(grip,rounded(.001,.087,.002,.0004),m.frame,[side*.023,-.004,.026]);
+ }
  const magazine=group(grip,[0,-.06,0]);add(magazine,rounded(.025,.112,.027,.002),m.magazine,[0,.060,0]);add(magazine,rounded(.031,.006,.034,.002),m.rubber,[0,.002,0]);
  for(let i=0;i<7;i++)add(magazine,new T.CircleGeometry(.0014,20),m.dark,[.0126,.021+i*.012,0]).rotation.y=Math.PI/2;
  const trigger=group(gun,[0,-.006,-.039]);add(trigger,new T.TubeGeometry(new T.CatmullRomCurve3([[0,0,0],[0,-.016,.002],[0,-.028,.012]].map(p=>new T.Vector3(...p))),24,.002,10,false),m.steel);
  const hammer=group(gun,[0,.061,.049]);add(hammer,rounded(.011,.012,.006,.002),m.steel,[0,.004,0]);for(let i=0;i<4;i++)add(hammer,rounded(.010,.0005,.0006,.00015),m.dark,[0,.004+i*.002,.0033]);
- const hands=[],skins=[];
- for(const side of[1,-1]){
-  const rest=side===1?[.020,-.115,.085]:[-.037,-.111,.060],hand=group(root,rest);hand.userData.rest=rest;const geo=handGeometry(side),translation=new T.Matrix4().makeTranslation(...rest.map(v=>-v));geo.applyMatrix4(translation);geo.morphAttributes.position[0].applyMatrix4(translation);geo.computeBoundingSphere();const skin=add(hand,geo,m.skin);skin.frustumCulled=false;skins.push(skin);
-  const local=p=>p.map((v,i)=>v-rest[i]);
-  const armPoints=(side===1?[[.020,-.115,.085],[.026,-.140,.095],[.058,-.175,.119],[.082,-.213,.136]]:[[-.037,-.112,.060],[-.046,-.141,.073],[-.061,-.178,.088],[-.082,-.213,.110]]).map(local);
-  add(hand,sweep(armPoints,[[.019,.019],[.022,.021],[.026,.024],[.032,.029]]),m.skin);
-  const clothPoints=[[side*.082,-.213,side===1?.136:.110],[side*.145,-.320,.18],[side*.235,-.50,.32]].map(local);
-  add(hand,sweep(clothPoints,[[.034,.031],[.047,.040],[.058,.05]],.065),m.sleeve);
-  const cuff=add(hand,new T.TorusGeometry(.033,.003,12,48),m.sleeve,local(clothPoints[0].map((v,i)=>v+rest[i])));cuff.quaternion.setFromUnitVectors(new T.Vector3(0,0,1),new T.Vector3(...clothPoints[1]).sub(new T.Vector3(...clothPoints[0])).normalize());cuff.scale.y=.92;
-  if(side===1)add(hand,sphere,m.nail,local([-.040,-.016,.018]),[.001,.0045,.0055]);else add(hand,sphere,m.nail,local([-.045,-.014,-.045]),[.0012,.0048,.0055]);
-  hands.push(hand);
- }
+ const {hands,skins}=createHands(m,root);
  if(m.marking){const label=add(slide,new T.PlaneGeometry(.067,.0065),m.marking,[-.0224,.049,-.035]);label.rotation.y=-Math.PI/2;}
  return {root,gun,slide,grip,magazine,trigger,hammer,rightHand:hands[0],leftHand:hands[1],rightSkin:skins[0],leftSkin:skins[1]};
 }

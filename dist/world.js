@@ -1,19 +1,22 @@
-import {painted} from './loading.js?v=4.5.1';
-import {BossArena} from './boss-arena.js?v=4.5.1';
-import {createAnatomy,animateCollapse} from './anatomy.js?v=4.5.1';
-import {reloadProgress} from './reload.js?v=4.5.1';
-import {ATTACKS,enemyRadius} from './enemy-director.js?v=4.5.1';
+import {WEAPONS,weaponFor} from './weapons.js?v=4.6.0';
+import {createLongGun} from './longguns.js?v=4.6.0';
+import {scannedMaterial,microTexture} from './surface-materials.js?v=4.6.0';
+import {painted} from './loading.js?v=4.6.0';
+import {BossArena} from './boss-arena.js?v=4.6.0';
+import {createAnatomy,animateCollapse} from './anatomy.js?v=4.6.0';
+import {reloadProgress} from './reload.js?v=4.6.0';
+import {ATTACKS,enemyRadius} from './enemy-director.js?v=4.6.0';
 import * as T from './vendor/three.module.js';
-import {TILE,seeded,solid,findPath} from './data.js?v=4.5.1';
-import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock,propsOcclude} from './fps.js?v=4.5.1';
-import {CombatEffects} from './combat-effects.js?v=4.5.1';
-import {WallPlacement} from './wall-placement.js?v=4.5.1';
-import {createViewModel} from './viewmodel.js?v=4.5.1';
-import {createWeaponMotion,kickWeapon,stepWeaponMotion} from './weapon-motion.js?v=4.5.1';
-import {CHARACTER_DESIGNS,characterHair,dressBirdy,dressArchetype,cloneCharacter} from './creature-design.js?v=4.5.1';
-import {EnemyEffects} from './enemy-effects.js?v=4.5.1';
-import {BOSS_PROFILES,createBossModel} from './boss-models.js?v=4.5.1';
-import {animateBoss} from './boss-animation.js?v=4.5.1';
+import {TILE,seeded,solid,findPath} from './data.js?v=4.6.0';
+import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock,propsOcclude} from './fps.js?v=4.6.0';
+import {CombatEffects} from './combat-effects.js?v=4.6.0';
+import {WallPlacement} from './wall-placement.js?v=4.6.0';
+import {createViewModel,createHands} from './viewmodel.js?v=4.6.0';
+import {createWeaponMotion,kickWeapon,stepWeaponMotion} from './weapon-motion.js?v=4.6.0';
+import {CHARACTER_DESIGNS,characterHair,dressBirdy,dressArchetype,cloneCharacter} from './creature-design.js?v=4.6.0';
+import {EnemyEffects} from './enemy-effects.js?v=4.6.0';
+import {BOSS_PROFILES,createBossModel} from './boss-models.js?v=4.6.0';
+import {animateBoss} from './boss-animation.js?v=4.6.0';
 
 const BOX=bevelBox(1,1,1,.014),WALLBOX=new T.BoxGeometry(1,1,1),SPHERE=new T.SphereGeometry(1,20,14),CYL=new T.CylinderGeometry(1,1,1,16);
 const SHARED=new Set([BOX,WALLBOX,SPHERE,CYL]);
@@ -47,6 +50,10 @@ function mergeParts(g){
  }
 }
 
+function resetWeaponParts(m){
+ m.magazine.position.set(...(m.magazine.userData.rest||[0,-.06,0]));m.magazine.rotation.set(0,0,0);m.magazine.visible=true;m.slide.position.z=0;m.trigger.rotation.x=m.hammer.rotation.x=0;if(m.pump)m.pump.position.z=0;
+ m.leftHand.position.set(...m.leftHand.userData.rest);m.leftHand.rotation.set(...(m.leftHand.userData.restRotation||[0,0,0]));m.leftSkin.morphTargetInfluences[0]=m.rightSkin.morphTargetInfluences[0]=0;if(m.muzzle)m.muzzle.visible=false;if(m.root.userData.shell)m.root.userData.shell.visible=false;
+}
 export class World{
  constructor(canvas,settings){
   this.settings=settings;this.renderer=new T.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});
@@ -56,11 +63,11 @@ export class World{
   this.lamps=[];this.obstacles=[];this.recoil=0;this.ads=0;this.walk=0;this.assets={};this.characterTemplates=new Map();this.characterResources=new Set();
   const loader=new T.TextureLoader();this.ready=Promise.all([['floor','floor'],['wall','plaster'],['skin','infected-skin'],['face','infected-face'],['ethan','ethan-face'],['survivor','survivor-face']].map(([name,file])=>new Promise((resolve,reject)=>{
    const t=loader.load(new URL(`./assets/${file}.webp`,import.meta.url).href,resolve,undefined,reject);t.wrapS=t.wrapT=T.RepeatWrapping;t.colorSpace=T.SRGBColorSpace;t.anisotropy=8;this.assets[name]=t;
-  })));const portrait=new Promise((resolve,reject)=>{const t=loader.load(new URL('./assets/boss-faces-v2.png',import.meta.url).href,resolve,undefined,reject);t.colorSpace=T.SRGBColorSpace;t.anisotropy=8;this.assets.boss=t;});this.ready=Promise.all([this.ready,portrait]);this.ready.catch(()=>{});
+  })));const portrait=new Promise((resolve,reject)=>{const t=loader.load(new URL('./assets/boss-faces-v2.png',import.meta.url).href,resolve,undefined,reject);t.colorSpace=T.SRGBColorSpace;t.anisotropy=8;this.assets.boss=t;});const scans=new Promise((resolve,reject)=>{const t=loader.load(new URL('./assets/material-scans.png',import.meta.url).href,resolve,undefined,reject);t.colorSpace=T.SRGBColorSpace;t.anisotropy=8;this.assets.scans=t;});this.ready=Promise.all([this.ready,portrait,scans]);this.ready.catch(()=>{});
   // Let the title paint and textures arrive before the detailed hands are built.
   this.ready=this.ready.then(async()=>{await painted();this.createWeapon();this.resize();});this.ready.catch(()=>{});this.resize();
  }
- resize(){this.renderer.setSize(innerWidth,innerHeight,false);this.camera.aspect=innerWidth/innerHeight;this.camera.updateProjectionMatrix();if(this.viewCamera){this.viewCamera.aspect=this.camera.aspect;this.viewCamera.updateProjectionMatrix();}}
+ resize(){this.needsPausedRender=true;this.renderer.setSize(innerWidth,innerHeight,false);this.camera.aspect=innerWidth/innerHeight;this.camera.updateProjectionMatrix();if(this.viewCamera){this.viewCamera.aspect=this.camera.aspect;this.viewCamera.updateProjectionMatrix();}}
  stageBoxGeometry(){return BOX.clone();}
  surface(asset,color,repeat=[1,1],bump=.02,roughness=.9){const map=this.assets[asset].clone();map.needsUpdate=true;map.repeat.set(...repeat);const height=map.clone();height.colorSpace=T.NoColorSpace;height.needsUpdate=true;return new T.MeshStandardMaterial({color,map,bumpMap:height,bumpScale:bump,roughness});}
  procedural(kind){
@@ -85,17 +92,17 @@ export class World{
  disposeLevel(){
   this.combatEffects?.dispose();this.combatEffects=null;this.enemyEffects?.dispose();this.enemyEffects=null;
   if(!this.root)return;const geos=new Set(),mats=new Set(),textures=new Set(),skeletons=new Set(),keep=new Set(Object.values(this.assets));
-  this.scene.traverse(o=>{if(o.isSkinnedMesh)skeletons.add(o.skeleton);if(o.geometry&&!SHARED.has(o.geometry))geos.add(o.geometry);if(o.material)for(const m of Array.isArray(o.material)?o.material:[o.material]){mats.add(m);for(const key of ['map','bumpMap','roughnessMap','alphaMap'])if(m[key]&&!keep.has(m[key]))textures.add(m[key]);}});
+  this.scene.traverse(o=>{if(o.isSkinnedMesh)skeletons.add(o.skeleton);if(o.geometry&&!SHARED.has(o.geometry))geos.add(o.geometry);if(o.material)for(const m of Array.isArray(o.material)?o.material:[o.material]){if(!this.characterResources?.has(m))mats.add(m);for(const key of ['map','bumpMap','roughnessMap','normalMap','alphaMap'])if(m[key]&&!keep.has(m[key]))textures.add(m[key]);}});
   for(const g of geos)if(!this.characterResources?.has(g))g.dispose();for(const m of mats)m.dispose();for(const t of textures)if(!this.characterResources?.has(t))t.dispose();for(const s of skeletons)s.dispose();this.flashlight?.shadow?.dispose();this.scene.clear();this.decalMaps={};
  }
  disposeObject(root){
   const geos=new Set(),mats=new Set(),textures=new Set(),skeletons=new Set(),keep=new Set(Object.values(this.assets));
-  root.traverse(o=>{if(o.isSkinnedMesh)skeletons.add(o.skeleton);if(o.geometry&&!SHARED.has(o.geometry))geos.add(o.geometry);if(o.material)for(const m of Array.isArray(o.material)?o.material:[o.material]){mats.add(m);for(const key of ['map','bumpMap','roughnessMap','alphaMap'])if(m[key]&&!keep.has(m[key]))textures.add(m[key]);}if(o.isLight)o.shadow?.dispose();});
+  root.traverse(o=>{if(o.isSkinnedMesh)skeletons.add(o.skeleton);if(o.geometry&&!SHARED.has(o.geometry))geos.add(o.geometry);if(o.material)for(const m of Array.isArray(o.material)?o.material:[o.material]){mats.add(m);for(const key of ['map','bumpMap','roughnessMap','normalMap','alphaMap'])if(m[key]&&!keep.has(m[key]))textures.add(m[key]);}if(o.isLight)o.shadow?.dispose();});
   for(const g of geos)if(!this.characterResources?.has(g))g.dispose();for(const m of mats)m.dispose();for(const t of textures)if(!this.characterResources?.has(t))t.dispose();for(const s of skeletons)s.dispose();root.clear();
  }
  load(chapter,grid){
-  this.weaponMotion=createWeaponMotion();this.ads=this.recoil=this.walk=this.flashTimer=this.knifeTimer=0;this.currentAds=false;
-  this.disposeLevel();this.bossArena=null;this.grid=grid;this.config=chapter;this.theme=chapter.theme;this.level=chapter.level;this.gates=[];this.blackoutUntil=0;this.protectedCells=new Set();for(const route of [this.level.route,...chapter.items.map(i=>[chapter.start,i.at])])for(let i=1;i<route.length;i++)for(const p of findPath(grid,{x:(route[i-1][0]+.5)*TILE,z:(route[i-1][1]+.5)*TILE},{x:(route[i][0]+.5)*TILE,z:(route[i][1]+.5)*TILE}))this.protectedCells.add(Math.floor(p.x/TILE)+","+Math.floor(p.z/TILE));this.lamps=[];this.obstacles=[];this.portal=null;this.gent=null;this.mist=[];
+  for(const m of this.weaponModels?.values()||[])resetWeaponParts(m);this.weaponMotion=createWeaponMotion();this.ads=this.recoil=this.walk=this.flashTimer=this.knifeTimer=0;this.currentAds=false;
+  this.disposeLevel();this.finisherHands?.forEach(h=>{h.visible=false;this.scene.add(h);});this.bossArena=null;this.grid=grid;this.config=chapter;this.theme=chapter.theme;this.level=chapter.level;this.gates=[];this.blackoutUntil=0;this.protectedCells=new Set();for(const route of [this.level.route,...chapter.items.map(i=>[chapter.start,i.at])])for(let i=1;i<route.length;i++)for(const p of findPath(grid,{x:(route[i-1][0]+.5)*TILE,z:(route[i-1][1]+.5)*TILE},{x:(route[i][0]+.5)*TILE,z:(route[i][1]+.5)*TILE}))this.protectedCells.add(Math.floor(p.x/TILE)+","+Math.floor(p.z/TILE));this.lamps=[];this.obstacles=[];this.portal=null;this.gent=null;this.mist=[];
   const yellow=this.theme==='backrooms',breach=this.theme==='breach';this.scene.background=new T.Color(yellow?0x1b1910:0x090e11);this.scene.fog=new T.FogExp2(yellow?0x25231a:0x0c1419,yellow?.026:.032);this.root=new T.Group();this.scene.add(this.root);
   this.scene.environment=this.viewScene.environment;this.scene.environmentIntensity=.16;
   this.scene.add(new T.HemisphereLight(yellow?0xd5cba0:0x9fbab7,0x1a201d,yellow?.46:.36));
@@ -418,7 +425,7 @@ export class World{
   mergeParts(body);mergeParts(head);mergeParts(jaw);return g;
  }
  animateCharacter(g,t,moving,mood={}){
-  if(g.userData.bossRig)return animateBoss(g,t,moving,mood);
+  if(g.userData.bossRig){animateBoss(g,t,moving,mood);if(g.userData.kind==='birdy'&&!mood.beat&&this.root){g.updateMatrixWorld(true);for(const wing of g.userData.detachedWings)if(wing.visible&&!wing.userData.landed){this.root.attach(wing);wing.position.y=.055;wing.userData.landed=true;}}return g;}
   const kind=g.userData.kind,phase=g.userData.phase||0;if(mood.dead){animateCollapse(g,mood.deathTime||0);return;}
   g.userData.body.rotation.set(0,0,0);g.userData.head.rotation.set(0,0,0);if(g.userData.face)g.userData.face.morphTargetInfluences[0]=0;
   if(g.userData.twins){g.userData.twins.forEach((half,i)=>{this.animateCharacter(half,t+i*.7,moving,{...mood,windup:mood.activeHead===i?mood.windup:0});half.userData.head.rotation.y+=(i?-.25:.25);});return;}
@@ -462,40 +469,46 @@ export class World{
   });
  }
  createWeapon(){
-  this.viewScene=new T.Scene();this.viewCamera=new T.PerspectiveCamera(62,1,.01,8);this.view=group(this.viewScene);this.view.scale.setScalar(1.08);this.weaponMotion=createWeaponMotion();
-  const faces=[];for(let i=0;i<6;i++){const c=document.createElement('canvas');c.width=c.height=64;const ctx=c.getContext('2d'),d=ctx.createLinearGradient(0,0,0,64);d.addColorStop(0,'#c2cfc8');d.addColorStop(.25,'#536f72');d.addColorStop(.5,'#172b2d');d.addColorStop(.75,'#839486');d.addColorStop(1,'#141b17');ctx.fillStyle=d;ctx.fillRect(0,0,64,64);faces.push(c);}const env=new T.CubeTexture(faces);env.needsUpdate=true;env.colorSpace=T.SRGBColorSpace;this.viewScene.environment=env;this.viewScene.environmentIntensity=.6;
-  this.viewScene.add(new T.HemisphereLight(0xf0dfca,0x26383c,.8));const key=new T.DirectionalLight(0xe5e9e2,1.8);key.position.set(-1,3,2);this.viewScene.add(key);const rim=new T.DirectionalLight(0x86afbd,.65);rim.position.set(2,0,-2);this.viewScene.add(rim);
-  const metal=material(0xe6ebf0,.32,.78),steel=material(0xe9eef3,.24,.88),frame=material(0x959eab,.55,.76),dark=material(0x121a1c,.6,.35),rubber=material(0xaaa79c,.93),sleeve=material(0x45483d,.93);
-  const metalMap=this.weaponTexture('metal'),rough=this.weaponTexture('rough'),gripMap=this.weaponTexture('rubber'),skinMap=this.weaponTexture('skin');
-  for(const m of[metal,frame,steel]){m.map=metalMap;m.bumpMap=rough;m.bumpScale=.00012;m.roughnessMap=rough;}
-  rubber.map=gripMap;rubber.bumpMap=gripMap;rubber.bumpScale=.0004;sleeve.map=this.procedural('fabric');
-  const skin=new T.MeshPhysicalMaterial({color:0xffffff,map:skinMap,bumpMap:skinMap,bumpScale:.00022,roughness:.57,metalness:0,clearcoat:.06,clearcoatRoughness:.65,sheen:.12,sheenColor:0x936e58});
-  const marking=canvasTexture((ctx,s)=>{ctx.canvas.width=1024;ctx.canvas.height=128;ctx.clearRect(0,0,1024,128);ctx.fillStyle='#d5ded566';ctx.font='32px monospace';ctx.textAlign='center';ctx.fillText('RE-9 / E. ESPEY',512,76);});
-  const model=createViewModel({metal,steel,frame,dark,rubber,skin,sleeve,magazine:material(0x6b777b,.38,.82),nail:new T.MeshPhysicalMaterial({color:0xc3b3a0,roughness:.45,clearcoat:.2}),sight:new T.MeshBasicMaterial({color:0xbdc8b7}),marking:new T.MeshBasicMaterial({map:marking,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1})});
-  this.view.add(model.root);const {root,...parts}=model;Object.assign(this,parts);this.hands=root;
-  for(const g of[this.slide,this.grip,this.gun,this.rightHand,this.leftHand,this.trigger,this.hammer])mergeParts(g);
+  this.viewScene=new T.Scene();this.viewCamera=new T.PerspectiveCamera(62,1,.01,8);this.view=group(this.viewScene);this.view.scale.setScalar(1.02);this.weaponMotion=createWeaponMotion();
+  const faces=[];for(let i=0;i<6;i++){const c=document.createElement('canvas');c.width=c.height=64;const ctx=c.getContext('2d'),d=ctx.createLinearGradient(0,0,0,64);d.addColorStop(0,'#c2cfc8');d.addColorStop(.25,'#536f72');d.addColorStop(.5,'#172b2d');d.addColorStop(.75,'#839486');d.addColorStop(1,'#141b17');ctx.fillStyle=d;ctx.fillRect(0,0,64,64);faces.push(c);}const env=new T.CubeTexture(faces);env.needsUpdate=true;env.colorSpace=T.SRGBColorSpace;this.viewScene.environment=env;this.viewScene.environmentIntensity=.42;
+  this.viewScene.add(new T.HemisphereLight(0xf0dfca,0x26383c,.8));const key=new T.DirectionalLight(0xfff0dc,2.1);key.position.set(-1,3,2);this.viewScene.add(key);const rim=new T.DirectionalLight(0xb8c7ca,.7);rim.position.set(2,0,-2);this.viewScene.add(rim);
+  const metal=scannedMaterial(this.assets.scans,'metal',{color:0xffffff,roughness:.42,metalness:.68}),steel=scannedMaterial(this.assets.scans,'metal',{color:0xd9d5c7,roughness:.27}),frame=scannedMaterial(this.assets.scans,'metal',{color:0xb8bab4,roughness:.54,metalness:.55}),dark=material(0x111312,.77,.24),rubber=material(0x262822,.88),sleeve=material(0x494d42,.93);
+  const metalNormal=microTexture('metal'),gripNormal=microTexture('grip'),skinNormal=microTexture('skin'),gripMap=this.weaponTexture('rubber'),skinMap=this.weaponTexture('skin');
+  for(const m of[metal,steel,frame]){m.normalMap=metalNormal;m.normalScale.set(.18,.18);}
+  rubber.map=gripMap;rubber.normalMap=gripNormal;rubber.normalScale.set(.6,.6);sleeve.map=this.procedural('fabric');sleeve.normalMap=microTexture('cloth');sleeve.normalScale.set(.45,.45);
+  const skin=new T.MeshPhysicalMaterial({color:0xe7c5ae,map:skinMap,normalMap:skinNormal,normalScale:new T.Vector2(.24,.24),roughness:.64,clearcoat:.035,clearcoatRoughness:.8,sheen:.16,sheenColor:0xb57f65});
+  const marking=canvasTexture((ctx,s)=>{ctx.canvas.width=1024;ctx.canvas.height=128;ctx.clearRect(0,0,1024,128);ctx.fillStyle='#e5ddc044';ctx.font='28px monospace';ctx.textAlign='center';ctx.fillText('ESPEY · 9mm',512,76);});
+  const materials={metal,steel,frame,dark,rubber,skin,sleeve,magazine:scannedMaterial(this.assets.scans,'metal',{color:0x9ca194,roughness:.45}),nail:new T.MeshPhysicalMaterial({color:0xb5a491,roughness:.6,clearcoat:.08}),sight:new T.MeshBasicMaterial({color:0xd2c9a0}),shell:material(0x793421,.58),marking:new T.MeshBasicMaterial({map:marking,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1})};
+  this.weaponModels=new Map();for(const id of Object.keys(WEAPONS)){
+   const model=id==='sidearm'?createViewModel(materials):createLongGun(materials,id);model.magazine.userData.rest=model.magazine.position.toArray();this.view.add(model.root);this.weaponModels.set(id,model);
+   for(const g of[model.slide,model.grip,model.gun,model.rightHand,model.leftHand,model.trigger,model.hammer,model.pump].filter(Boolean))mergeParts(g);
+   model.root.traverse(o=>{if(o.geometry)this.characterResources.add(o.geometry);for(const m of[o.material].flat().filter(Boolean)){this.characterResources.add(m);for(const key of ['map','bumpMap','roughnessMap','normalMap'])if(m[key])this.characterResources.add(m[key]);}});
+  }
+  const finish=createHands(materials,this.viewScene);this.finisherHands=finish.hands;finish.hands.forEach((h,i)=>{this.viewScene.remove(h);h.visible=false;h.userData.skin=finish.skins[i];for(const child of [...h.children])if(child!==finish.skins[i]&&child.isMesh&&child.material===sleeve)child.visible=false;h.traverse(o=>{if(o.geometry)this.characterResources.add(o.geometry);});});
+  this.setWeapon('sidearm');
   const flashMap=canvasTexture((ctx,s)=>{const d=ctx.createRadialGradient(s/2,s/2,0,s/2,s/2,s*.5);d.addColorStop(0,'#fffff0');d.addColorStop(.12,'#ffe9b8');d.addColorStop(.32,'#ffaa4433');d.addColorStop(1,'#ff991100');ctx.fillStyle=d;ctx.fillRect(0,0,s,s);},128);
-  this.muzzle=mesh(new T.PlaneGeometry(.09,.09),new T.MeshBasicMaterial({map:flashMap,transparent:true,blending:T.AdditiveBlending,depthWrite:false}),[1,1,1],[0,.054,-.197],this.gun);this.muzzle.visible=false;
+  for(const [id,model]of this.weaponModels){model.muzzle=mesh(new T.PlaneGeometry(.09,.09),new T.MeshBasicMaterial({map:flashMap,transparent:true,blending:T.AdditiveBlending,depthWrite:false}),[id==='shotgun'?1.5:1,1,1],WEAPONS[id].muzzle,model.gun);model.muzzle.visible=false;}this.setWeapon('sidearm');
   // A persistent light keeps firing and knife attacks on the same compiled shaders.
   this.viewFlash=new T.PointLight(0xffc879,0,2,2);this.viewScene.add(this.viewFlash);
   this.knife=group(this.viewScene,.31,-.33,-.52);const blade=material(0x9ca9a2,.23,.84);
   mesh(BOX,rubber,[.042,.15,.033],[0,-.07,0],this.knife);mesh(BOX,steel,[.095,.013,.025],[0,.013,0],this.knife);mesh(BOX,blade,[.046,.20,.008],[0,.12,0],this.knife);mesh(new T.ConeGeometry(.024,.085,3),blade,[1,1,.18],[0,.26,0],this.knife);this.knife.visible=false;mergeParts(this.knife);
   this.flashTimer=0;this.knifeTimer=0;
  }
- fireWeapon(aiming=false){this.weaponMotion??=createWeaponMotion();kickWeapon(this.weaponMotion,aiming);this.flashTimer=.045;if(this.muzzle)this.muzzle.rotation.z=this.weaponMotion.shots*2.399963;}
+ setWeapon(id){if(!this.weaponModels?.has(id))return;for(const [key,m]of this.weaponModels)m.root.visible=key===id;const model=this.weaponModels.get(id);resetWeaponParts(model);const {root,...parts}=model;this.pump=null;Object.assign(this,parts);this.hands=root;this.weaponId=id;this.weaponMotion=createWeaponMotion();this.flashTimer=0;}
+ fireWeapon(aiming=false,id=this.weaponId||'sidearm'){this.weaponMotion??=createWeaponMotion();kickWeapon(this.weaponMotion,aiming,WEAPONS[id]?.recoil||1);this.pumpEjected=false;this.flashTimer=.045;if(this.muzzle)this.muzzle.rotation.z=this.weaponMotion.shots*2.399963;}
  weaponPoint(p,at){
   this.view.updateMatrixWorld(true);this.weaponVector??=new T.Vector3();this.weaponEuler??=new T.Euler(0,0,0,'YXZ');
   const v=this.weaponVector.set(...at).applyMatrix4(this.gun.matrixWorld),scale=Math.tan(T.MathUtils.degToRad(this.camera.fov/2))/Math.tan(T.MathUtils.degToRad(this.viewCamera.fov/2));
   v.x*=scale;v.y*=scale;v.applyEuler(this.weaponEuler.set(p.pitch||0,p.yaw||0,0,'YXZ'));
   return {x:p.x+v.x,y:(p.crouching?1.14:EYE_HEIGHT)+v.y,z:p.z+v.z};
  }
- muzzleOrigin(p){return this.weaponPoint(p,[0,.054,-.197]);}
- ejectCasing(origin,yaw,p){if(p&&this.gun)this.combatEffects?.eject(this.weaponPoint(p,[.024,.052,-.024]),yaw,true);else this.combatEffects?.eject(origin,yaw);}
+ muzzleOrigin(p){return this.weaponPoint(p,weaponFor(p).muzzle);}
+ ejectCasing(origin,yaw,p){if(p&&this.gun)this.combatEffects?.eject(this.weaponPoint(p,weaponFor(p).port),yaw,true);else this.combatEffects?.eject(origin,yaw);}
  swingKnife(){this.knifeTimer=.46;}
  async prepareCombatAsync(){
   if(this.renderer.compileAsync){
-   const hidden=[],target=this.renderer.getRenderTarget(),warm=new T.WebGLRenderTarget(16,16);
-   this.root?.traverse(o=>{if(o.userData?.kind&&!o.visible){hidden.push(o);o.visible=true;}});this.viewScene.traverse(o=>{if(!o.visible){hidden.push(o);o.visible=true;}});
+   const hidden=[],target=this.renderer.getRenderTarget(),warm=new T.WebGLRenderTarget(16,16);for(const h of this.finisherHands||[])if(!h.visible){hidden.push(h);h.visible=true;}
+   this.root?.traverse(o=>{if(!o.visible){hidden.push(o);o.visible=true;}});this.viewScene.traverse(o=>{if(!o.visible){hidden.push(o);o.visible=true;}});
    try{await this.renderer.compileAsync(this.scene,this.camera);await this.renderer.compileAsync(this.viewScene,this.viewCamera);this.renderer.setRenderTarget(warm);await this.renderer.compileAsync(this.scene,this.camera);await this.renderer.compileAsync(this.viewScene,this.viewCamera);}
    finally{for(const o of hidden)o.visible=false;this.renderer.setRenderTarget(target);warm.dispose();}
   }
@@ -512,7 +525,7 @@ export class World{
   for(const spine of d.spines){const cy=spine===d.body?p.spine:p.spine+.08;part(spine,spine,d.kind==='zeb'?.34:d.kind==='birdy'?.18:.24,0,p.hip-cy,0,0,p.shoulder-.1-cy,0);}
   d.arms.forEach((arm,i)=>{const fore=arm.userData.forearm;part(arm,fore,d.kind==='zeb'?.15:.09);part(fore,fore,d.kind==='chris'&&i===1?.14:d.kind==='zeb'?.11:.075,0,0,0,...fore.userData.wrist);});
   d.legs.forEach(l=>{const calf=l.userData.calf;part(l,calf,d.kind==='zeb'?.16:.1);part(calf,calf,.085,0,0,0,0,-p.hip*.43,0);});
-  if(d.wings)d.wings.forEach((w,i)=>{part(w,d.wingWrists[i],.085);part(d.wingWrists[i],d.wingWrists[i],.085,0,0,0,(i?1:-1)*1.8,-.18,0);});parts.length=count;return parts;
+  if(d.wings)d.wings.forEach((w,i)=>{if(!w.visible)return;part(w,d.wingWrists[i],.085);part(d.wingWrists[i],d.wingWrists[i],.085,0,0,0,(i?1:-1)*1.8,-.18,0);});parts.length=count;return parts;
  }
  prepareCombat(){
   // Upload and render both weapons, the muzzle flash and both effect batches
@@ -521,7 +534,7 @@ export class World{
   const gun=this.view.visible,knife=this.knife.visible,muzzle=this.muzzle.visible;
   const enemyBatches=this.enemyEffects?[this.enemyEffects.projectiles,this.enemyEffects.stains,this.enemyEffects.rings]:[],enemyCounts=enemyBatches.map(m=>m.count);
   const particles=this.combatEffects.particles.count,tracers=this.combatEffects.tracers.geometry.drawRange.count,casings=this.combatEffects.casings.count;
-  const hidden=[],culling=[];this.root?.traverse(o=>{
+  const hidden=[],culling=[];for(const h of this.finisherHands||[])if(!h.visible){hidden.push(h);h.visible=true;}this.scene?.traverse(o=>{
    if(o.userData?.kind&&!o.visible){hidden.push(o);o.visible=true;}
    // Upload the entire authored level. The cinematic camera can be nowhere
    // near the player, and later rooms must not allocate buffers during a fight.
@@ -552,13 +565,13 @@ export class World{
  }
  updateWeapon(dt,t,p){
   dt=Number.isFinite(dt)?Math.max(0,dt):0;this.weaponMotion??=createWeaponMotion();
-  const progress=reloadProgress(p),pose=stepWeaponMotion(this.weaponMotion,dt,p,{reduced:this.settings.motion,walk:this.walk||0,aspect:this.camera.aspect,progress});this.weaponPose=pose;this.ads=pose.ads;this.recoil=this.weaponMotion.kick.x;
+  const progress=reloadProgress(p),pose=stepWeaponMotion(this.weaponMotion,dt,p,{reduced:this.settings.motion,walk:this.walk||0,aspect:this.camera.aspect,progress,viewScale:this.view.scale.x});this.weaponPose=pose;this.ads=pose.ads;this.recoil=this.weaponMotion.kick.x;
   this.flashTimer=Math.max(0,this.flashTimer-dt);this.knifeTimer=Math.max(0,this.knifeTimer-dt);
   this.view.position.set(...pose.position);this.view.rotation.set(...pose.rotation);
-  this.magazine.position.set(pose.reload.magazine[0],-.06+pose.reload.magazine[1],pose.reload.magazine[2]);this.magazine.rotation.set(0,0,pose.reload.magazine[0]*1.1);this.magazine.visible=pose.reload.magazineVisible;
-  if(this.leftHand){const rest=this.leftHand.userData.rest;this.leftHand.position.set(...rest.map((v,i)=>v+pose.reload.hand[i]));this.leftHand.rotation.set(...pose.reload.handRotation);this.leftSkin.morphTargetInfluences[0]=pose.reload.grasp;this.rightSkin.morphTargetInfluences[0]=pose.trigger;this.trigger.rotation.x=-pose.trigger*.15;this.hammer.rotation.x=-pose.trigger*.22;}
-  this.slide.position.z=pose.slide;this.muzzle.visible=this.flashTimer>0;this.viewFlash.intensity=this.flashTimer>0?6:0;
-  this.view.updateMatrixWorld(true);this.viewFlash.position.set(0,.054,-.197).applyMatrix4((this.gun||this.view).matrixWorld);
+  const w=weaponFor(p),magRest=this.magazine.userData.rest||[0,-.06,0];this.magazine.position.set(...magRest.map((v,i)=>v+pose.reload.magazine[i]));this.magazine.rotation.set(0,0,pose.reload.magazine[0]*1.1);this.magazine.visible=pose.reload.magazineVisible;
+  if(this.leftHand){const rest=this.leftHand.userData.rest;this.leftHand.position.set(...rest.map((v,i)=>v+pose.reload.hand[i]));this.leftHand.rotation.set(...pose.reload.handRotation.map((v,i)=>v+(this.leftHand.userData.restRotation?.[i]||0)));this.leftSkin.morphTargetInfluences[0]=pose.reload.grasp;this.rightSkin.morphTargetInfluences[0]=pose.trigger;this.trigger.rotation.x=-pose.trigger*.15;this.hammer.rotation.x=-pose.trigger*.22;}
+  this.slide.position.z=pose.slide;if(this.pump){this.pump.position.z=pose.pump||0;if(this.weaponId==='shotgun'){this.leftHand.position.z+=(pose.pump||0);if(!this.pumpEjected&&this.weaponMotion.shotAge>.34&&this.weaponMotion.shotAge<.7){this.pumpEjected=true;this.ejectCasing({x:p.x,y:EYE_HEIGHT,z:p.z},p.yaw,p);this.combatEffects?.shellLast?.();}}}if(this.hands?.userData.shell){const shell=this.hands.userData.shell;shell.visible=!!pose.shell;const rest=this.leftHand.position;shell.position.set(rest.x+.04,rest.y+.055,rest.z-.01);}this.muzzle.visible=this.flashTimer>0;this.viewFlash.intensity=this.flashTimer>0?6:0;
+  this.view.updateMatrixWorld(true);this.viewFlash.position.set(...w.muzzle).applyMatrix4((this.gun||this.view).matrixWorld);
   this.knife.visible=this.knifeTimer>0;this.view.visible=this.knifeTimer<=0;this.knife.rotation.z=-1.25+Math.sin((.46-this.knifeTimer)/.46*Math.PI)*2;this.knife.rotation.x=-.4;
   const fov=(this.settings.fov||76)+pose.fovOffset;if(Math.abs(this.camera.fov-fov)>.001){this.camera.fov=fov;this.camera.updateProjectionMatrix();}
  }
@@ -587,10 +600,12 @@ export class World{
  }
  activateObjective(g){if(!g)return;g.traverse(o=>{if(o.material?.emissive&&o.material.emissiveIntensity>0){o.material.color.setHex(0x83bc9c);o.material.emissive.setHex(0x6eb58e);}});if(g.userData.ring)g.userData.ring.visible=false;}
  rememberMemory(g){if(g?.userData.door)g.userData.door.rotation.y=-.95;if(g?.userData.memoryLight)g.userData.memoryLight.intensity=.25;}
- object(kind,x,z){
-  const g=group(this.root,x,0,z),color={fuse:0xd5b36a,seal:0xd5b36a,anchor:0xd5b36a,page:0xb7d8c7,ammo:0xc2a471,med:0x79caaa,save:0x74a5ce}[kind];
+ object(kind,x,z,weapon){
+  const g=group(this.root,x,0,z),color={fuse:0xd5b36a,seal:0xd5b36a,anchor:0xd5b36a,page:0xb7d8c7,ammo:0xc2a471,weapon:0xc2a471,med:0x79caaa,save:0x74a5ce}[kind];
   const glow=new T.MeshStandardMaterial({color,emissive:color,emissiveIntensity:.35,roughness:.65}),dark=this.palette.black,metal=this.palette.metal;
-  if(kind==='anchor'){
+  if(kind==='weapon'){
+   const model=this.weaponModels.get(weapon||'shotgun').gun.clone(true);model.traverse(o=>{if(o.material){const source=o.material;o.material=source.clone();o.material.onBeforeCompile=source.onBeforeCompile;o.material.customProgramCacheKey=source.customProgramCacheKey;}if(o.material?.blending===T.AdditiveBlending)o.visible=false;});model.position.set(0,.76,0);model.rotation.x=Math.PI/2;model.rotation.z=Math.PI/2;model.scale.setScalar(.8);g.add(model);mesh(BOX,this.palette.wood,[.7,.05,.90],[0,.55,0],g);
+  }else if(kind==='anchor'){
    mesh(BOX,metal,[.7,1.18,.62],[0,.59,0],g);mesh(BOX,dark,[.59,.38,.026],[0,.91,.328],g);mesh(BOX,glow,[.49,.29,.01],[0,.91,.345],g);
    for(let i=0;i<4;i++)mesh(BOX,dark,[.5,.036,.03],[0,.2+i*.08,.328],g);for(const dx of[-.19,.19])mesh(CYL,glow,[.032,.14,.032],[dx,.55,.35],g).rotation.x=Math.PI/2;
   }else if(kind==='save'){

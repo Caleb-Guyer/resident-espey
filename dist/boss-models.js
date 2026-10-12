@@ -1,6 +1,7 @@
+import {scannedMaterial,microTexture} from './surface-materials.js?v=4.6.0';
 import * as T from './vendor/three.module.js';
-import {sculptSurface,mergeRigid} from './sculpt-surface.js?v=4.5.1';
-import {CHARACTER_DESIGNS} from './creature-design.js?v=4.5.1';
+import {sculptSurface,mergeRigid} from './sculpt-surface.js?v=4.6.0';
+import {CHARACTER_DESIGNS} from './creature-design.js?v=4.6.0';
 const cache=new Map(),clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const mesh=(parent,geo,mat,at=[0,0,0],scale=[1,1,1])=>{const m=new T.Mesh(geo,mat);m.position.set(...at);m.scale.set(...scale);m.castShadow=m.receiveShadow=true;parent.add(m);return m;};
 const tube=(parent,mat,points,r=.006)=>mesh(parent,new T.TubeGeometry(new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p))),Math.max(12,points.length*5),r,6,false),mat);
@@ -11,13 +12,9 @@ export const BOSS_PROFILES=Object.freeze({
  birdy:{height:2.5,spine:1.38,head:2.16,shoulder:1.76,width:.28,hip:.96,step:.027,skin:0xb0a291}
 });
 function materials(world,kind){
- const p=BOSS_PROFILES[kind],skin=new T.MeshPhysicalMaterial({color:p.skin,map:world.assets.boss||world.assets.skin,roughness:.82,clearcoat:.015,clearcoatRoughness:.8,sheen:.06,sheenColor:0x705448});
- if(world.assets.boss)skin.onBeforeCompile=s=>{
-  s.vertexShader=s.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 tissuePosition;varying vec3 tissueNormal;').replace('#include <begin_vertex>','#include <begin_vertex>\ntissuePosition=position;tissueNormal=normal;');
-  s.fragmentShader=s.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 tissuePosition;varying vec3 tissueNormal;\nvec2 tissueAtlas(vec2 p){return vec2(.6666667,0.)+clamp(fract(p*1.5),vec2(.025),vec2(.975))*vec2(.3333333,.5);}')
-   .replace('#include <map_fragment>','vec3 blend=pow(abs(normalize(tissueNormal)),vec3(4.));blend/=max(.001,blend.x+blend.y+blend.z);vec3 tissue=texture2D(map,tissueAtlas(tissuePosition.yz)).rgb*blend.x+texture2D(map,tissueAtlas(tissuePosition.xz)).rgb*blend.y+texture2D(map,tissueAtlas(tissuePosition.xy)).rgb*blend.z;diffuseColor.rgb*=tissue;');
- };
- const cloth=new T.MeshStandardMaterial({color:kind==='chris'?0x42473d:0x37352e,map:world.procedural('infectedcloth'),roughness:.94}),dark=new T.MeshStandardMaterial({color:0x262721,map:world.procedural('fabric'),roughness:.92});
+ const p=BOSS_PROFILES[kind],skin=world.assets.scans?scannedMaterial(world.assets.scans,kind==='zeb'?'dark':'pale',{color:0xf4eee4,roughness:.73,clearcoat:.035,clearcoatRoughness:.7,sheen:.13,sheenColor:0x8b6551}):new T.MeshPhysicalMaterial({color:p.skin,map:world.assets.skin,roughness:.79});
+ if(typeof document!=='undefined'){skin.normalMap=microTexture('skin');skin.normalScale.set(.38,.38);}
+ const cloth=new T.MeshStandardMaterial({color:kind==='chris'?0x42473d:0x37352e,map:world.procedural('infectedcloth'),roughness:.94}),dark=new T.MeshStandardMaterial({color:0x646457,map:world.procedural('infectedcloth'),roughness:.92});
  return [skin,cloth,dark];
 }
 function makeRig(kind){
@@ -50,7 +47,7 @@ function bodyGeometry(kind,rig){
   for(const side of [-1,1]){
    // Pectoral, latissimus, deltoid and upper back remain anatomical volumes.
    ell(cx+side*w*.51,p.shoulder-.12,.10,w*.52,.15,.10);ell(cx+side*w*.58,p.shoulder-.26,-.09,w*.5,.19,.14);
-   for(let i=0;i<5;i++)ell(cx+side*w*.55,p.shoulder-.25-i*.09,.075,w*.52,.035,.1);
+   for(let i=0;i<6;i++)ell(cx+side*w*.72,p.shoulder-.24-i*.06,.054,w*.25,.020,.074);for(let i=0;i<3;i++)ell(cx+side*.052,p.spine-.05-i*.079,.111,.048,.050,.039);
   }
  }
  group=0;if(fused){ell(0,1.48,-.055,.24,.38,.19);ell(0,1.91,-.05,.23,.13,.12);ell(0,1.07,-.015,.21,.21,.16);}
@@ -86,11 +83,12 @@ function bossHair(parent,design,scale){
  }g.userData={hair:design.style,color:design.hair};mergeRigid(g);return g;
 }
 function head(world,parent,id,skin){
- const scale=id==='zeb'?[.235,.25,.185]:id==='bobby'?[.19,.23,.165]:id==='birdy'?[.167,.24,.15]:[.18,.225,.155],geo=new T.SphereGeometry(1,56,48),p=geo.attributes.position,uv=geo.attributes.uv;
+ const scale=id==='zeb'?[.204,.25,.185]:id==='bobby'?[.181,.235,.165]:id==='birdy'?[.148,.235,.153]:[.165,.23,.155],geo=new T.SphereGeometry(1,56,48),p=geo.attributes.position,uv=geo.attributes.uv;
  const col={chris:0,jakob:1,bobby:2,zeb:0,birdy:1}[id],row=['zeb','birdy'].includes(id)?0:.5;
  for(let i=0;i<p.count;i++){
   const x=p.getX(i)*scale[0],y=p.getY(i)*scale[1];let z=p.getZ(i)*scale[2];
-  if(z>0){z+=.028*Math.exp(-((x/.025)**2)-((y+.014)/.07)**2);z+=.012*Math.exp(-(((Math.abs(x)-.08)/.045)**2)-((y+.045)/.055)**2);z-=.014*Math.exp(-(((Math.abs(x)-.062)/.034)**2)-((y-.048)/.034)**2);}
+  if(z>0){z+=.044*Math.exp(-((x/.025)**2)-((y+.014)/.07)**2);z+=.012*Math.exp(-(((Math.abs(x)-.08)/.045)**2)-((y+.045)/.055)**2);z-=.023*Math.exp(-(((Math.abs(x)-.062)/.034)**2)-((y-.048)/.034)**2);}
+  if(z>0){z+=.012*Math.exp(-(((Math.abs(x)-.052)/.040)**2)-((y-.084)/.017)**2);z+=.015*Math.exp(-((x/.028)**2)-((y+.038)/.018)**2);z+=.013*Math.exp(-(((Math.abs(x)-.073)/.039)**2)-((y+.11)/.024)**2);}
   p.setXYZ(i,x*(y<-.11?1-clamp((-y-.11)*2,0,.2):1),y,z);uv.setXY(i,col/3+clamp(x/(scale[0]*3.5)+.5,.02,.98)/3,row+clamp(y/(scale[1]*2.6)+.51,.02,.98)*.5);
  }
  // Remove the front mouth patch; the oral cavity, jaws and teeth have depth.
@@ -98,16 +96,19 @@ function head(world,parent,id,skin){
   if(cz>.08&&(cx/.085)**2+((cy+.11)/.022)**2<1){mouthIndices.push(...ids);continue;}indices.push(...ids);
  }geo.setIndex(indices);geo.computeVertexNormals();
  const design=CHARACTER_DESIGNS[id]||{skin:0xb5a48d,hair:0x211d17,style:'straight'},base=new T.Color(design.skin).toArray();
- const faceMat=new T.MeshPhysicalMaterial({color:0xffffff,map:world.assets.boss||world.assets.face,bumpMap:world.assets.boss||world.assets.face,bumpScale:.0013,roughness:.69,clearcoat:.04,sheen:.12});
- const hairColor=new T.Color(design.hair).toArray();faceMat.onBeforeCompile=s=>{s.vertexShader=s.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 bossHeadPos;').replace('#include <begin_vertex>','#include <begin_vertex>\nbossHeadPos=position;');s.fragmentShader=s.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 bossHeadPos;').replace('#include <map_fragment>',`vec4 portrait=texture2D(map,vMapUv); float front=smoothstep(-0.045,0.025,bossHeadPos.z); vec3 sideSkin=mix(vec3(${base.map(v=>v*.6).join(',')}),vec3(${hairColor.join(',')}),smoothstep(.10,.18,bossHeadPos.y)); diffuseColor.rgb*=mix(sideSkin,portrait.rgb,front);`);};
+ const faceMat=new T.MeshPhysicalMaterial({color:0xffffff,map:world.assets.boss||world.assets.face,bumpMap:world.assets.boss||world.assets.face,bumpScale:.0013,roughness:.78,clearcoat:.025,sheen:.12});
+ if(typeof document!=='undefined'){faceMat.normalMap=microTexture('skin');faceMat.normalScale.set(.24,.24);}
+ const scan=world.assets.scans;
+ const hairColor=new T.Color(design.hair).toArray();faceMat.onBeforeCompile=s=>{if(scan)s.uniforms.faceScan={value:scan};s.vertexShader=s.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 bossHeadPos;').replace('#include <begin_vertex>','#include <begin_vertex>\nbossHeadPos=position;');s.fragmentShader=s.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 bossHeadPos;'+(scan?'\nuniform sampler2D faceScan;':'')).replace('#include <map_fragment>',`vec4 portrait=texture2D(map,vMapUv);float front=smoothstep(.050,.125,bossHeadPos.z);vec3 sideSkin=${scan?`texture2D(faceScan,vec2(${id==='zeb'?'.5':'0.'},.5)+(.02+fract(bossHeadPos.xy*2.2)*.96)*.5).rgb*.93`:`vec3(${base.join(',')})`};diffuseColor.rgb*=mix(sideSkin,portrait.rgb,front);`);};
  faceMat.customProgramCacheKey=()=>`boss-portrait-v2-${id}`;
- const face=mesh(parent,geo,faceMat),coverGeo=geo.clone();coverGeo.setIndex(mouthIndices);const mouthCover=mesh(parent,coverGeo,faceMat);const jaw=new T.Group();jaw.position.set(0,-.09,.035);parent.add(jaw);
+ const face=mesh(parent,geo,faceMat),coverGeo=geo.clone();coverGeo.setIndex(mouthIndices);coverGeo.computeVertexNormals();const mouthCover=mesh(parent,coverGeo,faceMat);const jaw=new T.Group();jaw.position.set(0,-.09,.035);parent.add(jaw);
  const dark=new T.MeshStandardMaterial({color:0x1d1110,roughness:.43}),lip=new T.MeshStandardMaterial({color:id==='zeb'?0x503326:0x786055,roughness:.55});
- mesh(parent,new T.SphereGeometry(1,24,16),dark,[0,-.113,.112],[.081,.036,.035]);
+ mesh(parent,new T.SphereGeometry(1,24,16),dark,[0,-.113,.085],[.069,.027,.027]);
  const tooth=new T.MeshStandardMaterial({color:0x8c846c,roughness:.58}),toothGeo=()=>{const g=new T.SphereGeometry(1,12,10),a=g.attributes.position;for(let i=0;i<a.count;i++)a.setX(i,a.getX(i)*(1-.3*Math.max(0,a.getY(i))));g.computeVertexNormals();return g;};
- for(let i=0;i<11;i++){const x=(i-5)*.0126,z=.153-.20*x*x;mesh(parent,toothGeo(),tooth,[x,-.1,z],[.0055,i===1||i===9?.016:.011,.007]);mesh(jaw,toothGeo(),tooth,[x,-.034,z-.035],[.005,.010,.006]);}
- tube(parent,lip,[[-.085,-.11,.126],[-.048,-.082,.149],[0,-.085,.164],[.05,-.086,.146],[.087,-.11,.125]],.005);
- tube(jaw,lip,[[-.077,-.025,.102],[-.043,-.040,.120],[0,-.044,.132],[.045,-.040,.12],[.077,-.025,.10]],.005);
+ for(let i=0;i<11;i++){const x=(i-5)*.0126,z=.125-.20*x*x;mesh(parent,toothGeo(),tooth,[x,-.1,z],[.0055,i===1||i===9?.016:.011,.007]);mesh(jaw,toothGeo(),tooth,[x,-.034,z-.035],[.005,.010,.006]);}
+ tube(parent,lip,[[-.076,-.11,.112],[-.046,-.095,.127],[0,-.095,.139],[.046,-.095,.127],[.076,-.11,.112]],.005);
+ tube(jaw,lip,[[-.077,-.025,.102],[-.043,-.040,.120],[0,-.044,.120],[.045,-.040,.12],[.077,-.025,.10]],.005);
+ const inside=new T.Group();for(const o of [...parent.children])if(o!==face&&o!==mouthCover&&o!==jaw)inside.add(o);parent.add(inside);mergeRigid(inside);const oralParts=[inside];
  const eyes=[];for(const side of [-1,1]){
   const eye=new T.Group();eye.position.set(side*(id==='zeb'?.061:.052),.048,.133);parent.add(eye);eyes.push(eye);
   const cornea=new T.MeshPhysicalMaterial({color:0xffffff,transparent:true,opacity:.035,roughness:.12,clearcoat:.6,depthWrite:false});mesh(eye,new T.SphereGeometry(.021,24,20),cornea);
@@ -117,38 +118,49 @@ function head(world,parent,id,skin){
  const hair=bossHair(parent,design,scale);
  for(let i=0;i<4;i++)tube(parent,lip,[[-.12+i*.028,-.045,.131],[-.115+i*.024,-.08,.144],[-.10+i*.02,-.13,.13]],.0017);
  const closed=p.array.slice(),open=closed.slice();for(let i=0;i<p.count;i++){const y=p.getY(i),x=p.getX(i),z=p.getZ(i),w=Math.exp(-((x/.095)**2))*clamp((-y-.08)/.10,0,1)*clamp(z/.1,0,1);open[i*3+1]-=.10*w;}geo.morphAttributes.position=[new T.Float32BufferAttribute(open,3)];face.updateMorphTargets();
- mergeRigid(jaw);mergeRigid(hair);return {face,jaw,eyes,hair,design,mouthCover};
+ mergeRigid(jaw);mergeRigid(hair);return {face,jaw,eyes,hair,design,mouthCover,oralParts};
 }
 function featherGeometry(length,width,curve){
  const positions=[],uv=[];const point=(t,side)=>{const w=width*Math.sin(Math.PI*(.06+.94*t))*(1-.6*t)*(1+.05*Math.sin(t*72));return [side*w,-t*length,Math.sin(t*Math.PI)*curve+side*side*.009];};
  for(let i=0;i<18;i++){const a=i/18,b=(i+1)/18;for(const [t,s]of [[a,-1],[a,1],[b,1],[a,-1],[b,1],[b,-1]]){positions.push(...point(t,s));uv.push((s+1)/2,t);}}
  const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(positions,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.computeVertexNormals();return g;
 }
-function wings(g,skin){
- const d=g.userData,feather=new T.MeshPhysicalMaterial({color:0x302c25,roughness:.68,side:T.DoubleSide,sheen:.28,sheenColor:0x877565,clearcoat:.035});d.wings=[];d.wingWrists=[];d.wingspan=6.8;
+function wings(g,skin,world){
+ const d=g.userData,feather=world.assets.scans?scannedMaterial(world.assets.scans,'feather',{color:0xf1ebdd,roughness:.72,side:T.DoubleSide,sheen:.42,sheenColor:0xa4937b}):new T.MeshPhysicalMaterial({color:0x585048,roughness:.68,side:T.DoubleSide,sheen:.28});d.wings=[];d.wingWrists=[];d.wingspan=6.8;d.wingStumps=[];d.detachedWings=[];
  for(const side of [-1,1]){
   const pivot=new T.Group();pivot.position.set(side*.22,.35,-.08);d.body.add(pivot);d.wings.push(pivot);const wrist=new T.Group();wrist.position.set(side*1.23,.20,-.06);pivot.add(wrist);d.wingWrists.push(wrist);
   tube(pivot,skin,[[0,0,0],[side*.32,.23,-.02],[side*.76,.31,-.06],[side*1.25,.20,-.06]],.036);tube(wrist,skin,[[0,0,0],[side*.57,-.02,-.025],[side*1.22,-.18,0],[side*1.95,-.45,.04]],.019);
   for(let i=0;i<17;i++){
-   const f=mesh(wrist,featherGeometry(.62+(i/16)*.56,.082,.11),feather,[side*(i/16)*1.8,-.09-(i/16)*.18,.02]);f.rotation.z=side*(.20-i*.014);
+   const f=mesh(wrist,featherGeometry(.74+Math.sin(i/16*Math.PI)*.37,.104,.14),feather,[side*(i/16)*1.8,-.04-(i/16)*.22-(i/16)**2*.20,.035]);f.rotation.z=side*(-.10+i/16*.52);
    tube(wrist,feather,[[side*i/16*1.8,-.10-i/16*.18,.035],[side*(i/16*1.8+.09),-.55-i/16*.39,.1],[side*(i/16*1.8+.1),-.72-i/16*.6,.06]],.0025);
   }
-  for(let row=0;row<3;row++)for(let i=0;i<15;i++){const f=mesh(pivot,featherGeometry(.43+row*.16,.077,.07),feather,[side*(.15+i/14*1.16),.19-row*.09-i/14*.16,.055+row*.009]);f.rotation.z=side*.15;}
+  for(let row=0;row<3;row++)for(let i=0;i<15;i++){const f=mesh(pivot,featherGeometry(.43+row*.16,.077,.07),feather,[side*(.15+i/14*1.16),.12+Math.sin(i/14*Math.PI)*.15-row*.11-i/14*.15,.055+row*.009]);f.rotation.z=side*(.02+i/14*.18);}
   mergeRigid(wrist);mergeRigid(pivot);
+  const wound=new T.MeshPhysicalMaterial({color:0x74392e,roughness:.36,clearcoat:.22});const stump=new T.Group();stump.position.copy(pivot.position);d.body.add(stump);mesh(stump,new T.SphereGeometry(1,36,24),wound,[side*.04,0,0],[.065,.071,.04]);tube(stump,skin,[[0,0,0],[side*.16,.025,-.02],[side*.21,-.035,-.01]],.025);stump.visible=false;d.wingStumps.push(stump);
+  const detached=pivot.clone(true);detached.position.set(side*1.45,.045,side*.3);detached.rotation.set(-Math.PI/2,side*.15,side*.11);detached.visible=false;detached.scale.setScalar(0);g.add(detached);d.detachedWings.push(detached);
+
  }
 }
 export function createBossModel(world,kind){
  const rig=makeRig(kind),{g,body,heads,arms,legs,spines}=rig,mats=materials(world,kind);
  const skin=new T.SkinnedMesh(bodyGeometry(kind,rig),mats);skin.castShadow=skin.receiveShadow=true;skin.frustumCulled=false;g.add(skin);g.updateMatrixWorld(true);skin.bind(new T.Skeleton(rig.bones));
- g.userData={kind,human:false,bossRig:true,body,head:heads[0],heads,arms,legs,skin,spines,phase:0,restSpine:BOSS_PROFILES[kind].spine,design:CHARACTER_DESIGNS[kind]||{skin:BOSS_PROFILES[kind].skin},identity:kind,detail:'sculpted muscle and scar tissue',jaws:[],eyes:[],faces:[],mouthCovers:[]};
- const ids=kind==='jakob'?['jakob','bobby']:[kind];heads.forEach((h,i)=>{const detail=head(world,h,ids[i],mats[0]);g.userData.faces.push(detail.face);g.userData.jaws.push(detail.jaw);g.userData.eyes.push(detail.eyes);g.userData.mouthCovers.push(detail.mouthCover);h.userData.identity=ids[i];h.userData.restHeadY=h.position.y;});g.userData.face=g.userData.faces[0];g.userData.jaw=g.userData.jaws[0];
+ g.userData={kind,human:false,bossRig:true,body,head:heads[0],heads,arms,legs,skin,spines,phase:0,restSpine:BOSS_PROFILES[kind].spine,design:CHARACTER_DESIGNS[kind]||{skin:BOSS_PROFILES[kind].skin},identity:kind,detail:'sculpted muscle and scar tissue',jaws:[],eyes:[],faces:[],mouthCovers:[],oralParts:[]};
+ const ids=kind==='jakob'?['jakob','bobby']:[kind];heads.forEach((h,i)=>{const detail=head(world,h,ids[i],mats[0]);g.userData.oralParts.push(detail.oralParts);g.userData.faces.push(detail.face);g.userData.jaws.push(detail.jaw);g.userData.eyes.push(detail.eyes);g.userData.mouthCovers.push(detail.mouthCover);h.userData.identity=ids[i];h.userData.restHeadY=h.position.y;});g.userData.face=g.userData.faces[0];g.userData.jaw=g.userData.jaws[0];
  if(kind==='jakob'){g.userData.identities=ids;g.userData.twins=spines;spines.forEach((s,i)=>s.userData={...s.userData,design:CHARACTER_DESIGNS[ids[i]],identity:ids[i],head:heads[i]});}
  const tendon=new T.MeshStandardMaterial({color:kind==='zeb'?0x51392d:0x816d57,roughness:.76}),bone=new T.MeshStandardMaterial({color:0xb6aa8e,roughness:.61});
  arms.forEach((arm,i)=>{const fore=arm.userData.forearm,[wx,wy,wz]=fore.userData.wrist;for(let f=0;f<4;f++){const x=wx+(f-1.5)*.027,len=kind==='chris'&&i===1?.23:kind==='birdy'?.19:.13;tube(fore,mats[0],[[x,wy-.03,wz+.025],[x+(f-1.5)*.006,wy-len*.55,wz+.04],[x+(f-1.5)*.012,wy-len,wz+.07]],.010);tube(fore,bone,[[x+(f-1.5)*.012,wy-len,wz+.07],[x+(f-1.5)*.016,wy-len-.055,wz+.095]],.0045);}
   const side=arm.userData.side;tube(fore,mats[0],[[wx+side*.05,wy+.025,wz+.02],[wx+side*.09,wy-.055,wz+.075],[wx+side*.075,wy-.11,wz+.1]],.012);
   for(let f=0;f<3;f++)tube(fore,tendon,[[(f-1)*.025,-.11,.083],[(f-1)*.019,wy+.035,wz+.03]],.0025);mergeRigid(fore);
  });
- if(kind==='birdy'){wings(g,mats[0]);g.userData.hair='thin brown';}
+ // Scars, stretched tendons and folds follow the rig, including the fused seam.
+ const wet=new T.MeshPhysicalMaterial({color:kind==='zeb'?0x34231d:0x734b3d,roughness:.42,clearcoat:.13}),scar=new T.MeshStandardMaterial({color:kind==='zeb'?0x836951:0xc0a593,roughness:.86});
+ for(const side of[-1,1]){
+  for(let i=0;i<6;i++)tube(body,scar,[[side*(.08+i*.016),.21-i*.02,.155],[side*(.15+i*.008),.15-i*.024,.174],[side*.19,.06-i*.017,.151]],.0018);
+  for(let i=0;i<4;i++)tube(body,wet,[[side*.12,.37-i*.105,.123],[side*.20,.31-i*.105,.165],[side*.22,.27-i*.105,.135]],.003);
+ }
+ if(kind==='chris'){const fore=arms[1].userData.forearm;for(let i=0;i<5;i++){mesh(fore,new T.SphereGeometry(1,32,20),wet,[.065,-.10-i*.061,.075],[.044,.034,.028]);tube(fore,bone,[[.05,-.09-i*.065,.098],[.08,-.105-i*.065,.130],[.093,-.14-i*.065,.09]],.009);}}
+ if(kind==='jakob'){for(let i=0;i<7;i++){const y=.34-i*.094;mesh(body,new T.SphereGeometry(1,24,20),wet,[0,y,.198],[.03,.038,.027]);tube(body,scar,[[-.054,y+.016,.187],[0,y-.015,.228],[.060,y+.010,.18]],.003);}}
+ if(kind==='birdy'){wings(g,mats[0],world);g.userData.hair='thin brown';}
  if(kind==='jakob')for(let i=0;i<15;i++){const y=i*.038-.27;tube(body,tendon,[[-.15,y,.17],[0,y+.009,.209],[.15,y-.006,.17]],.0038);}
  if(kind==='zeb'){
   g.userData.bileSacs=[];const bile=new T.MeshPhysicalMaterial({color:0x73734f,roughness:.29,clearcoat:.5});for(const side of [-1,1]){const sac=mesh(body,new T.SphereGeometry(1,36,24),bile,[side*.24,.2,.255],[.075,.13,.055]);g.userData.bileSacs.push(sac);for(let j=0;j<4;j++)tube(body,tendon,[[side*.15,.42,.22],[side*(.18+j*.019),.22,.3],[side*.2,.03,.24]],.003);}
