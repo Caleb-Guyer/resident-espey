@@ -1,8 +1,9 @@
-import {weaponFor} from './weapons.js?v=4.6.1';
-import {viewDirection} from './fps.js?v=4.6.1';
+import {weaponFor} from './weapons.js?v=4.7.0';
+import {viewDirection,EYE_HEIGHT} from './fps.js?v=4.7.0';
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export function settleWeapon(p,dt){
  if(!Number.isFinite(dt)||dt<0)return;
+ const eye=p.crouching?1.14:EYE_HEIGHT;p.eyeHeight=(Number.isFinite(p.eyeHeight)?p.eyeHeight:EYE_HEIGHT)+(eye-(Number.isFinite(p.eyeHeight)?p.eyeHeight:EYE_HEIGHT))*(1-Math.exp(-dt*12));
  p.bloom=Math.max(0,(p.bloom||0)-dt*1.9);
  const target=p.aiming&&!p.sprinting?(p.moving?.58:1):0;
  p.focus=(p.focus||0)+(target-(p.focus||0))*(1-Math.exp(-dt*8));

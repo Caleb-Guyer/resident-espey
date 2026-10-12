@@ -1,8 +1,8 @@
 import * as T from './vendor/three.module.js';
-import {StoryClock} from './story.js?v=4.6.1';
-import {voicedScene} from './voice-timeline.js?v=4.6.1';
-import {solid} from './data.js?v=4.6.1';
-import {speechMotion} from './cinematic-direction.js?v=4.6.1';
+import {StoryClock} from './story.js?v=4.7.0';
+import {voicedScene} from './voice-timeline.js?v=4.7.0';
+import {fitEncounterCamera} from './combat-space.js?v=4.7.0';
+import {speechMotion} from './cinematic-direction.js?v=4.7.0';
 export const BOSS_NAMES=Object.freeze({chris:'Chris',jakob:'Jakob & Bobby',zeb:'Zeb',birdy:'Lil Birdy'});
 export function displayName(name){return ({'Coach Hall':'Hall','Joel Honeycutt':'Joel','Landon Chapa':'Landon','Earl Britt':'Earl','Nathan Nunley':'Nathan','Zebene Martine':'Zeb'})[name]||name;}
 const shot=(at,from,to,look,fov=54)=>({at,from,to,look,end:look,fov});
@@ -31,7 +31,7 @@ export class BossIntroduction{
  play(enemy,complete,beat=null){
   const {game,world,cinema}=this;this.enemy=enemy;this.complete=complete;this.beat=beat;this.origin={x:enemy.x,z:enemy.z};this.saved={position:enemy.model.position.clone(),rotation:enemy.model.rotation.clone(),fov:world.camera.fov,yaw:game.player.yaw,pitch:game.player.pitch};
   this.story=voicedScene(beat?BOSS_BEATS[beat]:BOSS_INTROS[enemy.kind]);this.clock=new StoryClock(this.story);this.active=cinema.active=true;this.paused=false;this.finished=false;cinema.id=beat?'beat-'+beat:'encounter-'+enemy.kind;cinema.story=this.story;cinema.captionFallback=false;enemy.introActive=true;enemy.model.visible=true;enemy.model.rotation.y=0;
-  game.setPaused(true);game.sound.init();game.sound.pause(false);game.voice?.prepareScene(this.story);game.voice?.pause(false);
+  game.setPaused(true);world.enemyEffects?.clearHazards();game.sound.init();game.sound.pause(false);game.voice?.prepareScene(this.story);game.voice?.pause(false);
   $('#overlay').hidden=true;$('#hud').hidden=true;$('#touch-controls').hidden=true;$('#chapter-card').hidden=true;$('#cinematic').hidden=false;$('#scene-transition').hidden=true;$('#scene-type').textContent='';$('#scene-time').textContent='';$('#scene-location').textContent='';$('#pause-scene').textContent='Pause';
   document.body.classList.remove('memory-scene','premonition-scene');$('#cinematic').dataset.period='present';world.finisherHands?.forEach(h=>h.visible=false);this.update(0);
  }
@@ -40,12 +40,10 @@ export class BossIntroduction{
   if(!this.active)return;const {game,world,enemy,cinema}=this,voice=game.voice,state=voice?.scene;
   const advance=this.paused?0:cinema.captionFallback?dt:state?Math.max(0,voice.sceneTime-this.clock.time):dt,{sample,events,done}=this.clock.tick(advance),t=this.story.sourceTime(this.clock.time);
   for(const e of events){if(e.sound)game.sound.play(e.sound);if(e.scream)game.sound.scream?.(e.scream);if(e.shockwave)world.enemyEffects?.wave(enemy,5.6,0);}
-  world.advanceGates?.(this.paused?0:advance);world.enemyEffects?.update(this.paused?0:dt,game);world.combatEffects?.update(this.paused?0:dt);
+  world.advanceGates?.(this.paused?0:advance);world.enemyEffects?.update(advance,game);world.combatEffects?.update(advance);
   enemy.model.position.x=this.origin.x;enemy.model.position.z=this.origin.z;world.animateCharacter(enemy.model,t,false,this.beat?{...enemy,beat:{id:this.beat,time:t},wingSpace:true}:{intro:{time:t},wingSpace:true});world.bossArena?.updateBeat(enemy,this.beat,t);
-  const local=sample.position,pos=new T.Vector3(this.origin.x+local[0],local[1],this.origin.z+local[2]);
-  // Thin passages cannot place a closeup camera behind their walls. Fall back
-  // toward Ethan's entry side while retaining the shot's height and composition.
-  if(solid(game.grid,pos.x,pos.z,.12)){pos.x=game.player.x;pos.z=game.player.z;}
+  const local=sample.position,desired=(this.desiredCamera||=new T.Vector3()).set(this.origin.x+local[0],local[1],this.origin.z+local[2]),pos=fitEncounterCamera(game.grid,world.obstacles||[],desired,game.player,this.fittedCamera||=new T.Vector3());
+  // Refit obstructed shots toward the entry side while retaining their height.
   this.updateTearHands(t);world.camera.position.copy(pos);world.camera.lookAt(this.origin.x+sample.look[0],sample.look[1],this.origin.z+sample.look[2]);world.camera.fov=sample.fov;world.camera.updateProjectionMatrix();
   world.flashlight.position.copy(pos).add(new T.Vector3(-.9,.55,0));world.flashlight.target.position.set(this.origin.x,1.8,this.origin.z);world.flashlight.intensity=enemy.kind==='birdy'?33:38;
   const line=sample.line;if(line&&(enemy.kind==='birdy'||enemy.kind==='jakob')){const mouth=speechMotion(line,this.clock.time);enemy.model.userData.jaws[0].rotation.x=.045+mouth*.25;enemy.model.userData.faces[0].morphTargetInfluences[0]=mouth*.7;enemy.model.userData.mouthCovers[0].visible=mouth<.34;enemy.model.userData.jaws[0].visible=mouth>=.34;enemy.model.userData.oralParts?.[0]?.forEach(o=>o.visible=mouth>=.34);}

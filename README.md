@@ -4,6 +4,12 @@
 
 Some places remember you. Some refuse to let you go.
 
+Version **4.7.0** improves handling and encounter clarity. Guns retract and rise when approaching a wall, then smoothly recover their sights as Ethan steps back. The reticle returns while the sights are lowered. Crouching eases the camera between standing and crouched height; shots and projectile hits use the current stance height. Metal surfaces now combine grain with varied roughness and softer worn highlights.
+
+Creatures steer around nearby creatures during pursuit. Charges test their entire swept movement, including grazing hits. Injury lighting indicates the attack direction without another HUD panel, and projectiles retain their original attack direction. Boss projectiles respect a raised shutter's bottom edge and remaining panel. Introductions and phase movies clear prior hazards; defeating a boss clears its remaining projectiles, pools and waves. Decorative zero-damage effects cannot trigger injury feedback.
+
+Boss cameras refit shots around furniture and shutters as well as walls, preserving the shot height where possible. A standing-height fallback keeps low shots out of obstructing furniture. Cinematic effects use the scene clock and remain frozen during pauses and audio preparation. [4.7 verification](PLAYTEST_4.7.md).
+
 Version **4.6.1** fixes reload interruption, moving shutters, graphics changes and paused cutscenes. Magazine rounds transfer when seated and survive a dodge, melee attack or weapon switch; empty reloads keep the bolt open until chambering. Shotgun top-ups preserve the live round and skip the empty-reload pump cycle. Mixed pellet hits retain the body armor multiplier instead of granting headshot armor penetration to every pellet.
 
 Shutter collision follows the visible opening, bullets and sight lines respect the raised bottom edge, and navigation refreshes when the opening becomes passable. Boss encounters begin sealing their arena before their introduction, and shutters continue moving during those sequences. Lil Birdy's wing clearance uses his full span.

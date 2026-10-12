@@ -1,4 +1,4 @@
-import {isBoss,desiredPhase,encounterPattern,phaseRule} from './boss-fights.js?v=4.6.1';
+import {isBoss,desiredPhase,encounterPattern,phaseRule} from './boss-fights.js?v=4.7.0';
 // Targets commit during a readable tell. Every combo has a fresh warning and a
 // dodge window; a wall collision cancels the combo and exposes the creature.
 export const ATTACKS=Object.freeze({

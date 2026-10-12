@@ -1,22 +1,22 @@
-import {WEAPONS,weaponFor} from './weapons.js?v=4.6.1';
-import {createLongGun} from './longguns.js?v=4.6.1';
-import {scannedMaterial,microTexture} from './surface-materials.js?v=4.6.1';
-import {painted} from './loading.js?v=4.6.1';
-import {BossArena} from './boss-arena.js?v=4.6.1';
-import {createAnatomy,animateCollapse} from './anatomy.js?v=4.6.1';
-import {reloadProgress} from './reload.js?v=4.6.1';
-import {ATTACKS,enemyRadius} from './enemy-director.js?v=4.6.1';
+import {WEAPONS,weaponFor} from './weapons.js?v=4.7.0';
+import {createLongGun} from './longguns.js?v=4.7.0';
+import {scannedMaterial,microTexture} from './surface-materials.js?v=4.7.0';
+import {painted} from './loading.js?v=4.7.0';
+import {BossArena} from './boss-arena.js?v=4.7.0';
+import {createAnatomy,animateCollapse} from './anatomy.js?v=4.7.0';
+import {reloadProgress} from './reload.js?v=4.7.0';
+import {ATTACKS,enemyRadius} from './enemy-director.js?v=4.7.0';
 import * as T from './vendor/three.module.js';
-import {TILE,seeded,solid,findPath} from './data.js?v=4.6.1';
-import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock,propsOcclude} from './fps.js?v=4.6.1';
-import {CombatEffects} from './combat-effects.js?v=4.6.1';
-import {WallPlacement} from './wall-placement.js?v=4.6.1';
-import {createViewModel,createHands} from './viewmodel.js?v=4.6.1';
-import {createWeaponMotion,kickWeapon,stepWeaponMotion} from './weapon-motion.js?v=4.6.1';
-import {CHARACTER_DESIGNS,characterHair,dressBirdy,dressArchetype,cloneCharacter} from './creature-design.js?v=4.6.1';
-import {EnemyEffects} from './enemy-effects.js?v=4.6.1';
-import {BOSS_PROFILES,createBossModel} from './boss-models.js?v=4.6.1';
-import {animateBoss} from './boss-animation.js?v=4.6.1';
+import {TILE,seeded,solid,findPath} from './data.js?v=4.7.0';
+import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock,propsOcclude,environmentDistance} from './fps.js?v=4.7.0';
+import {CombatEffects} from './combat-effects.js?v=4.7.0';
+import {WallPlacement} from './wall-placement.js?v=4.7.0';
+import {createViewModel,createHands} from './viewmodel.js?v=4.7.0';
+import {createWeaponMotion,kickWeapon,stepWeaponMotion} from './weapon-motion.js?v=4.7.0';
+import {CHARACTER_DESIGNS,characterHair,dressBirdy,dressArchetype,cloneCharacter} from './creature-design.js?v=4.7.0';
+import {EnemyEffects} from './enemy-effects.js?v=4.7.0';
+import {BOSS_PROFILES,createBossModel} from './boss-models.js?v=4.7.0';
+import {animateBoss} from './boss-animation.js?v=4.7.0';
 
 const BOX=bevelBox(1,1,1,.014),WALLBOX=new T.BoxGeometry(1,1,1),SPHERE=new T.SphereGeometry(1,20,14),CYL=new T.CylinderGeometry(1,1,1,16);
 const SHARED=new Set([BOX,WALLBOX,SPHERE,CYL]);
@@ -563,15 +563,17 @@ export class World{
  }
  setView(p,yaw,pitch,t,ads=false){
   this.yaw=yaw;this.pitch=pitch;const bob=this.settings.motion?0:Math.sin(this.walk*7)*(this.weaponMotion?.move.x||0)*.009*(1-(this.ads||0)*.8);
-  const eye=p.crouching?1.14:EYE_HEIGHT;this.camera.position.set(p.x,eye+bob,p.z);
+  const eye=Number.isFinite(p.eyeHeight)?p.eyeHeight:p.crouching?1.14:EYE_HEIGHT;this.camera.position.set(p.x,eye+bob,p.z);
   this.camera.rotation.set(pitch,yaw,0,'YXZ');this.currentAds=ads;
  }
  updateWeapon(dt,t,p){
   dt=Number.isFinite(dt)?Math.max(0,dt):0;this.weaponMotion??=createWeaponMotion();
-  const progress=reloadProgress(p),pose=stepWeaponMotion(this.weaponMotion,dt,p,{reduced:this.settings.motion,walk:this.walk||0,aspect:this.camera.aspect,progress,viewScale:this.view.scale.x});this.weaponPose=pose;this.ads=pose.ads;this.recoil=this.weaponMotion.kick.x;
+  const w=weaponFor(p),reach=.45+Math.abs(w.muzzle[2])*this.view.scale.x,origin=this.clearanceOrigin||=( {} );origin.x=p.x;origin.y=Number.isFinite(p.eyeHeight)?p.eyeHeight:p.crouching?1.14:EYE_HEIGHT;origin.z=p.z;
+  const clearance=this.grid?environmentDistance(this.grid,origin,viewDirection(p.yaw||0,p.pitch||0),this.obstacles||[],reach+.16):reach+.16,obstruction=Math.max(0,Math.min(1,(reach+.12-clearance)/.4));
+  const progress=reloadProgress(p),pose=stepWeaponMotion(this.weaponMotion,dt,p,{reduced:this.settings.motion,walk:this.walk||0,aspect:this.camera.aspect,progress,viewScale:this.view.scale.x,obstruction});this.weaponPose=pose;this.ads=pose.ads;this.recoil=this.weaponMotion.kick.x;
   this.flashTimer=Math.max(0,this.flashTimer-dt);this.knifeTimer=Math.max(0,this.knifeTimer-dt);
   this.view.position.set(...pose.position);this.view.rotation.set(...pose.rotation);
-  const w=weaponFor(p),magRest=this.magazine.userData.rest||[0,-.06,0];this.magazine.position.set(...magRest.map((v,i)=>v+pose.reload.magazine[i]));this.magazine.rotation.set(0,0,pose.reload.magazine[0]*1.1);this.magazine.visible=pose.reload.magazineVisible;
+  const magRest=this.magazine.userData.rest||[0,-.06,0];this.magazine.position.set(...magRest.map((v,i)=>v+pose.reload.magazine[i]));this.magazine.rotation.set(0,0,pose.reload.magazine[0]*1.1);this.magazine.visible=pose.reload.magazineVisible;
   if(this.leftHand){const rest=this.leftHand.userData.rest;this.leftHand.position.set(...rest.map((v,i)=>v+pose.reload.hand[i]));this.leftHand.rotation.set(...pose.reload.handRotation.map((v,i)=>v+(this.leftHand.userData.restRotation?.[i]||0)));this.leftSkin.morphTargetInfluences[0]=pose.reload.grasp;this.rightSkin.morphTargetInfluences[0]=pose.trigger;this.trigger.rotation.x=-pose.trigger*.15;this.hammer.rotation.x=-pose.trigger*.22;}
   this.slide.position.z=pose.slide;if(this.pump){this.pump.position.z=pose.pump||0;if(this.weaponId==='shotgun'){this.leftHand.position.z+=(pose.pump||0);if(!this.pumpEjected&&this.weaponMotion.shotAge>.34&&this.weaponMotion.shotAge<.7){this.pumpEjected=true;this.ejectCasing({x:p.x,y:EYE_HEIGHT,z:p.z},p.yaw,p);this.combatEffects?.shellLast?.();}}}if(this.hands?.userData.shell){const shell=this.hands.userData.shell;shell.visible=!!pose.shell;const rest=this.leftHand.position;shell.position.set(rest.x+.04,rest.y+.055,rest.z-.01);}this.muzzle.visible=this.flashTimer>0;this.viewFlash.intensity=this.flashTimer>0?6:0;
   this.view.updateMatrixWorld(true);this.viewFlash.position.set(...w.muzzle).applyMatrix4((this.gun||this.view).matrixWorld);

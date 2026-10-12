@@ -122,6 +122,18 @@ test('Paused cutscenes reveal audio readiness and failure actions without advanc
  const g=game(),c=Object.create(Cinematics.prototype);c.game=g;c.active=true;c.paused=true;c.arena={active:false};c.leadIn=0;c.returnTime=null;c.captionFallback=false;let draws=0;c.update=()=>draws++;g.cinema=c;g.paused=true;g.voice={scene:{ready:false,error:false},update(){}};g.frame(1040);assert.equal(doc.querySelector('#scene-loading').hidden,false);g.voice.scene.error=true;g.frame(1080);assert.equal(doc.querySelector('#scene-audio-actions').hidden,false);assert.equal(doc.querySelector('#scene-loading-message').textContent,'Dialogue could not load.');g.voice.scene={ready:true,error:false};g.frame(1120);assert.equal(doc.querySelector('#scene-loading').hidden,true);assert.equal(draws,1);assert.equal(g.time,7);
 }));
 
+test('Shots originate at the current interpolated crouch height',()=>environment(()=>{
+ const g=game();g.player.eyeHeight=1.38;g.player.crouching=true;let y;g.world.tracer=from=>y=from.y;g.shoot();assert.equal(y,1.38);assert.equal(g.player.ammo,11);
+}));
+test('A grazing boss charge applies damage along its swept path and records its direction',()=>environment(()=>{
+ const g=game(),e=creature('chris');e.hp=e.max=1800;e.attack='rush';e.charge=.5;e.chargeX=1;e.chargeZ=0;g.player.x=6.29;g.player.z=7.83;g.enemies=[e];g.updateEnemies(.045);assert.equal(g.player.hp,72);assert.equal(e.hitCharge,true);assert.ok(g.hurtDirection.y<50);
+}));
+test('Decorative zero-damage waves cannot trigger injury feedback or consume invulnerability',()=>environment(()=>{
+ const g=game();assert.equal(g.hurt(0),false);assert.equal(g.hurt(NaN),false);assert.equal(g.player.hp,100);assert.equal(g.player.inv,0);assert.equal(g.flash,undefined);
+}));
+test('Defeating a boss clears its leftover hazards before opening the route',()=>environment(()=>{
+ const g=game(),e=creature('birdy');e.hp=1;e.max=1500;e.phase=4;e.stageResolved=1;g.enemies=[e];let cleared=0;g.world.enemyEffects={clearHazards(){cleared++;}};g.hurtEnemy(e,100);assert.equal(e.dead,true);assert.equal(cleared,1);
+}));
 test('Applying graphics suspends gameplay and rendering while hidden warmup variants are exposed',()=>environment(()=>{
  const g=game();let draws=0;g.world.update=()=>draws++;g.proximity=g.directRoute=()=>{};g.applyingGraphics=true;g.world.needsPausedRender=true;g.mouse.down=true;g.frame(1040);assert.equal(draws,0);assert.equal(g.time,7);assert.equal(g.stats.shots,0);g.mouse.down=false;g.applyingGraphics=false;g.frame(1080);assert.equal(draws,1);assert.ok(g.time>7);
 }));

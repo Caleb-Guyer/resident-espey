@@ -8,8 +8,9 @@ export function scannedMaterial(atlas,kind,options={}){
   s.vertexShader=s.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 scanPosition;varying vec3 scanNormal;').replace('#include <begin_vertex>','#include <begin_vertex>\nscanPosition=position;scanNormal=normal;');
   s.fragmentShader=s.fragmentShader.replace('#include <common>', '#include <common>\n#define SCAN_GAIN '+(kind==='metal'?'2.8':'1.0')+'\n');
   s.fragmentShader=s.fragmentShader.replace('#include <common>',`#include <common>\nvarying vec3 scanPosition;varying vec3 scanNormal;\nvec2 scanUV(vec2 v){return vec2(${offset.join(',')})+(.012+fract(v*${scale.toFixed(1)})*.976)*.5;}`)
-   .replace('#include <map_fragment>',kind==='metal'||kind==='feather'?'diffuseColor.rgb*=texture2D(map,scanUV(vMapUv/'+scale.toFixed(1)+')).rgb*SCAN_GAIN;':'vec3 weights=pow(abs(normalize(scanNormal)),vec3(4.));weights/=max(.001,weights.x+weights.y+weights.z);vec3 scanColor=texture2D(map,scanUV(scanPosition.yz)).rgb*weights.x+texture2D(map,scanUV(scanPosition.xz)).rgb*weights.y+texture2D(map,scanUV(scanPosition.xy)).rgb*weights.z;diffuseColor.rgb*=scanColor*SCAN_GAIN;');
- };m.customProgramCacheKey=()=>`scan-2026-${kind}`;return m;
+   .replace('#include <map_fragment>',kind==='metal'?'vec3 finishColor=texture2D(map,scanUV(vMapUv/'+scale.toFixed(1)+')).rgb*SCAN_GAIN;diffuseColor.rgb*=mix(vec3(.19),finishColor,.58);':kind==='feather'?'diffuseColor.rgb*=texture2D(map,scanUV(vMapUv/'+scale.toFixed(1)+')).rgb*SCAN_GAIN;':'vec3 weights=pow(abs(normalize(scanNormal)),vec3(4.));weights/=max(.001,weights.x+weights.y+weights.z);vec3 scanColor=texture2D(map,scanUV(scanPosition.yz)).rgb*weights.x+texture2D(map,scanUV(scanPosition.xz)).rgb*weights.y+texture2D(map,scanUV(scanPosition.xy)).rgb*weights.z;diffuseColor.rgb*=scanColor*SCAN_GAIN;');
+  if(kind==='metal')s.fragmentShader=s.fragmentShader.replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\nfloat wear=clamp(dot(texture2D(map,scanUV(vMapUv/8.0)).rgb,vec3(.2126,.7152,.0722))*2.8,0.,1.);roughnessFactor=clamp(roughnessFactor*(1.28-.50*wear),.19,.92);');
+ };m.customProgramCacheKey=()=>`scan-2026-v47-${kind}`;return m;
 }
 export function microTexture(mode='skin'){
  const n=256,c=document.createElement('canvas');c.width=c.height=n;const ctx=c.getContext('2d'),im=ctx.createImageData(n,n);let seed=291;

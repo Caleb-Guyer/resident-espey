@@ -1,5 +1,5 @@
-import {BOSS_PROFILES} from './boss-models.js?v=4.6.1';
-import {ATTACKS} from './enemy-director.js?v=4.6.1';
+import {BOSS_PROFILES} from './boss-models.js?v=4.7.0';
+import {ATTACKS} from './enemy-director.js?v=4.7.0';
 const clamp=n=>Math.max(0,Math.min(1,n)),ease=n=>{n=clamp(n);return n*n*(3-2*n);};
 export function animateBoss(g,t,moving,mood={}){
  const d=g.userData,kind=d.kind,p=BOSS_PROFILES[kind],seed=d.phase||0,pace=kind==='chris'?6.8:kind==='zeb'?2.7:kind==='birdy'?4.2:4.4,cycle=t*pace+seed,walk=moving?1:0,breathe=Math.sin(t*1.65+seed);
