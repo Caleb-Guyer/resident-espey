@@ -13,7 +13,7 @@ test('Campaign expands encounters, stages all types, and preserves existing enem
  for(const c of CHAPTERS){assert.equal(c.enemies.length,14);for(const [kind,x,z,stage]of c.enemies){assert.ok(ENEMY_STATS[kind]);assert.equal(solid(makeLevelGrid(c.theme,stage),(x+.5)*TILE,(z+.5)*TILE),false);assert.ok(Math.hypot(x-c.start[0],z-c.start[1])>4,'A safe start has a hostile spawn');}}
  assert.deepEqual(LEVELS.school.enemies.slice(0,5).map(e=>e[0]),['walker','walker','runner','walker','walker']);
  assert.deepEqual(LEVELS.backrooms.enemies.slice(0,5).map(e=>e[0]),['walker','zsiga','walker','birdy','zsiga']);
- assert.equal(new Set(CHAPTERS.flatMap(c=>c.enemies.map(e=>e[0]))).size,8);
+ assert.equal(new Set(CHAPTERS.flatMap(c=>c.enemies.map(e=>e[0]))).size,11);
 });
 test('Each boss has a distinct pair of attacks and phase two changes its pressure',()=>{
  const patterns=[];for(const kind of ['chris','jakob','zeb','birdy']){

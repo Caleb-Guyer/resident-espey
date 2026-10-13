@@ -1,8 +1,10 @@
-import {isBoss,desiredPhase,encounterPattern,phaseRule} from './boss-fights.js?v=5.0.0';
+import {isBoss,desiredPhase,encounterPattern,phaseRule} from './boss-fights.js?v=5.1.0';
+import {zombieAttack,zombieMobility} from './zombie-damage.js?v=5.1.0';
 // Targets commit during a readable tell. Every combo has a fresh warning and a
 // dodge window; a wall collision cancels the combo and exposes the creature.
 export const ATTACKS=Object.freeze({
  bite:{tell:.58,recover:.72,cool:1.35,radius:1.55,damage:1},
+ alarm:{tell:1.5,recover:1.8,cool:8,radius:1.55,damage:.4},
  pounce:{tell:.52,recover:.9,cool:2.7,dash:8.5,duration:.48,radius:1.5,damage:1.1},
  crawl:{tell:.65,recover:1.1,cool:3,dash:7,duration:.48,radius:1.4,damage:1},
  acid:{tell:1,recover:.8,cool:3.8,projectile:'acid',shots:1,speed:7.5,damage:.9},
@@ -37,10 +39,11 @@ export function navigationGoal(grid,target,canReach=()=>true,tile=2.4){
  for(let z=cz-2;z<=cz+2;z++)for(let x=cx-2;x<=cx+2;x++){if(grid[z]?.[x]!==0)continue;const p={x:(x+.5)*tile,z:(z+.5)*tile},d=(p.x-target.x)**2+(p.z-target.z)**2;if(d<score&&canReach(p,target)){score=d;best=p;}}return best;
 }
 export function chooseAttack(e,dist){
+ const injured=zombieAttack(e);if(injured)return injured;
  const rule=encounterPattern(e,dist);if(rule)return rule[0];
- switch(e.kind){case 'spitter':return 'acid';case 'brute':return 'crush';case 'crawler':return 'crawl';case 'stalker':return 'stalk';case 'runner':case 'zsiga':return dist>2.3?'pounce':'bite';default:return 'bite';}
+ switch(e.kind){case 'screamer':return dist>2?'alarm':'bite';case 'bulwark':case 'brute':return 'crush';case 'spitter':return 'acid';case 'crawler':return 'crawl';case 'stalker':return 'stalk';case 'feral':case 'runner':case 'zsiga':return dist>2.3?'pounce':'bite';default:return 'bite';}
 }
-export function attackReach(e){return isBoss(e.kind)?e.phase===2&&e.kind==='jakob'?8:12:e.kind==='spitter'?12:['stalker','crawler','runner','zsiga'].includes(e.kind)?5:e.kind==='brute'?3.1:e.range;}
+export function attackReach(e){if(zombieAttack(e))return e.zombie?.severed[4]&&e.zombie?.severed[5]?1.3:e.range;return isBoss(e.kind)?e.phase===2&&e.kind==='jakob'?8:12:['spitter','screamer'].includes(e.kind)?12:['stalker','crawler','runner','feral','zsiga'].includes(e.kind)?5:['brute','bulwark'].includes(e.kind)?3.1:e.range;}
 export function beginAttack(e,player){
  let name;
  if(e.comboPattern&&e.comboStep<e.comboPattern.length)name=e.comboPattern[e.comboStep++];
@@ -62,7 +65,7 @@ export function damageScale(e,headshot=false){
  if(e.recover>0&&(isBoss(e.kind)||e.kind==='brute'))return 1.35;
  if(e.kind==='zeb'&&!headshot)return e.phase>=2?.82:.62;
  if(e.kind==='chris'&&!headshot&&e.phase<2)return .68;
- if(e.kind==='brute'&&!headshot)return .7;return 1;
+ if(e.kind==='brute'&&!headshot)return .7;if(e.kind==='bulwark'&&!headshot)return .55;return 1;
 }
 export function stepEnemy(e,dt,context){
  const events=[],p=context.player,dist=distance(e,p),phase=phaseFor(e);
@@ -84,6 +87,6 @@ export function stepEnemy(e,dt,context){
  }
  if(e.stagger>0)return {mode:'hold',events};
  if(e.cool===0&&dist<attackReach(e)&&context.visible){events.push(beginAttack(e,p));return {mode:'hold',events};}
- if(e.kind==='spitter'&&context.visible)return {mode:dist<4?'retreat':dist>8?'chase':'strafe',events};
- return {mode:dist>e.range*.8?'chase':'hold',speedScale:phaseRule(e)?.speed||1+(e.phase||0)*.04,events};
+ if(e.kind==='spitter'&&!zombieAttack(e)&&context.visible)return {mode:dist<4?'retreat':dist>8?'chase':'strafe',events};
+ return {mode:dist>e.range*.8?'chase':'hold',speedScale:(phaseRule(e)?.speed||1+(e.phase||0)*.04)*zombieMobility(e)*(e.kind==='feral'&&e.hp<e.max*.5?1.18:1),events};
 }

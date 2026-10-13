@@ -1,4 +1,4 @@
-import {solid} from './data.js?v=5.0.0';
+import {solid} from './data.js?v=5.1.0';
 
 export const EYE_HEIGHT=1.64;
 export const CEILING=3.35;
@@ -65,17 +65,17 @@ export function environmentDistance(grid,origin,direction,props=[],maxDistance=2
 }
 export function traceShot(grid,origin,enemies,direction,props=[],maxDistance=24){
  let limit=environmentDistance(grid,origin,direction,props,maxDistance);
- let enemy=null,headshot=false,headIndex=null;const fallbackHead={x:0,y:0,z:0},min={x:0,y:0,z:0},max={x:0,y:0,z:0};
+ let enemy=null,headshot=false,headIndex=null,hitPart=null;const fallbackHead={x:0,y:0,z:0},min={x:0,y:0,z:0},max={x:0,y:0,z:0};
  for(const e of enemies){
   if(e.dead||e.dormant)continue;
   const [wide,tall]=BODY_SCALE[e.kind]||[1,1];
-  let head=Infinity,nearestHead=0,body=Infinity;const r=e.kind==='jakob'?.24:.24*wide;
-  if(e.hitHeads?.length){for(let i=0;i<e.hitHeads.length;i++){const t=sphereIntersection(origin,direction,e.hitHeads[i],r);if(t<head){head=t;nearestHead=i;}}}
+  let head=Infinity,nearestHead=0,body=Infinity,partName='torso';const r=e.kind==='jakob'?.24:e.zombie?.16:.24*wide;
+  if(Array.isArray(e.hitHeads)){for(let i=0;i<e.hitHeads.length;i++){const t=sphereIntersection(origin,direction,e.hitHeads[i],r);if(t<head){head=t;nearestHead=i;}}}
   else {fallbackHead.x=e.x;fallbackHead.y=1.64*tall;fallbackHead.z=e.z;head=sphereIntersection(origin,direction,fallbackHead,r);}
-  if(e.hitParts?.length){for(const part of e.hitParts){const t=capsuleIntersection(origin,direction,part.a,part.b,part.r);if(t<body)body=t;}}
+  if(Array.isArray(e.hitParts)){for(const part of e.hitParts){const t=capsuleIntersection(origin,direction,part.a,part.b,part.r);if(t<body){body=t;partName=part.name||'torso';}}}
   else {min.x=e.x-.34*wide;min.y=e.kind==='crawler'?.04:.25;min.z=e.z-.34*wide;max.x=e.x+.34*wide;max.y=e.kind==='crawler'?.78:1.48*tall;max.z=e.z+.34*wide;body=boxIntersection(origin,direction,min,max);}
   const t=Math.min(head,body);
-  if(t<limit){limit=t;enemy=e;headshot=head<=body;headIndex=headshot?nearestHead:null;}
+  if(t<limit){limit=t;enemy=e;headshot=head<=body;headIndex=headshot?nearestHead:null;hitPart=headshot?'head':partName;}
  }
- return {enemy,headshot,headIndex,distance:limit,end:{x:origin.x+direction.x*limit,y:origin.y+direction.y*limit,z:origin.z+direction.z*limit}};
+ return {enemy,headshot,headIndex,hitPart,distance:limit,end:{x:origin.x+direction.x*limit,y:origin.y+direction.y*limit,z:origin.z+direction.z*limit}};
 }

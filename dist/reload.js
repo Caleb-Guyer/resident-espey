@@ -1,4 +1,4 @@
-import {weaponFor} from './weapons.js?v=5.0.0';
+import {weaponFor} from './weapons.js?v=5.1.0';
 export const MAGAZINE_SIZE=12;
 export function beginReload(p){
  const w=weaponFor(p);if(p.reloading>0||p.ammo>=w.capacity||p.reserve<=0||p.equipping>0)return false;

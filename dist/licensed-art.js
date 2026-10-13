@@ -1,6 +1,7 @@
 import * as T from './vendor/three.module.js';
 import {GLTFLoader} from './vendor/GLTFLoader.js';
 import {clone} from './vendor/SkeletonUtils.js';
+import {prepareZombieGeometry,createZombieAnatomy,poseZombieInjuries} from './zombie-art.js?v=5.1.0';
 
 export const LICENSED_MATERIALS=['beige_wall_001','damaged_plaster','floor_tiles_06','old_linoleum_flooring_01','painted_plaster_wall'];
 export const LICENSED_PROPS=['utility_box_01','metal_office_desk','fire_alarm','security_camera_01'];
@@ -10,7 +11,7 @@ export async function loadLicensedArt(resources){
  const track=o=>o.traverse(node=>{if(node.geometry)resources.add(node.geometry);for(const m of node.material?(Array.isArray(node.material)?node.material:[node.material]):[]){resources.add(m);for(const value of Object.values(m))if(value?.isTexture){value.anisotropy=8;resources.add(value);}}});
  await Promise.all([...LICENSED_MATERIALS.map(async id=>{const maps=await Promise.all(['color','normal','rough'].map(async name=>{const t=await textureLoader.loadAsync(asset(id,name+'.jpg'));t.colorSpace=name==='color'?T.SRGBColorSpace:T.NoColorSpace;t.wrapS=t.wrapT=T.RepeatWrapping;t.anisotropy=8;resources.add(t);return t;}));materials.set(id,{color:maps[0],normal:maps[1],rough:maps[2]});}),...LICENSED_PROPS.map(async id=>{const gltf=await loader.loadAsync(asset(id,'model.gltf'));gltf.scene.updateMatrixWorld(true);track(gltf.scene);props.set(id,gltf.scene);})]);
  const character=await loader.loadAsync(asset('city-zombie','model.glb'));track(character.scene);
- const library={materials,props,character};library.head=extractArtistHead(character.scene);resources.add(library.head.geometry);return library;
+ const library={materials,props,character,resources};library.head=extractArtistHead(character.scene);resources.add(library.head.geometry);prepareZombieGeometry(character.scene,resources);return library;
 }
 
 export function extractArtistHead(scene){
@@ -45,21 +46,24 @@ export function fittedProp(template,width,height,depth){
 }
 
 export function createLicensedEnemy(library,kind='walker',color){
+ prepareZombieGeometry(library.character.scene,library.resources);
  const root=new T.Group(),visual=clone(library.character.scene),mats=new Map();
  visual.traverse(o=>{if(!o.isMesh)return;o.castShadow=o.receiveShadow=true;o.frustumCulled=false;const copy=m=>{if(!mats.has(m)){const own=m.clone();if(color&&m.name.includes('Outfit'))own.color.set(color).lerp(new T.Color(0xffffff),.5);mats.set(m,own);}return mats.get(m);};o.material=Array.isArray(o.material)?o.material.map(copy):copy(o.material);});
  root.add(visual);const find=name=>{let result;visual.traverse(o=>{if(o.isBone&&o.name.endsWith(name))result=o;});return result;},head=find('Head'),hips=find('Hips'),anchor=new T.Object3D();anchor.position.set(0,.075,0);head.add(anchor);
  const mixer=new T.AnimationMixer(visual),actions=Object.fromEntries(library.character.animations.map(c=>[c.name,mixer.clipAction(c)]));
- root.userData={kind,human:false,head:anchor,body:hips,arms:[],legs:[],licensedActor:{visual,mixer,actions,state:'',time:null},detail:'Rikindle3D artist-authored character and animation'};animateLicensedEnemy(root,0,false,{});mixer.setTime(Math.random()*actions.idle.getClip().duration);return root;
+ root.userData={kind,human:false,head:anchor,body:hips,arms:[],legs:[],licensedActor:{visual,mixer,actions,state:'',time:null},detail:'Rikindle3D artist-authored character and animation'};
+ const dimensions={brute:[1.34,1.08,1.22],bulwark:[1.17,1.02,1.12],stalker:[.83,1.07,.85],feral:[.88,1.03,.9],spitter:[1.07,.98,1.12],screamer:[.86,1.09,.9],zsiga:[.87,1.07,.93]}[kind]||[1,1,1];root.scale.set(...dimensions);
+ createZombieAnatomy(root,library);animateLicensedEnemy(root,0,false,{});mixer.setTime(Math.random()*actions.idle.getClip().duration);return root;
 }
 
 export function animateLicensedEnemy(root,t,moving,mood={}){
  const d=root.userData.licensedActor,dt=d.time===null?0:Math.max(0,Math.min(.1,t-d.time));d.time=t;
- const attack=!!(mood.windup>0||mood.strike>0),state=mood.dead?'death':mood.stagger>0?'hit':attack?'attack'+(['','2','3'][(mood.attackCount||0)%3]):moving?(root.userData.kind==='runner'?'run':'walk'):'idle';
+ const attack=!!(mood.windup>0||mood.strike>0),injured=!!(mood.zombie?.severed?.[4]||mood.zombie?.severed?.[5]),fast=['runner','feral','stalker'].includes(root.userData.kind),state=mood.dead?'death':mood.stagger>0?'hit':attack?(mood.attack==='alarm'?'scream':'attack'+(['','2','3'][(mood.attackCount||0)%3])):moving?(fast&&!injured?'run':root.userData.kind==='zsiga'?'walk2':'walk'):(root.userData.kind==='screamer'?'idle2':'idle');
  const next=d.actions[state]||d.actions.idle;if(state!==d.state){const previous=d.current;next.reset().setEffectiveWeight(1).play();next.enabled=true;next.clampWhenFinished=['death','hit'].includes(state);next.setLoop(next.clampWhenFinished?T.LoopOnce:T.LoopRepeat,Infinity);if(previous&&previous!==next){previous.fadeOut(.16);next.fadeIn(.16);}d.current=next;d.state=state;}
  if(state==='death'){next.setEffectiveTimeScale(0);next.time=Math.min(next.getClip().duration-.001,(mood.deathTime||0)/2.8*next.getClip().duration);d.mixer.update(dt);}
  else if(attack&&state.startsWith('attack')){next.setEffectiveTimeScale(0);const duration=next.getClip().duration,progress=mood.windup>0?.12+.40*(1-(mood.windup/(mood.tellDuration||.65))):.52+.32*(1-Math.min(1,(mood.strike||0)/.4));next.time=duration*progress;d.mixer.update(dt);}
  else{next.setEffectiveTimeScale(state==='run'?1.2:state==='walk'?.95:1);d.mixer.update(dt);}
- root.updateMatrixWorld(true);return root;
+ poseZombieInjuries(root,t,moving,mood);return root;
 }
 
 export function dressLicensedRooms(w){

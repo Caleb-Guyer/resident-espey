@@ -28,6 +28,8 @@ The game fits model instances proportionally inside existing placement envelopes
 
 The character is converted to glTF with the official Godot FBX2glTF converter. Its provided idle, alternate idle, two walks, run, three attacks, reaction, death and scream clips are combined into a single cached model. Horizontal root translation is removed so animation does not duplicate gameplay movement. Each enemy owns its skeleton, materials, mixer and animation actions; geometry, source textures and clips are shared. Attack poses follow the existing attack tell/release timing. Death progresses to the final pose and rests there.
 
+Version 5.1 extends this same artist model to all ordinary infected roles. The base skeleton and textures are shared; each role receives different proportions, movement and posing, and some have code-authored armor or infection tissue. Anatomical triangle attributes and cached region meshes retain original UVs, normals and skin weights. Severed regions are masked consistently in colour and shadow shaders. Detached pieces snapshot the already uploaded skin matrices; matching wound caps and blood effects are code-authored. No new third-party asset or altered bitmap is introduced by this pass.
+
 The artist's head geometry and UVs are also adapted for the bosses, with different proportions for Chris, Zeb, Jakob, Bobby and Birdy. The former generated portrait and teeth meshes are suppressed when an artist head is present. Speech retains a local jaw-region morph. The existing distinct boss bodies, wing systems, combat phases and identities remain custom; these are not newly purchased AAA boss rigs.
 
 ## Software

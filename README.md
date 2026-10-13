@@ -4,6 +4,10 @@
 
 Some places remember you. Some refuse to let you go.
 
+Version **5.1.0** rebuilds zombie combat around anatomical hit capsules and persistent injuries. All ten ordinary infected roles use the licensed textured skeletal model, with distinct proportions, poses, clothing and three resilience variations. Added screamers alert nearby enemies, armored infected resist body shots, and ferals accelerate when wounded. Regular health is substantially higher, with new supply caches to support the tougher fights.
+
+Concentrated fire can sever either arm, either leg, or the head. Matching colour and shadow cuts expose flesh and bone, and the original textured limb keeps its frozen animation pose as it flies away. A lost leg cancels rushes and causes a limp; both lost legs force a crawl; losing both arms changes attacks to bites. Approximately 5% of infected have a stable, identity-based headless survival trait. They wander with limited nearby perception and can still be killed through body damage. Blood spray, floor splatter and detached parts use bounded pools and are prepared during loading. Health, injuries and valid positions survive checkpoint reloads. [5.1 verification](PLAYTEST_5.1.md).
+
 Version **5.0.0** begins an artist-asset rebuild. Walkers and runners use Rikindle3D's licensed character, proper UV textures, and eleven imported motion clips with blended states, in-place locomotion and a lasting death pose. Boss faces use the artist's facial geometry, eyes and teeth with different head proportions; retired portrait and oral meshes stay hidden throughout speech and combat. Animated headshots follow the imported head bone.
 
 Photographed plaster, chipped brick-backed walls, worn tiles and linoleum now use separate color, normal and roughness maps. Artist-made desks, utility cabinets, fire alarms and CCTV cameras replace or supplement room stand-ins while respecting the existing furniture and wall reservations. The title image is captured from the actual game environment. Source files, authors and licenses are tracked in [licensed art credits](LICENSED_ART.md). [5.0 verification](PLAYTEST_5.0.md).
