@@ -1,4 +1,4 @@
-import * as T from './vendor/three.module.js';
+import * as T from './vendor/three.module.js?v=5.1.2';
 
 // A continuous isosurface replaces the visible ball/cylinder joints. Generate
 // each archetype once at loading time; instances own their disposable geometry.

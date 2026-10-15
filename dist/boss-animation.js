@@ -1,5 +1,5 @@
-import {BOSS_PROFILES} from './boss-models.js?v=5.1.1';
-import {ATTACKS} from './enemy-director.js?v=5.1.1';
+import {BOSS_PROFILES} from './boss-models.js?v=5.1.2';
+import {ATTACKS} from './enemy-director.js?v=5.1.2';
 const clamp=n=>Math.max(0,Math.min(1,n)),ease=n=>{n=clamp(n);return n*n*(3-2*n);};
 export function plantBossFoot(leg,p,phase,walk,lift=.055,stride=.14){
  const calf=leg.userData.calf,ankle=calf.userData.ankle;if(!ankle)return;const a=Math.hypot(calf.position.y,calf.position.z),b=Math.hypot(ankle[1],ankle[2]),upperRest=-Math.atan2(calf.position.z,-calf.position.y),lowerRest=-Math.atan2(ankle[2],-ankle[1]),swing=Math.max(0,Math.sin(phase))*walk;
