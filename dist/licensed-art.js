@@ -1,7 +1,7 @@
 import * as T from './vendor/three.module.js';
 import {GLTFLoader} from './vendor/GLTFLoader.js';
 import {clone} from './vendor/SkeletonUtils.js';
-import {prepareZombieGeometry,createZombieAnatomy,poseZombieInjuries} from './zombie-art.js?v=5.1.0';
+import {prepareZombieGeometry,createZombieAnatomy,poseZombieInjuries} from './zombie-art.js?v=5.1.1';
 
 export const LICENSED_MATERIALS=['beige_wall_001','damaged_plaster','floor_tiles_06','old_linoleum_flooring_01','painted_plaster_wall'];
 export const LICENSED_PROPS=['utility_box_01','metal_office_desk','fire_alarm','security_camera_01'];
@@ -48,7 +48,7 @@ export function fittedProp(template,width,height,depth){
 export function createLicensedEnemy(library,kind='walker',color){
  prepareZombieGeometry(library.character.scene,library.resources);
  const root=new T.Group(),visual=clone(library.character.scene),mats=new Map();
- visual.traverse(o=>{if(!o.isMesh)return;o.castShadow=o.receiveShadow=true;o.frustumCulled=false;const copy=m=>{if(!mats.has(m)){const own=m.clone();if(color&&m.name.includes('Outfit'))own.color.set(color).lerp(new T.Color(0xffffff),.5);mats.set(m,own);}return mats.get(m);};o.material=Array.isArray(o.material)?o.material.map(copy):copy(o.material);});
+ visual.traverse(o=>{if(!o.isMesh)return;o.castShadow=o.receiveShadow=true;o.frustumCulled=true;if(o.isSkinnedMesh)o.boundingSphere=new T.Sphere(new T.Vector3(0,.9,0),2.4);const copy=m=>{if(!mats.has(m)){const own=m.clone();if(color&&m.name.includes('Outfit'))own.color.set(color).lerp(new T.Color(0xffffff),.5);mats.set(m,own);}return mats.get(m);};o.material=Array.isArray(o.material)?o.material.map(copy):copy(o.material);});
  root.add(visual);const find=name=>{let result;visual.traverse(o=>{if(o.isBone&&o.name.endsWith(name))result=o;});return result;},head=find('Head'),hips=find('Hips'),anchor=new T.Object3D();anchor.position.set(0,.075,0);head.add(anchor);
  const mixer=new T.AnimationMixer(visual),actions=Object.fromEntries(library.character.animations.map(c=>[c.name,mixer.clipAction(c)]));
  root.userData={kind,human:false,head:anchor,body:hips,arms:[],legs:[],licensedActor:{visual,mixer,actions,state:'',time:null},detail:'Rikindle3D artist-authored character and animation'};

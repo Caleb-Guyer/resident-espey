@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {solid} from './data.js?v=5.1.0';
+import {solid} from './data.js?v=5.1.1';
 const acquire=(list,free,capacity)=>free.pop()||(list.length>=capacity?list.shift():{});
 const release=(free,item,capacity)=>{if(item.pooled&&free.length<capacity)free.push(item);};
 export class EnemyEffects{
@@ -37,5 +37,5 @@ export class EnemyEffects{
   this.rings.count=this.waves.length;for(let i=0;i<this.waves.length;i++){const w=this.waves[i];d.position.set(w.x,.04,w.z);d.rotation.set(-Math.PI/2,0,0);d.scale.setScalar(w.r);d.updateMatrix();this.rings.setMatrixAt(i,d.matrix);}
   for(const m of [this.projectiles,this.stains,this.rings]){m.instanceMatrix.needsUpdate=true;if(m.instanceColor)m.instanceColor.needsUpdate=true;}
  }
- dispose(){for(const m of [this.projectiles,this.stains,this.rings]){this.root.remove(m);m.geometry.dispose();m.material.dispose();}this.bolts.length=this.pools.length=this.waves.length=0;}
+ dispose(){for(const m of [this.projectiles,this.stains,this.rings]){this.root.remove(m);m.dispose();m.geometry.dispose();m.material.dispose();}this.bolts.length=this.pools.length=this.waves.length=0;}
 }

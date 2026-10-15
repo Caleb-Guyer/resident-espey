@@ -1,10 +1,11 @@
-import {painted} from './loading.js?v=5.1.0';
-import {sceneContext,MEMORY_LEAD_IN} from './scene-context.js?v=5.1.0';
-import {dialogueFrame,speakingActor,speechMotion} from './cinematic-direction.js?v=5.1.0';
+import {painted} from './loading.js?v=5.1.1';
+import {duringGPUWork,finishGPUWarmup} from './render-budget.js?v=5.1.1';
+import {sceneContext,MEMORY_LEAD_IN} from './scene-context.js?v=5.1.1';
+import {dialogueFrame,speakingActor,speechMotion} from './cinematic-direction.js?v=5.1.1';
 import * as T from './vendor/three.module.js';
-import {SCENES,StoryClock} from './story.js?v=5.1.0';
-import {voicedScene} from './voice-timeline.js?v=5.1.0';
-import {BossIntroduction,displayName} from './boss-introductions.js?v=5.1.0';
+import {SCENES,StoryClock} from './story.js?v=5.1.1';
+import {voicedScene} from './voice-timeline.js?v=5.1.1';
+import {BossIntroduction,displayName} from './boss-introductions.js?v=5.1.1';
 const $=s=>document.querySelector(s);
 
 // A separate, lit stage prevents cinematic actors from touching combat or save state.
@@ -112,8 +113,8 @@ export class Cinematics{
  async prewarm(ids){
   const w=this.world,r=w.renderer,camera=w.camera,position=camera.position.clone(),rotation=camera.quaternion.clone(),fov=camera.fov,target=r.getRenderTarget(),autoClear=r.autoClear,warm=new T.WebGLRenderTarget(16,16);let savedId=this.id,savedStory=this.story;
   try{r.autoClear=true;if(this.game.voice?.context)await Promise.allSettled(ids.flatMap(id=>voicedScene(SCENES[id]).lines.map(l=>this.game.voice.load(l.key))));for(const id of ids){await painted();this.id=id;this.story=voicedScene(SCENES[id]);this.build(this.story.stage);const visibility=[],culling=[];this.scene.traverse(o=>{if(!o.visible){visibility.push(o);o.visible=true;}if(o.isMesh){culling.push([o,o.frustumCulled]);o.frustumCulled=false;}});
-   try{if(r.compileAsync)await r.compileAsync(this.scene,camera);r.setRenderTarget(warm);if(r.compileAsync)await r.compileAsync(this.scene,camera);r.render(this.scene,camera);r.setRenderTarget(target);if(target===null)r.render(this.scene,camera);}finally{visibility.forEach(o=>o.visible=false);for(const[o,v]of culling)o.frustumCulled=v;}
-  }}finally{r.setRenderTarget(target);r.autoClear=autoClear;warm.dispose();camera.position.copy(position);camera.quaternion.copy(rotation);camera.fov=fov;camera.updateProjectionMatrix();this.id=savedId;this.story=savedStory;this.scene=null;}
+   try{if(r.compileAsync)await duringGPUWork(r.getContext?.(),()=>r.compileAsync(this.scene,camera));r.setRenderTarget(warm);if(r.compileAsync)await duringGPUWork(r.getContext?.(),()=>r.compileAsync(this.scene,camera));r.render(this.scene,camera);r.setRenderTarget(target);if(target===null)r.render(this.scene,camera);}finally{visibility.forEach(o=>o.visible=false);for(const[o,v]of culling)o.frustumCulled=v;}
+  }await finishGPUWarmup(r.getContext?.());}finally{r.setRenderTarget(target);r.autoClear=autoClear;warm.dispose();camera.position.copy(position);camera.quaternion.copy(rotation);camera.fov=fov;camera.updateProjectionMatrix();this.id=savedId;this.story=savedStory;this.scene=null;}
  }
  event(e){if(e.sound)this.game.sound.play(e.sound);if(e.door!==undefined&&this.door)this.doorTarget=e.door;if(e.serum&&this.vial){const fore=this.actors.get('hall')?.userData.arms?.[0]?.userData.forearm;if(fore){fore.add(this.vial);this.vial.position.set(0,-.39,.03);this.vial.rotation.z=.7;}else this.vial.visible=false;}if(e.collapse&&this.crater)this.crater.visible=true;
   if(e.maze&&this.mazeStage){this.mazeStage.visible=true;for(const g of this.actors.values())g.visible=false;const landon=this.actors.get('landon');if(landon){landon.visible=true;landon.position.set(.7,0,0);}this.key.color.set(0xffe0a1);}

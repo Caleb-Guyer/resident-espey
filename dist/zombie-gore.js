@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {solid} from './data.js?v=5.1.0';
+import {solid} from './data.js?v=5.1.1';
 function bloodMap(){
  const size=128,data=new Uint8Array(size*size*4);let seed=57;const rand=()=>{seed=Math.imul(seed,1664525)+1013904223;return(seed>>>0)/4294967296;},drops=Array.from({length:28},()=>({x:rand()*2-1,y:rand()*2-1,r:.013+rand()*.065}));
  for(let y=0;y<size;y++)for(let x=0;x<size;x++){const u=(x/size-.5)*2,v=(y/size-.5)*2,a=Math.atan2(v,u),edge=.56+Math.sin(a*7)*.09+Math.sin(a*13+1)*.04,r=Math.hypot(u,v);let alpha=Math.max(0,Math.min(1,(edge-r)*35));for(const d of drops)alpha=Math.max(alpha,Math.max(0,Math.min(1,(d.r-Math.hypot(u-d.x,v-d.y))*100)));const i=(y*size+x)*4;data[i]=80+rand()*22;data[i+1]=9+rand()*6;data[i+2]=8+rand()*6;data[i+3]=alpha*230;}
@@ -41,5 +41,5 @@ export class ZombieGore{
   }this.fragments.length=n;this.sync();
  }
  sync(){const d=this.dummy;let n=0;for(const p of this.spray)if(p.life>0){d.position.set(p.x,p.y,p.z);d.rotation.set(0,0,0);d.scale.set(p.r,p.r*1.6,p.r);d.updateMatrix();this.droplets.setMatrixAt(n++,d.matrix);}this.droplets.count=n;n=0;for(const s of this.stains)if(s.life>0){d.position.set(s.x,.023,s.z);d.rotation.set(-Math.PI/2,0,s.angle);d.scale.set(s.size,s.size,1);d.updateMatrix();this.splats.setMatrixAt(n++,d.matrix);}this.splats.count=n;this.droplets.instanceMatrix.needsUpdate=this.splats.instanceMatrix.needsUpdate=true;}
- dispose(){for(const f of this.fragments)f.piece.visible=false;this.fragments.length=0;for(const m of [this.droplets,this.splats]){this.root.remove(m);m.geometry.dispose();m.material.dispose();}this.map.dispose();}
+ dispose(){for(const f of this.fragments)f.piece.visible=false;this.fragments.length=0;for(const m of [this.droplets,this.splats]){this.root.remove(m);m.dispose();m.geometry.dispose();m.material.dispose();}this.map.dispose();}
 }

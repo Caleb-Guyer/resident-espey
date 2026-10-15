@@ -4,6 +4,8 @@
 
 Some places remember you. Some refuse to let you go.
 
+Version **5.1.1** fixes retained GPU instance buffers on retries, removes first-draw skeletal bounds scans, culls off-screen infected and detached parts, and caches procedural texture sources. Rendering uses a nonblocking queue limit to avoid submitting unbounded work when the GPU falls behind. Loading waits for warm uploads, and graphics interruptions preserve progress, prepare restored scenes and return control while paused. [Performance verification](PLAYTEST_5.1.1.md).
+
 Version **5.1.0** rebuilds zombie combat around anatomical hit capsules and persistent injuries. All ten ordinary infected roles use the licensed textured skeletal model, with distinct proportions, poses, clothing and three resilience variations. Added screamers alert nearby enemies, armored infected resist body shots, and ferals accelerate when wounded. Regular health is substantially higher, with new supply caches to support the tougher fights.
 
 Concentrated fire can sever either arm, either leg, or the head. Matching colour and shadow cuts expose flesh and bone, and the original textured limb keeps its frozen animation pose as it flies away. A lost leg cancels rushes and causes a limp; both lost legs force a crawl; losing both arms changes attacks to bites. Approximately 5% of infected have a stable, identity-based headless survival trait. They wander with limited nearby perception and can still be killed through body damage. Blood spray, floor splatter and detached parts use bounded pools and are prepared during loading. Health, injuries and valid positions survive checkpoint reloads. [5.1 verification](PLAYTEST_5.1.md).

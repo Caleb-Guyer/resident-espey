@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {REGIONS} from './zombie-damage.js?v=5.1.0';
+import {REGIONS} from './zombie-damage.js?v=5.1.1';
 const V=new T.Vector3(),M=new T.Matrix4(),Q=new T.Quaternion();
 const ik={hip:new T.Vector3(),knee:new T.Vector3(),end:new T.Vector3(),target:new T.Vector3(),dir:new T.Vector3(),bend:new T.Vector3(),from:new T.Vector3(),to:new T.Vector3(),q:new T.Quaternion(),parent:new T.Quaternion(),world:new T.Quaternion()};
 function aimBone(joint,child,target){
@@ -70,7 +70,7 @@ export function createZombieAnatomy(root,library){
    // Keep the inverse at the moment of severing. SkinnedMesh's usual detached
    // update would replace it with inverse(bindMatrix), moving a world snapshot.
    mesh.updateMatrixWorld=T.Object3D.prototype.updateMatrixWorld;
-   mesh.frustumCulled=false;mesh.castShadow=mesh.receiveShadow=true;mesh.customDepthMaterial=regionMaterial(new T.MeshDepthMaterial({depthPacking:T.RGBADepthPacking}),only);mesh.customDistanceMaterial=regionMaterial(new T.MeshDistanceMaterial(),only);
+   mesh.boundingSphere=new T.Sphere(new T.Vector3(0,.9,0),2.4);mesh.frustumCulled=true;mesh.castShadow=mesh.receiveShadow=true;mesh.customDepthMaterial=regionMaterial(new T.MeshDepthMaterial({depthPacking:T.RGBADepthPacking}),only);mesh.customDistanceMaterial=regionMaterial(new T.MeshDistanceMaterial(),only);
    group.add(mesh);group.userData.sources.push({mesh,source});
   }
   root.add(group);chunks[i]=group;
@@ -102,7 +102,7 @@ export function detachZombieRegion(root,region){
 }
 export function zombieHitParts(root,refresh=true){
  if(refresh)root.updateMatrixWorld(true);const a=root.userData.licensedActor.anatomy,b=a.bones,parts=a.parts;let count=0;
- const add=(name,start,end,r)=>{const p=parts[count]||=( {a:{},b:{}} );p.name=name;p.r=r*Math.max(root.scale.x,root.scale.z);const x=start.getWorldPosition(V);Object.assign(p.a,{x:x.x,y:x.y,z:x.z});const y=end.getWorldPosition(V);Object.assign(p.b,{x:y.x,y:y.y,z:y.z});count++;};
+ const add=(name,start,end,r)=>{const p=parts[count]||=( {a:{},b:{}} );p.name=name;p.r=r*Math.max(root.scale.x,root.scale.z);const x=V.setFromMatrixPosition(start.matrixWorld);p.a.x=x.x;p.a.y=x.y;p.a.z=x.z;const y=V.setFromMatrixPosition(end.matrixWorld);p.b.x=y.x;p.b.y=y.y;p.b.z=y.z;count++;};
  add('torso',b.Hips,b.Spine2||b.Neck,.19);
  for(const [i,prefix]of [[2,'Left'],[3,'Right'],[4,'Left'],[5,'Right']])if(a.mask[i]){const arm=i<4;add(REGIONS[i],b[prefix+(arm?'Arm':'UpLeg')],b[prefix+(arm?'ForeArm':'Leg')],arm?.072:.086);add(REGIONS[i],b[prefix+(arm?'ForeArm':'Leg')],b[prefix+(arm?'Hand':'Foot')],arm?.063:.073);}
  parts.length=count;return parts;

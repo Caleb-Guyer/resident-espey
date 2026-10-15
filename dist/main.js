@@ -1,8 +1,8 @@
-import {applyGraphics} from './graphics.js?v=5.1.0';
-import {normalizeSettings} from './settings.js?v=5.1.0';
-import {Game} from './game.js?v=5.1.0';
-import {CHAPTERS,PAGES,TILE} from './data.js?v=5.1.0';
-import {MEMORY_IDS,SCENES} from './story.js?v=5.1.0';
+import {applyGraphics} from './graphics.js?v=5.1.1';
+import {normalizeSettings} from './settings.js?v=5.1.1';
+import {Game} from './game.js?v=5.1.1';
+import {CHAPTERS,PAGES,TILE} from './data.js?v=5.1.1';
+import {MEMORY_IDS,SCENES} from './story.js?v=5.1.1';
 const $=s=>document.querySelector(s);
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;let settings=normalizeSettings({},reducedMotion);
 try{settings=normalizeSettings(JSON.parse(localStorage.getItem('resident-espey-settings')),reducedMotion);}catch{}
@@ -29,7 +29,7 @@ const ui={
  async load(n,run){
   if(game.loading)return;const c=CHAPTERS[n],screen=$('#loading-screen');screen.hidden=false;$('#loading-chapter').textContent='CHAPTER '+c.number;$('#loading-location').textContent=c.place.split(' / ')[0];$('#loading-hint').textContent=['Keep moving. Use cover when changing a magazine.','A voice can be borrowed. A name has to be remembered.','Their armor breaks during recovery. Make the opening count.'][n];
   const progress=p=>{$('#loading-fill').style.width=(p*100)+'%';$('#loading-track').setAttribute('aria-valuenow',Math.round(p*100));};progress(0);
-  try{await game.prepareRun(n,run,progress);$('#overlay').hidden=true;}catch(error){console.error(error);this.open('Loading failed','The signal was lost.','<p>Refresh to download the remaining assets.</p>',[{label:'Retry',primary:true,action:()=>location.reload()}],'loading');}finally{screen.hidden=true;}
+  try{await game.prepareRun(n,run,progress);$('#overlay').hidden=true;}catch(error){if(error.code==='GRAPHICS_LOST'){if(game.running)this.pause();else this.start();return;}console.error(error);this.open('Loading failed','The signal was lost.','<p>Refresh to download the remaining assets.</p>',[{label:'Retry',primary:true,action:()=>location.reload()}],'loading');}finally{screen.hidden=true;}
  },
  start(){returnMenu='';this.open('New game','Choose difficulty',`<div class="difficulty-list"><label><input type="radio" name="difficulty" value="story"><span>Story<small>A gentler fight. More room to explore.</small></span></label><label><input type="radio" name="difficulty" value="survivor" checked><span>Survivor<small>Stay alert. Make every round count.</small></span></label><label><input type="radio" name="difficulty" value="nightmare"><span>Nightmare<small>Relentless enemies. Little room for mistakes.</small></span></label></div><p class="muted">Your progress is saved in this browser.</p>`,[{label:'Start game',primary:true,action:async()=>{const d=$('input[name="difficulty"]:checked').value,b=$('#overlay-actions button');b.disabled=true;b.textContent='Loading…';game.sound.init();try{await this.load(0,()=>game.newGame(d));}catch(error){console.error(error);this.open('Loading failed','The school could not load.','<p>Refresh to download the remaining textures.</p>',[{label:'Retry',primary:true,action:()=>location.reload()}],'loading');}}},{label:'Back',action:()=>this.close()}],'start');},
  guide(){if(current==='pause')returnMenu='pause';this.open('Controls','Survive the night','<div class="control-grid">'+controls.map(([a,b])=>`<div><span>${a}</span><kbd>${b}</kbd></div>`).join('')+'</div><p class="muted">Find the shotgun in the survivors’ shelter and the carbine in the compass store. Press 1, 2 or 3, or use the wheel, to switch. Shotgun shells load one at a time; firing interrupts the reload. Headshots do double damage. Dodge outside attack warnings. Interrupt spitters with a headshot. Hit Birdy twice during a grounded charge tell. Shoot the speaking head of Jakob and Bobby, then lure them beneath the press during the chase. Let Chris hit a wall; steam and purge switches expose their bosses. The knife never runs out. Blue terminals save and heal.</p><p class="muted">If mouse capture is unavailable, hold right click and drag to look. On touch: left stick moves, right side looks.</p>',[{label:'Back',primary:true,action:()=>this.back()}],'guide');},

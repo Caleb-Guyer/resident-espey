@@ -1,27 +1,28 @@
-import {isZombie} from './zombie-damage.js?v=5.1.0';
-import {ZombieGore} from './zombie-gore.js?v=5.1.0';
-import {WEAPONS,weaponFor} from './weapons.js?v=5.1.0';
-import {createLongGun} from './longguns.js?v=5.1.0';
-import {scannedMaterial,microTexture} from './surface-materials.js?v=5.1.0';
-import {surfaceMaterial} from './material-surfaces.js?v=5.1.0';
-import {addEnvironmentDetail} from './environment-detail.js?v=5.1.0';
-import {loadLicensedArt,photographedMaterial,createLicensedEnemy,animateLicensedEnemy,dressLicensedRooms,fittedProp} from './licensed-art.js?v=5.1.0';
-import {painted} from './loading.js?v=5.1.0';
-import {BossArena} from './boss-arena.js?v=5.1.0';
-import {createAnatomy,animateCollapse} from './anatomy.js?v=5.1.0';
-import {reloadProgress} from './reload.js?v=5.1.0';
-import {ATTACKS,enemyRadius} from './enemy-director.js?v=5.1.0';
+import {duringGPUWork,finishGPUWarmup} from './render-budget.js?v=5.1.1';
+import {isZombie} from './zombie-damage.js?v=5.1.1';
+import {ZombieGore} from './zombie-gore.js?v=5.1.1';
+import {WEAPONS,weaponFor} from './weapons.js?v=5.1.1';
+import {createLongGun} from './longguns.js?v=5.1.1';
+import {scannedMaterial,microTexture} from './surface-materials.js?v=5.1.1';
+import {surfaceMaterial} from './material-surfaces.js?v=5.1.1';
+import {addEnvironmentDetail} from './environment-detail.js?v=5.1.1';
+import {loadLicensedArt,photographedMaterial,createLicensedEnemy,animateLicensedEnemy,dressLicensedRooms,fittedProp} from './licensed-art.js?v=5.1.1';
+import {painted} from './loading.js?v=5.1.1';
+import {BossArena} from './boss-arena.js?v=5.1.1';
+import {createAnatomy,animateCollapse} from './anatomy.js?v=5.1.1';
+import {reloadProgress} from './reload.js?v=5.1.1';
+import {ATTACKS,enemyRadius} from './enemy-director.js?v=5.1.1';
 import * as T from './vendor/three.module.js';
-import {TILE,seeded,solid,findPath} from './data.js?v=5.1.0';
-import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock,propsOcclude,environmentDistance} from './fps.js?v=5.1.0';
-import {CombatEffects} from './combat-effects.js?v=5.1.0';
-import {WallPlacement} from './wall-placement.js?v=5.1.0';
-import {createViewModel,createHands,updateSleeveAnchors,loadHandSurfaces} from './viewmodel.js?v=5.1.0';
-import {createWeaponMotion,kickWeapon,stepWeaponMotion} from './weapon-motion.js?v=5.1.0';
-import {CHARACTER_DESIGNS,characterHair,dressBirdy,dressArchetype,cloneCharacter} from './creature-design.js?v=5.1.0';
-import {EnemyEffects} from './enemy-effects.js?v=5.1.0';
-import {BOSS_PROFILES,createBossModel} from './boss-models.js?v=5.1.0';
-import {animateBoss} from './boss-animation.js?v=5.1.0';
+import {TILE,seeded,solid,findPath} from './data.js?v=5.1.1';
+import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock,propsOcclude,environmentDistance} from './fps.js?v=5.1.1';
+import {CombatEffects} from './combat-effects.js?v=5.1.1';
+import {WallPlacement} from './wall-placement.js?v=5.1.1';
+import {createViewModel,createHands,updateSleeveAnchors,loadHandSurfaces} from './viewmodel.js?v=5.1.1';
+import {createWeaponMotion,kickWeapon,stepWeaponMotion} from './weapon-motion.js?v=5.1.1';
+import {CHARACTER_DESIGNS,characterHair,dressBirdy,dressArchetype,cloneCharacter} from './creature-design.js?v=5.1.1';
+import {EnemyEffects} from './enemy-effects.js?v=5.1.1';
+import {BOSS_PROFILES,createBossModel} from './boss-models.js?v=5.1.1';
+import {animateBoss} from './boss-animation.js?v=5.1.1';
 
 const BOX=bevelBox(1,1,1,.014),WALLBOX=new T.BoxGeometry(1,1,1),SPHERE=new T.SphereGeometry(1,20,14),CYL=new T.CylinderGeometry(1,1,1,16);
 const SHARED=new Set([BOX,WALLBOX,SPHERE,CYL]);
@@ -76,7 +77,8 @@ export class World{
  stageBoxGeometry(){return BOX.clone();}
  surface(asset,color,repeat=[1,1],bump=.02,roughness=.9){if(asset==='floor'&&this.licensed){const m=photographedMaterial(this.licensed.materials.get('floor_tiles_06'),repeat,color);m.roughness=roughness;return m;}const map=this.assets[asset].clone();map.needsUpdate=true;map.repeat.set(...repeat);const height=map.clone();height.colorSpace=T.NoColorSpace;height.needsUpdate=true;return new T.MeshStandardMaterial({color,map,bumpMap:height,bumpScale:bump,roughness});}
  procedural(kind){
-  const rnd=seeded(kind.length*87);return canvasTexture((ctx,s)=>{
+  this.proceduralCache??=new Map();if(this.proceduralCache.has(kind)){const t=this.proceduralCache.get(kind).clone();t.needsUpdate=true;return t;}
+  const rnd=seeded(kind.length*87);const source=canvasTexture((ctx,s)=>{
    ctx.fillStyle=kind==='paper'?'#bdb4a1':kind==='carpet'?'#81704a':kind==='wallpaper'?'#aa9659':kind==='ceiling'?'#9b9c88':'#949b8b';ctx.fillRect(0,0,s,s);
    for(let i=0;i<22000;i++){ctx.fillStyle=rnd()>.5?'rgba(232,222,186,.08)':'rgba(9,12,8,.14)';ctx.fillRect(rnd()*s,rnd()*s,1+rnd()*3,1+rnd()*3);}
    if(kind==='wallpaper'){
@@ -88,21 +90,24 @@ export class World{
    if(kind==='fabric'){ctx.strokeStyle='#71806425';ctx.lineWidth=.6;for(let i=0;i<s;i+=3){ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i,s);ctx.moveTo(0,i);ctx.lineTo(s,i);ctx.stroke();}}
    if(kind==='infectedcloth'){for(let i=0;i<45;i++){const x=rnd()*s,y=rnd()*s,r=8+rnd()*70,d=ctx.createRadialGradient(x,y,0,x,y,r);d.addColorStop(0,i%3?'#171c18c0':'#361713bb');d.addColorStop(1,'#171c1800');ctx.fillStyle=d;ctx.fillRect(x-r,y-r,r*2,r*2);}ctx.strokeStyle='#ddd2bb33';ctx.lineWidth=1;for(let i=0;i<45;i++){const x=rnd()*s,y=rnd()*s;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+2,y+10+rnd()*30);ctx.stroke();}}
    if(kind==='wood'){ctx.fillStyle='#a29377';ctx.fillRect(0,0,s,s);for(let i=0;i<750;i++){const x=rnd()*s;ctx.strokeStyle=i%3?'#33261b25':'#cfbea82a';ctx.lineWidth=.3+rnd()*1.2;ctx.beginPath();ctx.moveTo(x,0);ctx.bezierCurveTo(x+Math.sin(i)*10,s*.3,x+Math.sin(i+1)*14,s*.7,x,s);ctx.stroke();}}
-  });
+  });this.proceduralCache.set(kind,source);this.characterResources?.add(source);this.renderer?.initTexture?.(source);const t=source.clone();t.needsUpdate=true;return t;
  }
  optimizeStatic(){
   this.root.updateMatrixWorld(true);const buckets=new Map();this.root.traverse(o=>{if(!o.isMesh||o.isInstancedMesh||!SHARED.has(o.geometry)||Array.isArray(o.material)||o.material.transparent)return;const key=o.geometry.uuid+'/'+o.material.uuid;if(!buckets.has(key))buckets.set(key,[]);buckets.get(key).push(o);});
   for(const objects of buckets.values()){if(objects.length<3)continue;const first=objects[0],batch=new T.InstancedMesh(first.geometry,first.material,objects.length);objects.forEach((o,i)=>batch.setMatrixAt(i,o.matrixWorld));batch.castShadow=true;batch.receiveShadow=true;this.root.add(batch);for(const o of objects)o.parent.remove(o);}
+  this.root.updateMatrixWorld(true);const moving=new Set([this.portal,this.gent,this.dust,...this.mist||[]].filter(Boolean));
+  this.root.traverse(o=>{if(o===this.root)return;for(let p=o;p&&p!==this.root;p=p.parent)if(moving.has(p))return;o.matrixAutoUpdate=false;o.matrixWorldAutoUpdate=false;});
  }
+ reactionMaterials(g){const materials=new Set();g.traverse(o=>{if(o.parent?.userData?.gorePiece)return;for(const m of o.material?(Array.isArray(o.material)?o.material:[o.material]):[])if(m.emissive&&!this.characterResources?.has(m))materials.add(m);});return [...materials];}
  disposeLevel(){
   this.zombieGore?.dispose();this.zombieGore=null;this.combatEffects?.dispose();this.combatEffects=null;this.enemyEffects?.dispose();this.enemyEffects=null;
   if(!this.root)return;const geos=new Set(),mats=new Set(),textures=new Set(),skeletons=new Set(),keep=new Set(Object.values(this.assets));
-  this.scene.traverse(o=>{if(o.isSkinnedMesh)skeletons.add(o.skeleton);if(o.geometry&&!SHARED.has(o.geometry))geos.add(o.geometry);if(o.material)for(const m of [...(Array.isArray(o.material)?o.material:[o.material]),o.customDepthMaterial,o.customDistanceMaterial].filter(Boolean)){if(!this.characterResources?.has(m))mats.add(m);for(const key of ['map','bumpMap','roughnessMap','normalMap','alphaMap'])if(m[key]&&!keep.has(m[key]))textures.add(m[key]);}});
+  this.scene.traverse(o=>{if(o.isInstancedMesh)o.dispose();if(o.isSkinnedMesh)skeletons.add(o.skeleton);if(o.geometry&&!SHARED.has(o.geometry))geos.add(o.geometry);if(o.material)for(const m of [...(Array.isArray(o.material)?o.material:[o.material]),o.customDepthMaterial,o.customDistanceMaterial].filter(Boolean)){if(!this.characterResources?.has(m))mats.add(m);for(const key of ['map','bumpMap','roughnessMap','normalMap','alphaMap'])if(m[key]&&!keep.has(m[key]))textures.add(m[key]);}});
   for(const g of geos)if(!this.characterResources?.has(g))g.dispose();for(const m of mats)if(!this.characterResources?.has(m))m.dispose();for(const t of textures)if(!this.characterResources?.has(t))t.dispose();for(const s of skeletons)s.dispose();this.flashlight?.shadow?.dispose();this.scene.clear();this.decalMaps={};
  }
  disposeObject(root){
   const geos=new Set(),mats=new Set(),textures=new Set(),skeletons=new Set(),keep=new Set(Object.values(this.assets));
-  root.traverse(o=>{if(o.isSkinnedMesh)skeletons.add(o.skeleton);if(o.geometry&&!SHARED.has(o.geometry))geos.add(o.geometry);if(o.material)for(const m of [...(Array.isArray(o.material)?o.material:[o.material]),o.customDepthMaterial,o.customDistanceMaterial].filter(Boolean)){mats.add(m);for(const key of ['map','bumpMap','roughnessMap','normalMap','alphaMap'])if(m[key]&&!keep.has(m[key]))textures.add(m[key]);}if(o.isLight)o.shadow?.dispose();});
+  root.traverse(o=>{if(o.isInstancedMesh)o.dispose();if(o.isSkinnedMesh)skeletons.add(o.skeleton);if(o.geometry&&!SHARED.has(o.geometry))geos.add(o.geometry);if(o.material)for(const m of [...(Array.isArray(o.material)?o.material:[o.material]),o.customDepthMaterial,o.customDistanceMaterial].filter(Boolean)){mats.add(m);for(const key of ['map','bumpMap','roughnessMap','normalMap','alphaMap'])if(m[key]&&!keep.has(m[key]))textures.add(m[key]);}if(o.isLight)o.shadow?.dispose();});
   for(const g of geos)if(!this.characterResources?.has(g))g.dispose();for(const m of mats)m.dispose();for(const t of textures)if(!this.characterResources?.has(t))t.dispose();for(const s of skeletons)s.dispose();root.clear();
  }
  load(chapter,grid){
@@ -522,10 +527,16 @@ export class World{
   if(this.renderer.compileAsync){
    const hidden=[],target=this.renderer.getRenderTarget(),warm=new T.WebGLRenderTarget(16,16);for(const h of this.finisherHands||[])if(!h.visible){hidden.push(h);h.visible=true;}
    this.root?.traverse(o=>{if(!o.visible){hidden.push(o);o.visible=true;}});this.viewScene.traverse(o=>{if(!o.visible){hidden.push(o);o.visible=true;}});
-   try{await this.renderer.compileAsync(this.scene,this.camera);await this.renderer.compileAsync(this.viewScene,this.viewCamera);this.renderer.setRenderTarget(warm);await this.renderer.compileAsync(this.scene,this.camera);await this.renderer.compileAsync(this.viewScene,this.viewCamera);}
+   try{await duringGPUWork(this.renderer.getContext?.(),()=>this.renderer.compileAsync(this.scene,this.camera));await duringGPUWork(this.renderer.getContext?.(),()=>this.renderer.compileAsync(this.viewScene,this.viewCamera));this.renderer.setRenderTarget(warm);await duringGPUWork(this.renderer.getContext?.(),()=>this.renderer.compileAsync(this.scene,this.camera));await duringGPUWork(this.renderer.getContext?.(),()=>this.renderer.compileAsync(this.viewScene,this.viewCamera));}
    finally{for(const o of hidden)o.visible=false;this.renderer.setRenderTarget(target);warm.dispose();}
   }
-  await painted();this.prepareCombat();await painted();
+  await painted();this.prepareCombat();await finishGPUWarmup(this.renderer.getContext?.());await painted();
+ }
+ async prepareSceneGPU(scene,camera){
+  const r=this.renderer,hidden=[],culling=[],target=r.getRenderTarget(),auto=r.autoClear,warm=new T.WebGLRenderTarget(16,16);
+  scene.traverse(o=>{if(!o.visible){hidden.push(o);o.visible=true;}if(o.isMesh||o.isPoints){culling.push([o,o.frustumCulled]);o.frustumCulled=false;}});
+  try{if(r.compileAsync)await duringGPUWork(r.getContext?.(),()=>r.compileAsync(scene,camera));r.setRenderTarget(warm);if(r.compileAsync)await duringGPUWork(r.getContext?.(),()=>r.compileAsync(scene,camera));r.autoClear=true;r.render(scene,camera);if(target===null){r.setRenderTarget(null);r.render(scene,camera);}await finishGPUWarmup(r.getContext?.());}
+  finally{for(const o of hidden)o.visible=false;for(const [o,value]of culling)o.frustumCulled=value;r.setRenderTarget(target);r.autoClear=auto;warm.dispose();}
  }
  headPositions(g,refresh=true){
   if(refresh)g.updateMatrixWorld(true);this.headVector??=new T.Vector3();const d=g.userData,heads=d.heads||[d.head],out=d.hitHeadsCache||=([]);let count=0;
