@@ -1,7 +1,7 @@
-import * as T from './vendor/three.module.js?v=5.1.2';
-import {GLTFLoader} from './vendor/GLTFLoader.js?v=5.1.2';
-import {clone} from './vendor/SkeletonUtils.js?v=5.1.2';
-import {prepareZombieGeometry,createZombieAnatomy,poseZombieInjuries} from './zombie-art.js?v=5.1.2';
+import * as T from './vendor/three.module.js?v=5.1.3';
+import {GLTFLoader} from './vendor/GLTFLoader.js?v=5.1.3';
+import {clone} from './vendor/SkeletonUtils.js?v=5.1.3';
+import {prepareZombieGeometry,createZombieAnatomy,poseZombieInjuries} from './zombie-art.js?v=5.1.3';
 
 export const LICENSED_MATERIALS=['beige_wall_001','damaged_plaster','floor_tiles_06','old_linoleum_flooring_01','painted_plaster_wall'];
 export const LICENSED_PROPS=['utility_box_01','metal_office_desk','fire_alarm','security_camera_01'];

@@ -1,15 +1,16 @@
-import * as T from './vendor/three.module.js?v=5.1.2';
-import {profileGeometry} from './profile-geometry.js?v=5.1.2';
+import * as T from './vendor/three.module.js?v=5.1.3';
+import {profileGeometry} from './profile-geometry.js?v=5.1.3';
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const handCache=new Map();
 const tetra=[[0,5,1,6],[0,1,2,6],[0,2,3,6],[0,3,7,6],[0,7,4,6],[0,4,5,6]],corners=[[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0,0,1],[1,0,1],[1,1,1],[0,1,1]];
 const add=(parent,geometry,material,at=[0,0,0],scale=[1,1,1])=>{const m=new T.Mesh(geometry,material);m.position.set(...at);m.scale.set(...scale);parent.add(m);return m;};
 const group=(parent,at=[0,0,0])=>{const g=new T.Group();g.position.set(...at);parent.add(g);return g;};
 const sphere=new T.SphereGeometry(1,32,20);
+const stipple=new T.SphereGeometry(1,6,4);
 const cyl=new T.CylinderGeometry(1,1,1,40);
 function rounded(w,h,d,r=.001){
  const s=new T.Shape(),x=w/2-r,y=h/2-r;s.moveTo(-x,-y-r);s.lineTo(x,-y-r);s.quadraticCurveTo(x+r,-y-r,x+r,-y);s.lineTo(x+r,y);s.quadraticCurveTo(x+r,y+r,x,y+r);s.lineTo(-x,y+r);s.quadraticCurveTo(-x-r,y+r,-x-r,y);s.lineTo(-x-r,-y);s.quadraticCurveTo(-x-r,-y-r,-x,-y-r);
- const g=new T.ExtrudeGeometry(s,{depth:d-r*2,bevelEnabled:true,bevelSize:r,bevelThickness:r,bevelSegments:4,curveSegments:12}).translate(0,0,-d/2+r);g.computeBoundingBox();const size=g.boundingBox.getSize(new T.Vector3());g.scale(w/size.x,h/size.y,d/size.z);uv(g);return g;
+ const micro=Math.min(w,h,d)<.002,g=new T.ExtrudeGeometry(s,{depth:d-r*2,bevelEnabled:true,bevelSize:r,bevelThickness:r,bevelSegments:micro?1:4,curveSegments:micro?2:12}).translate(0,0,-d/2+r);g.computeBoundingBox();const size=g.boundingBox.getSize(new T.Vector3());g.scale(w/size.x,h/size.y,d/size.z);uv(g);return g;
 }
 function uv(g){
  g.computeBoundingBox();const a=g.attributes.position,n=g.attributes.normal,u=g.attributes.uv,min=g.boundingBox.min,size=g.boundingBox.getSize(new T.Vector3());
@@ -132,7 +133,7 @@ export function createViewModel(m){
  }
  add(gun,rounded(.003,.005,.03,.001),m.steel,[-.020,.017,-.021]);
  for(const side of[-1,1]){
-  for(let y=-.046;y<.043;y+=.0055)for(let z=-.019;z<.023;z+=.0055)add(grip,sphere,m.dark,[side*.0230,y,z],[.0005,.00065,.00065]);
+  for(let y=-.046;y<.043;y+=.0055)for(let z=-.019;z<.023;z+=.0055)add(grip,stipple,m.dark,[side*.0230,y,z],[.0005,.00065,.00065]);
   add(grip,rounded(.001,.087,.002,.0004),m.frame,[side*.023,-.004,.026]);
  }
  const magazine=group(grip,[0,-.06,0]);add(magazine,rounded(.025,.112,.027,.002),m.magazine,[0,.060,0]);add(magazine,rounded(.031,.006,.034,.002),m.rubber,[0,.002,0]);

@@ -60,5 +60,5 @@ test('Weapon and effect warmup restores render targets and visibility even if re
 test('Chapter warmup compiles output and tone-mapping shaders on the actual framebuffer',()=>{
  const w=weaponWorld();w.combatEffects=new CombatEffects(w.scene);let target=null;const calls=[];
  w.renderer={autoClear:true,getRenderTarget:()=>target,setRenderTarget:t=>target=t,render(scene){calls.push({scene,target});}};
- w.prepareCombat();assert.equal(calls.length,4);assert.ok(calls[0].target?.isWebGLRenderTarget);assert.ok(calls[1].target?.isWebGLRenderTarget);assert.equal(calls[2].target,null);assert.equal(calls[3].target,null);assert.equal(calls[2].scene,w.scene);assert.equal(calls[3].scene,w.viewScene);assert.equal(target,null);w.combatEffects.dispose();
+ w.prepareCombat();assert.equal(calls.length,2);assert.equal(calls[0].target,null);assert.equal(calls[1].target,null);assert.equal(calls[0].scene,w.scene);assert.equal(calls[1].scene,w.viewScene);assert.equal(target,null);w.combatEffects.dispose();
 });

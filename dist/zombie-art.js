@@ -1,5 +1,5 @@
-import * as T from './vendor/three.module.js?v=5.1.2';
-import {REGIONS} from './zombie-damage.js?v=5.1.2';
+import * as T from './vendor/three.module.js?v=5.1.3';
+import {REGIONS} from './zombie-damage.js?v=5.1.3';
 const V=new T.Vector3(),M=new T.Matrix4(),Q=new T.Quaternion();
 const ik={hip:new T.Vector3(),knee:new T.Vector3(),end:new T.Vector3(),target:new T.Vector3(),dir:new T.Vector3(),bend:new T.Vector3(),from:new T.Vector3(),to:new T.Vector3(),q:new T.Quaternion(),parent:new T.Quaternion(),world:new T.Quaternion()};
 function aimBone(joint,child,target){
@@ -46,6 +46,9 @@ function woundKit(library){
 export function createZombieAnatomy(root,library){
  const d=root.userData.licensedActor,visual=d.visual,kit=woundKit(library),mask=new Float32Array([1,1,1,1,1,1]),sources=[];
  visual.traverse(o=>{if(o.isSkinnedMesh)sources.push(o);});
+ // The imported body, clothing and eyes use the same joints and bind poses.
+ // One skeleton updates/uploads that pose once per frame for all skin sections.
+ const shared=sources[0]?.skeleton;for(const mesh of sources.slice(1)){const s=mesh.skeleton;if(s.bones.length===shared.bones.length&&s.bones.every((b,i)=>b===shared.bones[i]&&s.boneInverses[i].equals(shared.boneInverses[i])))mesh.skeleton=shared;}
  const bones=Object.fromEntries(['Head','Neck','Hips','Spine','Spine1','Spine2','LeftArm','LeftForeArm','LeftHand','RightArm','RightForeArm','RightHand','LeftUpLeg','LeftLeg','LeftFoot','RightUpLeg','RightLeg','RightFoot'].map(n=>[n,bone(visual,n)]));
  for(const mesh of sources){regionMaterial(mesh.material,mask);mesh.customDepthMaterial=regionMaterial(new T.MeshDepthMaterial({depthPacking:T.RGBADepthPacking}),mask);mesh.customDistanceMaterial=regionMaterial(new T.MeshDistanceMaterial(),mask);}
  const caps=[],chunks=[];
@@ -60,9 +63,9 @@ export function createZombieAnatomy(root,library){
   if(i===1)cap.position.y=.018;
   joint.add(cap);caps[i]=cap;
   const group=new T.Group();group.visible=false;group.userData.gorePiece=true;group.userData.region=REGIONS[i];group.userData.sources=[];
-  for(const source of sources){const geometry=source.geometry.userData.pieces[i];if(!geometry)continue;
+  const frozenSkeletons=new Map();for(const source of sources){const geometry=source.geometry.userData.pieces[i];if(!geometry)continue;
    const only=new Float32Array(6);only[i]=1;
-   const mesh=new T.SkinnedMesh(geometry,regionMaterial(source.material.clone(),only)),frozen=new T.Skeleton(source.skeleton.bones,source.skeleton.boneInverses);
+   const mesh=new T.SkinnedMesh(geometry,regionMaterial(source.material.clone(),only));let frozen=frozenSkeletons.get(source.skeleton);if(!frozen){frozen=new T.Skeleton(source.skeleton.bones,source.skeleton.boneInverses);frozenSkeletons.set(source.skeleton,frozen);}
    // Snapshot matrices into an existing skeleton: no geometry, texture or
    // shader is allocated in response to a shot.
    source.skeleton.update();frozen.boneMatrices.set(source.skeleton.boneMatrices);frozen.update=()=>{};

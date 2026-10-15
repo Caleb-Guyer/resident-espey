@@ -4,6 +4,8 @@
 
 Some places remember you. Some refuse to let you go.
 
+Version **5.1.3** reduces excessive first-person mesh detail, preserves indexed vertices when batching rigid parts, and constructs weapons in loading stages. Matching zombie skin sections share one live skeleton, with independent snapshots for detached regions. Texture uploads yield in bounded batches, and warmup prepares the real game output once in a small viewport. [Startup and combat verification](PLAYTEST_5.1.3.md).
+
 Version **5.1.2** fixes retained GPU instance buffers on retries, removes first-draw skeletal bounds scans, culls off-screen infected and detached parts, and caches procedural texture sources. Rendering uses a nonblocking queue limit to avoid submitting unbounded work when the GPU falls behind. Loading waits for warm uploads, and graphics interruptions preserve progress, prepare restored scenes and return control while paused. [Performance verification](PLAYTEST_5.1.2.md).
 
 Version **5.1.0** rebuilds zombie combat around anatomical hit capsules and persistent injuries. All ten ordinary infected roles use the licensed textured skeletal model, with distinct proportions, poses, clothing and three resilience variations. Added screamers alert nearby enemies, armored infected resist body shots, and ferals accelerate when wounded. Regular health is substantially higher, with new supply caches to support the tougher fights.

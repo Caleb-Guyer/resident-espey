@@ -1,9 +1,9 @@
-import {scannedMaterial,microTexture} from './surface-materials.js?v=5.1.2';
-import {surfaceMaterial} from './material-surfaces.js?v=5.1.2';
-import {artistHead} from './licensed-art.js?v=5.1.2';
-import * as T from './vendor/three.module.js?v=5.1.2';
-import {sculptSurface,mergeRigid} from './sculpt-surface.js?v=5.1.2';
-import {CHARACTER_DESIGNS} from './creature-design.js?v=5.1.2';
+import {scannedMaterial,microTexture} from './surface-materials.js?v=5.1.3';
+import {surfaceMaterial} from './material-surfaces.js?v=5.1.3';
+import {artistHead} from './licensed-art.js?v=5.1.3';
+import * as T from './vendor/three.module.js?v=5.1.3';
+import {sculptSurface,mergeRigid} from './sculpt-surface.js?v=5.1.3';
+import {CHARACTER_DESIGNS} from './creature-design.js?v=5.1.3';
 const cache=new Map(),clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const mesh=(parent,geo,mat,at=[0,0,0],scale=[1,1,1])=>{const m=new T.Mesh(geo,mat);m.position.set(...at);m.scale.set(...scale);m.castShadow=m.receiveShadow=true;parent.add(m);return m;};
 const tube=(parent,mat,points,r=.006)=>mesh(parent,new T.TubeGeometry(new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p))),Math.max(12,points.length*5),r,6,false),mat);

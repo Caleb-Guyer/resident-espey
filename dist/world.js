@@ -1,28 +1,31 @@
-import {duringGPUWork,finishGPUWarmup} from './render-budget.js?v=5.1.2';
-import {isZombie} from './zombie-damage.js?v=5.1.2';
-import {ZombieGore} from './zombie-gore.js?v=5.1.2';
-import {WEAPONS,weaponFor} from './weapons.js?v=5.1.2';
-import {createLongGun} from './longguns.js?v=5.1.2';
-import {scannedMaterial,microTexture} from './surface-materials.js?v=5.1.2';
-import {surfaceMaterial} from './material-surfaces.js?v=5.1.2';
-import {addEnvironmentDetail} from './environment-detail.js?v=5.1.2';
-import {loadLicensedArt,photographedMaterial,createLicensedEnemy,animateLicensedEnemy,dressLicensedRooms,fittedProp} from './licensed-art.js?v=5.1.2';
-import {painted} from './loading.js?v=5.1.2';
-import {BossArena} from './boss-arena.js?v=5.1.2';
-import {createAnatomy,animateCollapse} from './anatomy.js?v=5.1.2';
-import {reloadProgress} from './reload.js?v=5.1.2';
-import {ATTACKS,enemyRadius} from './enemy-director.js?v=5.1.2';
-import * as T from './vendor/three.module.js?v=5.1.2';
-import {TILE,seeded,solid,findPath} from './data.js?v=5.1.2';
-import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock,propsOcclude,environmentDistance} from './fps.js?v=5.1.2';
-import {CombatEffects} from './combat-effects.js?v=5.1.2';
-import {WallPlacement} from './wall-placement.js?v=5.1.2';
-import {createViewModel,createHands,updateSleeveAnchors,loadHandSurfaces} from './viewmodel.js?v=5.1.2';
-import {createWeaponMotion,kickWeapon,stepWeaponMotion} from './weapon-motion.js?v=5.1.2';
-import {CHARACTER_DESIGNS,characterHair,dressBirdy,dressArchetype,cloneCharacter} from './creature-design.js?v=5.1.2';
-import {EnemyEffects} from './enemy-effects.js?v=5.1.2';
-import {BOSS_PROFILES,createBossModel} from './boss-models.js?v=5.1.2';
-import {animateBoss} from './boss-animation.js?v=5.1.2';
+import {duringGPUWork,finishGPUWarmup} from './render-budget.js?v=5.1.3';
+import {mergeRigidParts} from './rigid-batch.js?v=5.1.3';
+import {warmRaster} from './warm-raster.js?v=5.1.3';
+import {uploadSceneTextures} from './texture-warmup.js?v=5.1.3';
+import {isZombie} from './zombie-damage.js?v=5.1.3';
+import {ZombieGore} from './zombie-gore.js?v=5.1.3';
+import {WEAPONS,weaponFor} from './weapons.js?v=5.1.3';
+import {createLongGun} from './longguns.js?v=5.1.3';
+import {scannedMaterial,microTexture} from './surface-materials.js?v=5.1.3';
+import {surfaceMaterial} from './material-surfaces.js?v=5.1.3';
+import {addEnvironmentDetail} from './environment-detail.js?v=5.1.3';
+import {loadLicensedArt,photographedMaterial,createLicensedEnemy,animateLicensedEnemy,dressLicensedRooms,fittedProp} from './licensed-art.js?v=5.1.3';
+import {painted} from './loading.js?v=5.1.3';
+import {BossArena} from './boss-arena.js?v=5.1.3';
+import {createAnatomy,animateCollapse} from './anatomy.js?v=5.1.3';
+import {reloadProgress} from './reload.js?v=5.1.3';
+import {ATTACKS,enemyRadius} from './enemy-director.js?v=5.1.3';
+import * as T from './vendor/three.module.js?v=5.1.3';
+import {TILE,seeded,solid,findPath} from './data.js?v=5.1.3';
+import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock,propsOcclude,environmentDistance} from './fps.js?v=5.1.3';
+import {CombatEffects} from './combat-effects.js?v=5.1.3';
+import {WallPlacement} from './wall-placement.js?v=5.1.3';
+import {createViewModel,createHands,updateSleeveAnchors,loadHandSurfaces} from './viewmodel.js?v=5.1.3';
+import {createWeaponMotion,kickWeapon,stepWeaponMotion} from './weapon-motion.js?v=5.1.3';
+import {CHARACTER_DESIGNS,characterHair,dressBirdy,dressArchetype,cloneCharacter} from './creature-design.js?v=5.1.3';
+import {EnemyEffects} from './enemy-effects.js?v=5.1.3';
+import {BOSS_PROFILES,createBossModel} from './boss-models.js?v=5.1.3';
+import {animateBoss} from './boss-animation.js?v=5.1.3';
 
 const BOX=bevelBox(1,1,1,.014),WALLBOX=new T.BoxGeometry(1,1,1),SPHERE=new T.SphereGeometry(1,20,14),CYL=new T.CylinderGeometry(1,1,1,16);
 const SHARED=new Set([BOX,WALLBOX,SPHERE,CYL]);
@@ -42,19 +45,7 @@ function bevelBox(w,h,d,r=.003){
 }
 
 // Each limb keeps its own animation pivot; rigid details share a merged mesh.
-function mergeParts(g){
- const buckets=new Map();for(const o of [...g.children])if(o.isMesh&&!o.morphTargetInfluences&&!Array.isArray(o.material)&&!o.material.transparent){const key=o.material.uuid;if(!buckets.has(key))buckets.set(key,[]);buckets.get(key).push(o);}
- for(const objects of buckets.values()){
-  if(objects.length<2)continue;
-  const parts=objects.map(o=>{o.updateMatrix();const geo=o.geometry.index?o.geometry.toNonIndexed():o.geometry.clone();return geo.applyMatrix4(o.matrix);}),geo=new T.BufferGeometry();
-  for(const attr of ['position','normal','uv']){
-   if(parts.some(p=>!p.getAttribute(attr)))continue;const data=new Float32Array(parts.reduce((n,p)=>n+p.getAttribute(attr).array.length,0));let offset=0;
-   for(const p of parts){const arr=p.getAttribute(attr).array;data.set(arr,offset);offset+=arr.length;}geo.setAttribute(attr,new T.BufferAttribute(data,attr==='uv'?2:3));
-  }
-  geo.computeBoundingSphere();const o=new T.Mesh(geo,objects[0].material);o.castShadow=true;o.receiveShadow=true;g.add(o);
-  for(const p of parts)p.dispose();for(const old of objects){g.remove(old);if(!SHARED.has(old.geometry))old.geometry.dispose();}
- }
-}
+const mergeParts=g=>mergeRigidParts(g,SHARED);
 
 function resetWeaponParts(m){
  m.magazine.position.set(...(m.magazine.userData.rest||[0,-.06,0]));m.magazine.rotation.set(0,0,0);m.magazine.visible=true;m.slide.position.z=0;m.trigger.rotation.x=m.hammer.rotation.x=0;if(m.pump)m.pump.position.z=0;
@@ -71,7 +62,7 @@ export class World{
    const t=loader.load(new URL(`./assets/${file}.webp`,import.meta.url).href,resolve,undefined,reject);t.wrapS=t.wrapT=T.RepeatWrapping;t.colorSpace=T.SRGBColorSpace;t.anisotropy=8;this.assets[name]=t;
   })));const portrait=new Promise((resolve,reject)=>{const t=loader.load(new URL('./assets/boss-faces-v2.png',import.meta.url).href,resolve,undefined,reject);t.colorSpace=T.SRGBColorSpace;t.anisotropy=8;this.assets.boss=t;});const scans=new Promise((resolve,reject)=>{const t=loader.load(new URL('./assets/material-scans.png',import.meta.url).href,resolve,undefined,reject);t.colorSpace=T.SRGBColorSpace;t.anisotropy=8;this.assets.scans=t;});const surfaces=new Promise((resolve,reject)=>{const t=loader.load(new URL('./assets/material-surfaces-v3.png',import.meta.url).href,resolve,undefined,reject);t.colorSpace=T.SRGBColorSpace;t.anisotropy=8;this.assets.surfaces=t;});this.ready=Promise.all([this.ready,portrait,scans,surfaces,loadHandSurfaces()]);this.ready.catch(()=>{});
   // Let the title paint and textures arrive before the detailed hands are built.
-  this.ready=Promise.all([this.ready,loadLicensedArt(this.characterResources).then(library=>{this.licensed=library;})]).then(async()=>{await painted();this.createWeapon();this.resize();});this.ready.catch(()=>{});this.resize();
+  this.ready=Promise.all([this.ready,loadLicensedArt(this.characterResources).then(library=>{this.licensed=library;})]).then(async()=>{await painted();await this.prepareWeapons();this.resize();});this.ready.catch(()=>{});this.resize();
  }
  resize(){this.needsPausedRender=true;this.renderer.setSize(innerWidth,innerHeight,false);this.camera.aspect=innerWidth/innerHeight;this.camera.updateProjectionMatrix();if(this.viewCamera){this.viewCamera.aspect=this.camera.aspect;this.viewCamera.updateProjectionMatrix();}}
  stageBoxGeometry(){return BOX.clone();}
@@ -486,7 +477,9 @@ export class World{
    }
   });
  }
- createWeapon(){
+ createWeapon(){for(const stage of this.weaponPreparation()){} }
+ async prepareWeapons(yieldFrame=painted){for(const stage of this.weaponPreparation())await yieldFrame();}
+ *weaponPreparation(){
   this.viewScene=new T.Scene();this.viewCamera=new T.PerspectiveCamera(62,1,.01,8);this.view=group(this.viewScene);this.view.scale.setScalar(1.02);this.weaponMotion=createWeaponMotion();
   const faces=[];for(let i=0;i<6;i++){const c=document.createElement('canvas');c.width=c.height=128;const ctx=c.getContext('2d'),d=ctx.createLinearGradient(0,0,0,128);d.addColorStop(0,i===2?'#c9c7b7':'#3d4d52');d.addColorStop(.38,'#233138');d.addColorStop(1,'#0b1115');ctx.fillStyle=d;ctx.fillRect(0,0,128,128);if(i!==3){ctx.fillStyle=i===2?'#e9e4ce':'#c2cfd0';ctx.fillRect(20+i*3,16,7,74);ctx.fillStyle='#7d8f93';ctx.fillRect(29+i*3,17,3,73);ctx.fillRect(98-i*3,33,4,56);}faces.push(c);}const env=new T.CubeTexture(faces);env.needsUpdate=true;env.colorSpace=T.SRGBColorSpace;this.viewScene.environment=env;this.viewScene.environmentIntensity=.42;
   this.viewAmbient=new T.HemisphereLight(0xe1dacf,0x202d32,.42);this.viewScene.add(this.viewAmbient);const key=this.viewKey=new T.DirectionalLight(0xffefd7,1.35);key.position.set(-1,3,2);this.viewScene.add(key);const rim=this.viewRim=new T.DirectionalLight(0xb8c7ca,.45);rim.position.set(2,0,-2);this.viewScene.add(rim);
@@ -497,10 +490,11 @@ export class World{
   const skin=this.assets.surfaces?surfaceMaterial(this.assets.surfaces,'hand',{color:0xf4e8df,normalMap:skinNormal,normalScale:new T.Vector2(.14,.14),roughness:.57,clearcoat:.02,sheen:.12}):new T.MeshPhysicalMaterial({color:0xe7c5ae,map:skinMap,normalMap:skinNormal,normalScale:new T.Vector2(.24,.24),roughness:.64,clearcoat:.035,clearcoatRoughness:.8,sheen:.16,sheenColor:0xb57f65});
   const marking=canvasTexture((ctx,s)=>{ctx.canvas.width=1024;ctx.canvas.height=128;ctx.clearRect(0,0,1024,128);ctx.fillStyle='#e5ddc044';ctx.font='28px monospace';ctx.textAlign='center';ctx.fillText('ESPEY · 9mm',512,76);});
   const materials={metal,steel,frame,dark,rubber,skin,sleeve,magazine:scannedMaterial(this.assets.scans,'metal',{color:0x9ca194,roughness:.45}),nail:new T.MeshPhysicalMaterial({color:0xb5a491,roughness:.6,clearcoat:.08}),sight:new T.MeshBasicMaterial({color:0xd2c9a0}),shell:material(0x793421,.58),marking:new T.MeshBasicMaterial({map:marking,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-1})};
-  this.weaponModels=new Map();for(const id of Object.keys(WEAPONS)){
+  this.weaponModels=new Map();yield;for(const id of Object.keys(WEAPONS)){
    const model=id==='sidearm'?createViewModel(materials):createLongGun(materials,id);model.magazine.userData.rest=model.magazine.position.toArray();this.view.add(model.root);this.weaponModels.set(id,model);
    for(const g of[model.slide,model.grip,model.gun,model.rightHand,model.leftHand,model.trigger,model.hammer,model.pump].filter(Boolean))mergeParts(g);
    model.root.traverse(o=>{if(o.geometry)this.characterResources.add(o.geometry);for(const m of[o.material].flat().filter(Boolean)){this.characterResources.add(m);for(const key of ['map','bumpMap','roughnessMap','normalMap'])if(m[key])this.characterResources.add(m[key]);}});
+   yield;
   }
   const finish=createHands(materials,this.viewScene);this.finisherHands=finish.hands;finish.hands.forEach((h,i)=>{this.viewScene.remove(h);h.visible=false;h.userData.skin=finish.skins[i];for(const child of [...h.children])if(child!==finish.skins[i]&&child.isMesh&&child.material===sleeve)child.visible=false;h.traverse(o=>{if(o.geometry)this.characterResources.add(o.geometry);});});
   this.setWeapon('sidearm');
@@ -524,19 +518,20 @@ export class World{
  ejectCasing(origin,yaw,p){if(p&&this.gun)this.combatEffects?.eject(this.weaponPoint(p,weaponFor(p).port),yaw,true);else this.combatEffects?.eject(origin,yaw);}
  swingKnife(){this.knifeTimer=.46;}
  async prepareCombatAsync(){
+  await uploadSceneTextures(this.renderer,[this.scene,this.viewScene]);
   if(this.renderer.compileAsync){
-   const hidden=[],target=this.renderer.getRenderTarget(),warm=new T.WebGLRenderTarget(16,16);for(const h of this.finisherHands||[])if(!h.visible){hidden.push(h);h.visible=true;}
+   const hidden=[],target=this.renderer.getRenderTarget();for(const h of this.finisherHands||[])if(!h.visible){hidden.push(h);h.visible=true;}
    this.root?.traverse(o=>{if(!o.visible){hidden.push(o);o.visible=true;}});this.viewScene.traverse(o=>{if(!o.visible){hidden.push(o);o.visible=true;}});
-   try{await duringGPUWork(this.renderer.getContext?.(),()=>this.renderer.compileAsync(this.scene,this.camera));await duringGPUWork(this.renderer.getContext?.(),()=>this.renderer.compileAsync(this.viewScene,this.viewCamera));this.renderer.setRenderTarget(warm);await duringGPUWork(this.renderer.getContext?.(),()=>this.renderer.compileAsync(this.scene,this.camera));await duringGPUWork(this.renderer.getContext?.(),()=>this.renderer.compileAsync(this.viewScene,this.viewCamera));}
-   finally{for(const o of hidden)o.visible=false;this.renderer.setRenderTarget(target);warm.dispose();}
+   try{this.renderer.setRenderTarget(null);await duringGPUWork(this.renderer.getContext?.(),()=>this.renderer.compileAsync(this.scene,this.camera));await duringGPUWork(this.renderer.getContext?.(),()=>this.renderer.compileAsync(this.viewScene,this.viewCamera));}
+   finally{for(const o of hidden)o.visible=false;this.renderer.setRenderTarget(target);}
   }
   await painted();this.prepareCombat();await finishGPUWarmup(this.renderer.getContext?.());await painted();
  }
  async prepareSceneGPU(scene,camera){
-  const r=this.renderer,hidden=[],culling=[],target=r.getRenderTarget(),auto=r.autoClear,warm=new T.WebGLRenderTarget(16,16);
+  const r=this.renderer,hidden=[],culling=[],target=r.getRenderTarget(),auto=r.autoClear,raster=warmRaster(r);
   scene.traverse(o=>{if(!o.visible){hidden.push(o);o.visible=true;}if(o.isMesh||o.isPoints){culling.push([o,o.frustumCulled]);o.frustumCulled=false;}});
-  try{if(r.compileAsync)await duringGPUWork(r.getContext?.(),()=>r.compileAsync(scene,camera));r.setRenderTarget(warm);if(r.compileAsync)await duringGPUWork(r.getContext?.(),()=>r.compileAsync(scene,camera));r.autoClear=true;r.render(scene,camera);if(target===null){r.setRenderTarget(null);r.render(scene,camera);}await finishGPUWarmup(r.getContext?.());}
-  finally{for(const o of hidden)o.visible=false;for(const [o,value]of culling)o.frustumCulled=value;r.setRenderTarget(target);r.autoClear=auto;warm.dispose();}
+  try{await uploadSceneTextures(r,[scene]);r.setRenderTarget(null);if(r.compileAsync)await duringGPUWork(r.getContext?.(),()=>r.compileAsync(scene,camera));r.autoClear=true;raster.output();r.render(scene,camera);await finishGPUWarmup(r.getContext?.());}
+  finally{for(const o of hidden)o.visible=false;for(const [o,value]of culling)o.frustumCulled=value;r.setRenderTarget(target);r.autoClear=auto;raster.restore();}
  }
  headPositions(g,refresh=true){
   if(refresh)g.updateMatrixWorld(true);this.headVector??=new T.Vector3();const d=g.userData,heads=d.heads||[d.head],out=d.hitHeadsCache||=([]);let count=0;
@@ -552,9 +547,10 @@ export class World{
   if(d.wings)d.wings.forEach((w,i)=>{if(!w.visible)return;part(w,d.wingWrists[i],.085);part(d.wingWrists[i],d.wingWrists[i],.085,0,0,0,(i?1:-1)*1.8,-.18,0);});parts.length=count;return parts;
  }
  prepareCombat(){
-  // Upload and render both weapons, the muzzle flash and both effect batches
-  // offscreen during chapter loading, before the player can attack.
+  // Upload every weapon and effect during loading using the actual output
+  // shaders, bounded to a small viewport under the loading cover.
   const target=this.renderer.getRenderTarget(),autoClear=this.renderer.autoClear;
+  const raster=warmRaster(this.renderer);
   const gun=this.view.visible,knife=this.knife.visible,muzzle=this.muzzle.visible;
   const enemyBatches=this.enemyEffects?[this.enemyEffects.projectiles,this.enemyEffects.stains,this.enemyEffects.rings,...(this.zombieGore?[this.zombieGore.droplets,this.zombieGore.splats]:[])]:[],enemyCounts=enemyBatches.map(m=>m.count);
   const particles=this.combatEffects.particles.count,tracers=this.combatEffects.tracers.geometry.drawRange.count,casings=this.combatEffects.casings.count;
@@ -565,21 +561,18 @@ export class World{
    if(o.isMesh||o.isPoints){culling.push([o,o.frustumCulled]);o.frustumCulled=false;}
   });
   this.viewScene.traverse(o=>{if(!o.visible){hidden.push(o);o.visible=true;}if(o.isMesh){culling.push([o,o.frustumCulled]);o.frustumCulled=false;}});
-  const warm=new T.WebGLRenderTarget(16,16);
   try{
-   this.renderer.setRenderTarget(warm);this.renderer.autoClear=true;
+   this.renderer.setRenderTarget(null);raster.output();this.renderer.autoClear=true;
    enemyBatches.forEach(m=>m.count=1);this.combatEffects.particles.count=1;this.combatEffects.casings.count=1;this.combatEffects.tracers.geometry.setDrawRange(0,2);
    this.renderer.render(this.scene,this.camera);
+   raster.reuseShadow();
    this.view.visible=this.knife.visible=this.muzzle.visible=true;
    this.renderer.render(this.viewScene,this.viewCamera);
-   // Default-framebuffer shaders include tone mapping and output conversion;
-   // warming only an offscreen target leaves these programs cold. Loading UI
-   // covers the canvas while all rooms and hidden attack variants are drawn.
-   if(target===null){this.renderer.setRenderTarget(null);this.renderer.render(this.scene,this.camera);this.renderer.render(this.viewScene,this.viewCamera);}
   }finally{
    enemyBatches.forEach((m,i)=>m.count=enemyCounts[i]);this.combatEffects.particles.count=particles;this.combatEffects.casings.count=casings;this.combatEffects.tracers.geometry.setDrawRange(0,tracers);
    this.view.visible=gun;this.knife.visible=knife;this.muzzle.visible=muzzle;
-   for(const o of hidden)o.visible=false;for(const[o,value]of culling)o.frustumCulled=value;this.renderer.setRenderTarget(target);this.renderer.autoClear=autoClear;warm.dispose();
+   for(const o of hidden)o.visible=false;for(const[o,value]of culling)o.frustumCulled=value;this.renderer.setRenderTarget(target);this.renderer.autoClear=autoClear;
+   raster.restore();
   }
  }
  setView(p,yaw,pitch,t,ads=false){
