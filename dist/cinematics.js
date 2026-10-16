@@ -1,10 +1,13 @@
-import {painted} from './loading.js?v=5.2.1';
-import {sceneContext,MEMORY_LEAD_IN} from './scene-context.js?v=5.2.1';
-import {dialogueFrame,speakingActor,speechMotion,DialogueCamera} from './cinematic-direction.js?v=5.2.1';
-import * as T from './vendor/three.module.js?v=5.2.1';
-import {SCENES,StoryClock} from './story.js?v=5.2.1';
-import {voicedScene} from './voice-timeline.js?v=5.2.1';
-import {BossIntroduction,displayName} from './boss-introductions.js?v=5.2.1';
+import {stagePerformance,poseCinematicActor} from './cinematic-performance.js?v=5.3.0';
+import {fitStoryCamera} from './cinematic-camera.js?v=5.3.0';
+import {photographedMaterial} from './licensed-art.js?v=5.3.0';
+import {painted} from './loading.js?v=5.3.0';
+import {sceneContext,MEMORY_LEAD_IN} from './scene-context.js?v=5.3.0';
+import {dialogueFrame,DialogueCamera} from './cinematic-direction.js?v=5.3.0';
+import * as T from './vendor/three.module.js?v=5.3.0';
+import {SCENES,StoryClock} from './story.js?v=5.3.0';
+import {voicedScene} from './voice-timeline.js?v=5.3.0';
+import {BossIntroduction,displayName} from './boss-introductions.js?v=5.3.0';
 const $=s=>document.querySelector(s);
 
 // A separate, lit stage prevents cinematic actors from touching combat or save state.
@@ -33,18 +36,18 @@ export class Cinematics{
   this.portal=this.endingMic=this.door=this.vial=this.crater=this.mazeStage=this.rings=null;this.doorTarget=undefined;this.footbeat=undefined;
   this.scene=new T.Scene();this.stage=new T.Group();this.scene.add(this.stage);this.actors=new Map();this.geometry=[this.world.stageBoxGeometry(),new T.CylinderGeometry(1,1,1,16),new T.SphereGeometry(1,16,12)];
   this.materials=[];const mat=(color,roughness=.8,metalness=0)=>{const m=new T.MeshStandardMaterial({color,roughness,metalness});this.materials.push(m);return m;};
-  const box=(m,scale,at,parent=this.stage)=>{const o=new T.Mesh(this.geometry[0],m);o.scale.set(...scale);o.position.set(...at);o.castShadow=o.receiveShadow=true;parent.add(o);return o;};
+  const box=(m,scale,at,parent=this.stage)=>{const o=new T.Mesh(this.geometry[0],m);o.scale.set(...scale);o.position.set(...at);o.castShadow=o.receiveShadow=true;if(scale[0]>.12&&scale[1]>.14&&scale[2]>.10)o.userData.cinematicCollider=true;parent.add(o);return o;};
   const cyl=(m,scale,at,parent=this.stage)=>{const o=new T.Mesh(this.geometry[1],m);o.scale.set(...scale);o.position.set(...at);o.castShadow=o.receiveShadow=true;parent.add(o);return o;};
   const yellow=['maze','seal'].includes(type),outside=['road','dawn'].includes(type),breach=type==='breach';
   this.scene.background=new T.Color(type==='dawn'?0x6e796f:outside?0x0d1820:yellow?0x252012:0x0a1518);this.scene.fog=new T.FogExp2(this.scene.background,outside?.04:.023);
-  this.scene.add(new T.HemisphereLight(type==='dawn'?0xffe0ac:yellow?0xf5dba4:0xb0c8d0,0x22261c,outside?1.3:.9));
-  this.key=new T.SpotLight(type==='dawn'?0xffdca3:yellow?0xffe1a3:0xd9f0ee,180,24,.8,.6,2);this.key.position.set(-2,4,4);this.key.target.position.set(0,1,0);this.key.castShadow=true;this.key.shadow.mapSize.set(1024,1024);this.key.shadow.normalBias=.035;this.scene.add(this.key,this.key.target);
-  const rim=new T.PointLight(breach?0xe87043:yellow?0xe1a245:0x6b98c1,35,14,2);rim.position.set(2,2.8,-4);this.scene.add(rim);
-  this.scene.environment=this.world.viewScene.environment;this.scene.environmentIntensity=.28;
-  this.faceLight=new T.SpotLight(0xf4d8b8,18,8,.65,.95,2);this.scene.add(this.faceLight,this.faceLight.target);
+  this.scene.add(new T.HemisphereLight(type==='dawn'?0xffe0ac:yellow?0xf5dba4:0xb0c8d0,0x22261c,outside?.8:.38));
+  this.key=new T.SpotLight(type==='dawn'?0xffdca3:yellow?0xffe1a3:0xd9f0ee,90,24,.8,.7,2);this.key.position.set(-2,4,4);this.key.target.position.set(0,1,0);this.key.castShadow=true;this.key.shadow.mapSize.set(1024,1024);this.key.shadow.normalBias=.035;this.scene.add(this.key,this.key.target);
+  const rim=new T.PointLight(breach?0xe87043:yellow?0xe1a245:0x6b98c1,22,14,2);rim.position.set(2,2.8,-4);this.scene.add(rim);
+  this.scene.environment=this.world.viewScene.environment;this.scene.environmentIntensity=.20;
+  this.faceLight=new T.SpotLight(0xf4d8b8,2,8,.8,.95,2);this.scene.add(this.faceLight,this.faceLight.target);
   const metal=mat(0x394845,.4,.65),dark=mat(0x17201f),wood=mat(0x514836),paper=mat(0xcac1a5),red=mat(0x782d23,.4),paint=mat(yellow?0xafa16b:0x758783);
   wood.map=this.world.procedural('wood');wood.bumpMap=wood.map;wood.bumpScale=.005;metal.bumpMap=this.world.procedural('fabric');metal.bumpScale=.0015;paper.map=this.world.procedural('paper');
-  const wall=this.world.surface('wall',yellow?0xc5af70:0x9ca9a0,[2,1],.032);this.materials.push(wall);if(yellow)wall.map=this.world.procedural('wallpaper');
+  const wall=this.world.licensed?photographedMaterial(this.world.licensed.materials.get(yellow?'beige_wall_001':breach?'painted_plaster_wall':'damaged_plaster'),[2,1],yellow?0xb5a477:0x9ca9a0):this.world.surface('wall',yellow?0xc5af70:0x9ca9a0,[2,1],.032);this.materials.push(wall);if(yellow&&!this.world.licensed)wall.map=this.world.procedural('wallpaper');
   const floor=this.world.surface('floor',outside?0x4b5556:0xabb3ab,[6,8],.02,.48);this.materials.push(floor);
   box(floor,[outside?40:8,.12,outside?45:16],[0,-.08,0]);
   if(outside){
@@ -57,7 +60,7 @@ export class Cinematics{
     for(let i=0;i<24;i++){const a=i/24*Math.PI*2;const p=box(dark,[.8,.12,.7],[Math.cos(a)*3.1,.04,Math.sin(a)*3.1],this.crater);p.rotation.set(.2*Math.sin(i),a,.1*Math.cos(i));}
     this.mazeStage=new T.Group();this.mazeStage.visible=false;this.stage.add(this.mazeStage);box(wall,[8,3.3,.15],[0,1.6,-2.5],this.mazeStage);box(floor,[8,.12,10],[0,0,0],this.mazeStage);this.text('LUKE?', [0,1.8,-2.4],2,.5,'#d2c19a',this.mazeStage);
    }else{
-    const sun=new T.DirectionalLight(0xffd695,3.2);sun.position.set(-7,4,-8);this.scene.add(sun);this.text('SMITHSON VALLEY',[0,2.6,-8],5,.6,'#cfbd98');
+    const sun=new T.DirectionalLight(0xffd695,2.2);sun.position.set(-7,4,-8);this.scene.add(sun);this.text('SMITHSON VALLEY',[0,2.6,-8],5,.6,'#cfbd98');
     if(this.id!=='alone'){
      const mic=new T.Group();this.stage.add(mic);cyl(metal,[.022,1.3,.022],[-.8,.65,1.3],mic);box(dark,[.09,.17,.08],[-.8,1.37,1.3],mic);box(metal,[.3,.035,.3],[-.8,.018,1.3],mic);this.endingMic=mic;
      this.portal=new T.Mesh(new T.TorusGeometry(2.5,.055,8,64),new T.MeshBasicMaterial({color:0xe0ca94}));this.portal.position.set(0,2.5,-4);this.stage.add(this.portal);
@@ -86,8 +89,8 @@ export class Cinematics{
    }
    if(type==='serum'||type==='closet'||type==='school'){
     box(metal,[1.6,.08,.65],[1.9,.85,-.7]);for(const x of[1.25,2.55])for(const z of[-.95,-.45])box(metal,[.05,.85,.05],[x,.43,z]);
-    this.vial=new T.Group();this.vial.position.set(1.85,.94,-.65);this.stage.add(this.vial);const liquid=mat(0x76bb8d,.18,.3);cyl(liquid,[.045,.15,.045],[0,0,0],this.vial);cyl(metal,[.047,.035,.047],[0,.095,0],this.vial);box(paper,[.28,.01,.22],[.2,-.045,0],this.vial);
-    this.text('HALL',[1.85,1.05,-.64],.3,.09,'#d8dfbf');box(wood,[.6,.06,.55],[.5,.5,0]);box(wood,[.6,.6,.05],[.5,.82,-.23]);for(const x of[.27,.73])for(const z of[-.2,.2])box(metal,[.04,.5,.04],[x,.25,z]);
+    this.vial=new T.Group();this.vial.position.set(1.85,1.1,-.65);this.stage.add(this.vial);const liquid=mat(0x76bb8d,.18,.3);cyl(liquid,[.016,.105,.016],[0,-.11,0],this.vial);cyl(metal,[.018,.018,.018],[0,-.052,0],this.vial);cyl(metal,[.0016,.052,.0016],[0,-.026,0],this.vial);cyl(paper,[.009,.07,.009],[0,-.192,0],this.vial);cyl(paper,[.027,.009,.027],[0,-.232,0],this.vial);for(let i=0;i<5;i++)box(dark,[.012,.0015,.0015],[.009,-.075-i*.015,.014],this.vial);box(paper,[.28,.01,.22],[2.05,.902,-.65]);
+    this.text('HALL',[2.05,.911,-.65],.19,.055,'#354b3d').rotation.x=-Math.PI/2;box(wood,[.6,.06,.55],[.5,.5,0]);box(wood,[.6,.6,.05],[.5,.82,-.23]);for(const x of[.27,.73])for(const z of[-.2,.2])box(metal,[.04,.5,.04],[x,.25,z]);
    }
    if(type==='seal'){
     this.rings=[];for(let i=0;i<3;i++){const ring=new T.Mesh(new T.TorusGeometry(.45+i*.24,.025,8,64),new T.MeshStandardMaterial({color:0x726445,emissive:0x000000,metalness:.75,roughness:.35}));ring.rotation.x=Math.PI/2;ring.position.set(0,.35+i*.035,0);this.stage.add(ring);this.rings.push(ring);}
@@ -100,10 +103,13 @@ export class Cinematics{
     for(let i=0;i<15;i++){const vein=box(red,[.05,1.2,.06],[(i%2?1:-1)*3.88,.4+i%4*.65,-6+i*.7]);vein.rotation.z=Math.sin(i)*.9;}
    }
   }
-  for(const a of this.story.actors){const g=this.world.character(a.kind,a.color,a.id);this.stage.add(g);this.actors.set(a.id,g);}this.capturePack();
+  for(const a of this.story.actors){const g=this.world.character(a.kind,a.color,a.id);this.stage.add(g);this.actors.set(a.id,g);}
+  this.scene.updateMatrixWorld(true);this.cameraObstacles=[];this.scene.traverse(o=>{if(!o.userData.cinematicCollider||o.parent===this.door)return;const b=new T.Box3().setFromObject(o);this.cameraObstacles.push({min:b.min.toArray(),max:b.max.toArray()});});
+  if(this.door){this.doorBounds={min:[0,0,0],max:[0,0,0]};this.cameraObstacles.push(this.doorBounds);}else this.doorBounds=null;
+  this.capturePack();
  }
  capturePack(){
-  this.stageCache||=new Map();const fields=['scene','stage','actors','geometry','materials','portal','key','faceLight','endingMic','door','vial','crater','mazeStage','rings'],pack={fields:{},nodes:[],materials:[]};for(const k of fields)pack.fields[k]=this[k];const materials=new Set();
+  this.stageCache||=new Map();const fields=['scene','stage','actors','geometry','materials','portal','key','faceLight','endingMic','door','vial','crater','mazeStage','rings','cameraObstacles','doorBounds'],pack={fields:{},nodes:[],materials:[]};for(const k of fields)pack.fields[k]=this[k];const materials=new Set();
   this.scene.traverse(o=>{pack.nodes.push({o,parent:o.parent,p:o.position.clone(),q:o.quaternion.clone(),s:o.scale.clone(),visible:o.visible,morph:o.morphTargetInfluences?[...o.morphTargetInfluences]:null});for(const m of o.material?(Array.isArray(o.material)?o.material:[o.material]):[])if(!materials.has(m)){materials.add(m);pack.materials.push({m,color:m.color?.clone(),emissive:m.emissive?.clone()});}});this.stageCache.set(this.id,pack);
  }
  restorePack(pack){
@@ -115,7 +121,7 @@ export class Cinematics{
   try{if(this.game.voice?.context)await Promise.allSettled(ids.flatMap(id=>voicedScene(SCENES[id]).lines.map(l=>this.game.voice.load(l.key))));for(const id of ids){await painted();this.id=id;this.story=voicedScene(SCENES[id]);this.build(this.story.stage);await w.prepareSceneGPU(this.scene,camera);}}
   finally{camera.position.copy(position);camera.quaternion.copy(rotation);camera.fov=fov;camera.updateProjectionMatrix();this.id=savedId;this.story=savedStory;this.scene=null;}
  }
- event(e){if(e.sound)this.game.sound.play(e.sound);if(e.door!==undefined&&this.door)this.doorTarget=e.door;if(e.serum&&this.vial){const fore=this.actors.get('hall')?.userData.arms?.[0]?.userData.forearm;if(fore){fore.add(this.vial);this.vial.position.set(0,-.39,.03);this.vial.rotation.z=.7;}else this.vial.visible=false;}if(e.collapse&&this.crater)this.crater.visible=true;
+ event(e){if(e.sound)this.game.sound.play(e.sound);if(e.door!==undefined&&this.door)this.doorTarget=e.door;if((e.serum||e.prepareSerum)&&this.vial){const fore=this.actors.get('hall')?.userData.arms?.[0]?.userData.forearm;if(fore){fore.add(this.vial);this.vial.position.set(0,-.39,.03);this.vial.rotation.z=.7;}else this.vial.visible=false;}if(e.collapse&&this.crater)this.crater.visible=true;
   if(e.maze&&this.mazeStage){this.mazeStage.visible=true;for(const g of this.actors.values())g.visible=false;const landon=this.actors.get('landon');if(landon){landon.visible=true;landon.position.set(.7,0,0);}this.key.color.set(0xffe0a1);}
   if(e.ring!==undefined&&this.rings?.[e.ring])this.rings[e.ring].material.emissive.set(0x725525);
  }
@@ -132,24 +138,24 @@ export class Cinematics{
   $('#scene-transition').hidden=!transition;$('#scene-transition').style.opacity=this.leadIn>0?Math.min(1,this.leadIn/.35):this.returnTime!==null?Math.min(1,this.returnTime/.3):0;
   const voice=this.game.voice,state=voice?.scene;const advance=transition||this.paused?0:state?Math.max(0,voice.sceneTime-this.clock.time):dt;const {events,sample,done}=this.clock.tick(advance);for(const e of events)this.event(e);const t=this.clock.time,originalTime=this.story.sourceTime(t);
   $('#scene-loading').hidden=transition||!state||state.ready;$('#scene-loading-message').textContent=state?.error?'Dialogue could not load.':'Preparing audio…';$('#scene-audio-actions').hidden=!state?.error;
-  for(const a of sample.actors){const g=this.actors.get(a.id);if(!g||this.mazeStage?.visible)continue;g.position.set(a.x,a.y,a.z);g.rotation.y=a.yaw;this.world.animateCharacter(g,t,a.moving);
-   const d=g.userData;if(a.pose==='hurt'){d.body.rotation.z=.10;d.head.rotation.z=.15;d.arms[0].rotation.x=-.4;if(d.arms[0].userData.forearm)d.arms[0].userData.forearm.rotation.x=-1.5;}
-   if(a.pose==='kneel'||a.pose==='sit'){g.position.y-=.42;d.legs.forEach(l=>{l.rotation.x=-1.1;if(l.userData.calf)l.userData.calf.rotation.x=1.6;});d.body.rotation.x=.10;}
-   if(a.pose==='reach'||a.pose==='brace'){d.arms.forEach((arm,i)=>{arm.rotation.x=a.pose==='brace'?-.85:i===0?-.65:-.1;if(arm.userData.forearm)arm.userData.forearm.rotation.x=a.pose==='brace'?-.6:i===0?-.7:-.15;});d.head.rotation.x=-.1;}
+  for(const a of sample.actors){const g=this.actors.get(a.id);if(!g||this.mazeStage?.visible)continue;g.position.set(a.x,a.y,a.z);g.rotation.y=a.yaw;if(g.userData.human)for(const arm of g.userData.arms){arm.rotation.y=arm.rotation.z=0;arm.userData.forearm.rotation.y=arm.userData.forearm.rotation.z=0;}this.world.animateCharacter(g,t,a.moving);
+   poseCinematicActor(g,a);
   }
-  if(this.door&&this.doorTarget!==undefined)this.door.rotation.y+=(this.doorTarget-this.door.rotation.y)*Math.min(1,dt*7);
-  const frame=(this.cameraDirection||=new DialogueCamera()).resolve(dialogueFrame(this.story,sample,t),sample.shot,t),camera=this.world.camera;camera.position.fromArray(frame.position);if(camera.aspect<1.25){const target=(this.cameraTarget||=new T.Vector3()).fromArray(frame.look);camera.position.sub(target).multiplyScalar(1.22).add(target);}camera.lookAt(...frame.look);const fov=Math.min(100,T.MathUtils.radToDeg(2*Math.atan(Math.tan(T.MathUtils.degToRad(frame.fov)/2)*Math.max(1,1/camera.aspect))));if(Math.abs(camera.fov-fov)>.0001){camera.fov=fov;camera.updateProjectionMatrix();}
-  this.faceLight.position.copy(camera.position);this.faceLight.position.y+=.45;this.faceLight.target.position.fromArray(frame.look);this.faceLight.intensity=frame.subject?16:4;
-  const footbeat=Math.floor(t*2.5);if(!this.paused&&footbeat!==this.footbeat&&sample.actors.some(a=>a.moving)){this.game.sound.play('step');this.footbeat=footbeat;}
+  if(this.door&&this.doorTarget!==undefined)this.door.rotation.y+=(this.doorTarget-this.door.rotation.y)*Math.min(1,(this.paused?0:advance)*7);
+  stagePerformance(this,sample,t,originalTime);
+  const targets=this.frameTargets||=( {} ),headPoint=this.headPoint||=new T.Vector3();for(const [id,g]of this.actors){g.updateMatrixWorld(true);g.userData.head.getWorldPosition(headPoint);const target=targets[id]||=new Array(3);headPoint.toArray(target);}
+  if(this.vial){this.vial.getWorldPosition(headPoint);headPoint.toArray(targets.vial||=new Array(3));}
+  if(this.doorBounds){const box=(this.cameraDoorBox||=new T.Box3()).setFromObject(this.door);box.min.toArray(this.doorBounds.min);box.max.toArray(this.doorBounds.max);}
+  const frame=(this.cameraDirection||=new DialogueCamera()).resolve(dialogueFrame(this.story,sample,t,targets),sample.shot,t),camera=this.world.camera;camera.position.fromArray(frame.position);
+  if(camera.aspect<1.25){const target=(this.cameraTarget||=new T.Vector3()).fromArray(frame.look);camera.position.sub(target).multiplyScalar(1.22).add(target);}
+  const fitted=fitStoryCamera(camera.position.toArray(this.cameraArray||=new Array(3)),frame.look,this.cameraObstacles||[],this.fittedStoryPosition||=new Array(3));camera.position.fromArray(fitted);camera.lookAt(...frame.look);
+  const fov=Math.min(100,T.MathUtils.radToDeg(2*Math.atan(Math.tan(T.MathUtils.degToRad(frame.fov)/2)*Math.max(1,1/camera.aspect))));if(Math.abs(camera.fov-fov)>.0001){camera.fov=fov;camera.updateProjectionMatrix();}
+  this.faceLight.position.copy(camera.position);this.faceLight.position.y+=.45;this.faceLight.target.position.fromArray(frame.look);this.faceLight.intensity=frame.subject?2:.6;
+  const footbeat=Math.floor(t*2.5);if(advance>0&&footbeat!==this.footbeat&&sample.actors.some(a=>a.moving)){this.game.sound.play('step');this.footbeat=footbeat;}
   if(this.endingMic)this.endingMic.visible=originalTime<12;
   if(!this.game.settings.motion&&this.story.stage==='road'&&originalTime>10&&originalTime<12)camera.position.y+=Math.sin(t*41)*.045;
-  if(this.portal)this.portal.rotation.z=t*.09;this.key.intensity=180*(.98+Math.sin(t*2.1)*.02);
+  if(this.portal)this.portal.rotation.z=t*.09;this.key.intensity=90*(.98+Math.sin(t*2.1)*.02);
   $('#scene-speaker').textContent=sample.line?displayName(sample.line.speaker):'';$('#scene-subtitle').textContent=sample.line?.text||'';$('#scene-captions').hidden=transition||!sample.line||(!this.captionFallback&&this.game.settings.subtitles===false);
-  const speakerId=speakingActor(this.story,sample.line),speaker=this.actors.get(speakerId),mouth=speechMotion(sample.line,t);
-  for(const [id,g]of this.actors){const d=g.userData;if(d.face)d.face.morphTargetInfluences[0]=id===speakerId?mouth:0;if(!d.human)continue;
-   d.head.rotation.x+=Math.sin(t*2.8+(d.phase||0))*.012;d.body.rotation.y=Math.sin(t*.7+(d.phase||0))*.008;
-   if(id===speakerId){d.head.rotation.x+=Math.sin(t*4.1)*.02;d.head.rotation.z+=Math.sin(t*2.6)*.018;if(!sample.actors.find(a=>a.id===id)?.pose){d.arms[1].rotation.x-=mouth*.12;d.arms[1].userData.forearm.rotation.x-=mouth*.17;}}
-  }
   $('#scene-fade').style.opacity=transition?1:sample.fade;$('#scene-progress').style.width=t/this.story.duration*100+'%';$('#scene-location').style.opacity=t<5?1:0;$('#scene-time').style.opacity=t<5?1:0;
   this.world.renderer.autoClear=true;this.world.renderer.render(this.scene,camera);this.world.worldCalls=this.world.renderer.info.render.calls;
   if(this.game.debugSnapshots)$('#world').dataset.state=JSON.stringify({...this.game.snapshot(),cinematic:this.id,sceneTime:Math.round(t*10)/10,scenePaused:this.paused,voice:voice?.status});

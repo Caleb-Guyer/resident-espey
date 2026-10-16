@@ -2,7 +2,7 @@ import test from 'node:test';import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';import {gunzipSync} from 'node:zlib';
 import {buildBossGeometry} from '../dist/boss-models.js';
 import {createAnatomy} from '../dist/anatomy.js';
-import {decodePreparedGeometry,preparedGeometry} from '../dist/prepared-geometry.js?v=5.2.1';
+import {decodePreparedGeometry,preparedGeometry} from '../dist/prepared-geometry.js?v=5.3.0';
 const arrayBuffer=b=>b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength);
 test('Published creature buffers exactly preserve the editable sculpt, UVs, normals, indices and bind weights',async()=>{
  const originals=new Map([['human',createAnatomy('player',[]).userData.skin.geometry],...['chris','jakob','zeb','birdy'].map(k=>[k,buildBossGeometry(k)])]);

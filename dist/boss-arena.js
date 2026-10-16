@@ -1,7 +1,7 @@
-import * as T from './vendor/three.module.js?v=5.2.1';
-import {TILE,solid,sight} from './data.js?v=5.2.1';
-import {mergeRigid} from './sculpt-surface.js?v=5.2.1';
-import {crushBobby,phaseRule} from './boss-fights.js?v=5.2.1';
+import * as T from './vendor/three.module.js?v=5.3.0';
+import {TILE,solid,sight} from './data.js?v=5.3.0';
+import {mergeRigid} from './sculpt-surface.js?v=5.3.0';
+import {crushBobby,phaseRule} from './boss-fights.js?v=5.3.0';
 const clamp=n=>Math.max(0,Math.min(1,n)),ease=n=>{n=clamp(n);return n*n*(3-2*n);};
 const piece=(g,geo,mat,x,y,z)=>{const m=new T.Mesh(geo,mat);m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;g.add(m);return m;};
 const box=(g,m,w,h,d,x,y,z)=>piece(g,new T.BoxGeometry(w,h,d,2,2,2),m,x,y,z);

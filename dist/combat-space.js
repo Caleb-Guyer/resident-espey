@@ -1,5 +1,5 @@
-import {enemyRadius} from './enemy-director.js?v=5.2.1';
-import {solid} from './data.js?v=5.2.1';
+import {enemyRadius} from './enemy-director.js?v=5.3.0';
+import {solid} from './data.js?v=5.3.0';
 
 // Soft steering keeps a group moving without turning creatures into a queue
 // of rigid obstacles. Committed tells and charges use their original paths.
@@ -26,7 +26,21 @@ export function cameraClear(grid,props,x,y,z){
  for(const p of props)if((p.active!==false||p.blocksShots)&&y>(p.minY||0)-.16&&y<p.h+.16&&x>p.x-p.w/2-.16&&x<p.x+p.w/2+.16&&z>p.z-p.d/2-.16&&z<p.z+p.d/2+.16)return false;
  return true;
 }
-export function fitEncounterCamera(grid,props,desired,fallback,out){
+export function encounterViewClear(grid,props,camera,focus){
+ if(!cameraClear(grid,props,camera.x,camera.y,camera.z))return false;
+ const length=Math.hypot(camera.x-focus.x,camera.y-focus.y,camera.z-focus.z),steps=Math.ceil(length/.24);
+ for(let i=1;i<steps;i++){const u=i/steps;if(length*u<.4)continue;const x=focus.x+(camera.x-focus.x)*u,y=focus.y+(camera.y-focus.y)*u,z=focus.z+(camera.z-focus.z)*u;if(solid(grid,x,z,.05))return false;
+  for(const p of props){if(p.active===false&&!p.blocksShots)continue;if(focus.x>p.x-p.w/2&&focus.x<p.x+p.w/2&&focus.z>p.z-p.d/2&&focus.z<p.z+p.d/2)continue;if(y>(p.minY||0)&&y<p.h&&x>p.x-p.w/2&&x<p.x+p.w/2&&z>p.z-p.d/2&&z<p.z+p.d/2)return false;}
+ }return true;
+}
+export function fitEncounterCamera(grid,props,desired,fallback,out,focus=null){
+ if(focus){
+  if(encounterViewClear(grid,props,desired,focus))return out.copy(desired);
+  // Bounded search stays on the authored side of the creature. A camera can
+  // occupy clear floor while still looking through a wall or a closed shutter.
+  for(let i=1;i<=12;i++){const u=1-i/16;out.set(focus.x+(desired.x-focus.x)*u,desired.y,focus.z+(desired.z-focus.z)*u);if(Math.hypot(out.x-focus.x,out.z-focus.z)>.75&&encounterViewClear(grid,props,out,focus))return out;}
+  for(let i=1;i<=12;i++){const u=i/12;out.set(desired.x+(fallback.x-desired.x)*u,desired.y,desired.z+(fallback.z-desired.z)*u);if(encounterViewClear(grid,props,out,focus))return out;}
+ }
  if(cameraClear(grid,props,desired.x,desired.y,desired.z)){out.copy(desired);return out;}
  const length=Math.hypot(desired.x-fallback.x,desired.z-fallback.z),steps=Math.max(1,Math.ceil(length/.12));
  for(let i=1;i<=steps;i++){const u=i/steps,x=desired.x+(fallback.x-desired.x)*u,z=desired.z+(fallback.z-desired.z)*u;if(cameraClear(grid,props,x,desired.y,z)){out.set(x,desired.y,z);return out;}}

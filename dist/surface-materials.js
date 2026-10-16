@@ -1,4 +1,4 @@
-import * as T from './vendor/three.module.js?v=5.2.1';
+import * as T from './vendor/three.module.js?v=5.3.0';
 // Original albedo scans are sampled inside their own atlas region. Triplanar
 // mapping keeps the fused anatomy continuous across its numerous skin bones.
 export function scannedMaterial(atlas,kind,options={}){

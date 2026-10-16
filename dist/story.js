@@ -1,3 +1,4 @@
+import {directStoryScenes} from './cinematic-edits.js?v=5.3.0';
 // Original screen adaptation of the Chapa stories. Timings are seconds.
 const actor=(id,kind,color,path)=>({id,kind,color,path});
 const shot=(at,from,to,look,end=look,fov=52)=>({at,from,to,look,end,fov});
@@ -12,7 +13,7 @@ export const SCENES={
   actors:[ethan([[0,-.7,-5,0],[5,-.7,.8,0],[12,-.7,1.5,2.4],[22,-.7,1.5,2.4,0,'kneel']]),joel([[0,.8,-5.8,0],[5,.8,.1,0],[12,.8,.5,-1,0,'hurt'],[30,.8,.5,-1,0,'hurt']]),hall([[0,1.7,1.4,-2],[10,1.3,.8,-2],[12,1.2,.7,-2,0,'reach'],[20,1.2,.7,-2,0,'reach']]),actor('infected','walker',0x556350,[[0,0,-7,0],[5,0,-4,0],[34,0,-3.3,0]])],
   shots:[shot(0,[0,1.1,4.8],[0,1.5,3.5],[0,1,-3]),shot(6,[2.9,1.6,2.8],[2.3,1.55,2.3],[0,1.2,.5]),shot(14,[-2.5,1.5,1.9],[-1.7,1.35,1.9],[.8,1.1,.5]),shot(23,[-.7,1.3,2.7],[-.7,.8,2.2],[1.1,1.2,.5]),shot(28,[0,1.7,4],[0,1.7,3.5],[0,1.2,0])],
   lines:[line(1,5,'Coach Hall','Inside! Ethan, get Joel through the door!'),line(7,11,'Joel','My arm... Ethan, something is moving in my arm.'),line(12,16,'Coach Hall','This will hide you from it. Hold still.'),line(17,21,'Joel','Who... who are you?'),line(22,27,'Ethan','Ethan. Your friend. Joel Honeycutt. Stay with me.'),line(28,33,'Coach Hall','Room 204 controls the bell. Restore the three fuses. Then find me.')],
-  events:[{at:0,sound:'boss'},{at:5,door:0},{at:6,sound:'slam'},{at:16,serum:true,sound:'heartbeat'},{at:27,sound:'bell'}],goal:'Restore power. Find Room 204.'},
+  events:[{at:0,sound:'boss'},{at:5,door:0},{at:6,sound:'slam'},{at:12.2,prepareSerum:true},{at:16,serum:true,sound:'heartbeat'},{at:27,sound:'bell'}],goal:'Restore power. Find Room 204.'},
  descent:{duration:25,stage:'maze',label:'Room 204',when:'Present day · Somewhere underneath the school',
   actors:[ethan([[0,-.9,2.8,Math.PI],[6,-.9,1,Math.PI],[25,-.9,1,2.2]]),landon([[0,.8,-.3,0],[25,.8,-.3,-.8]]),actor('birdy','birdy',0xab291e,[[0,0,-8,0],[25,0,-7,0]])],
   shots:[shot(0,[0,1.7,5],[0,1.7,3.7],[0,1.5,-3],undefined,64),shot(7,[-2.8,1.55,2.9],[-2.4,1.5,2.4],[.8,1.5,-.3]),shot(15,[.5,1.6,2.3],[.3,1.6,1.9],[0,1.2,-5]),shot(21,[-2,1.4,2],[-1.8,1.4,2],[.8,1.4,-.3])],
@@ -24,7 +25,7 @@ export const SCENES={
  closet:{duration:26,stage:'closet',label:'The survivors’ closet',when:'Memory · The first night',
   actors:[ethan([[0,-.8,.7,Math.PI],[6,-.8,-.1,1.8],[26,-.8,-.1,1.8]]),joel([[0,.5,-.8,0,0,'hurt'],[26,.5,-.8,-.6,0,'hurt']]),hall([[0,1.6,-.3,-1.4],[13,1.1,-.5,-1.4,0,'reach']]),actor('earl','npc',0x433d32,[[0,0,2.8,Math.PI],[7,0,2.2,0,0,'brace'],[26,0,2.2,0,0,'brace']])],
   shots:[shot(0,[-2.5,1.7,1.3],[-2.2,1.6,1],[0,1.1,-.5]),shot(8,[1.6,1.55,.9],[1.5,1.4,.7],[0,1.1,-.5]),shot(17,[-1.8,1.45,.6],[-1.5,1.45,.6],[.5,1.3,-.8]),shot(22,[-1.8,1.6,-.1],[-1.8,1.6,-.1],[0,1.3,1.8])],
-  lines:[line(1,5,'Earl Britt','They followed us. I can hold this door.'),line(6,10,'Coach Hall','Joel, one dose. Ethan, keep saying his name.'),line(11,15,'Joel','The lights... where did everyone go?'),line(16,20,'Ethan','We are here. Joel. Earl. Hall. I wrote every name.'),line(21,26,'Earl Britt','Fuses: the north classroom, east utility, east hall. Go!')],events:[{at:1,door:0,sound:'slam'},{at:10,serum:true,sound:'heartbeat'},{at:22,sound:'slam'}],goal:'Fuse locations remembered. Check the map.'},
+  lines:[line(1,5,'Earl Britt','They followed us. I can hold this door.'),line(6,10,'Coach Hall','Joel, one dose. Ethan, keep saying his name.'),line(11,15,'Joel','The lights... where did everyone go?'),line(16,20,'Ethan','We are here. Joel. Earl. Hall. I wrote every name.'),line(21,26,'Earl Britt','Fuses: the north classroom, east utility, east hall. Go!')],events:[{at:1,door:0,sound:'slam'},{at:6.2,prepareSerum:true},{at:10,serum:true,sound:'heartbeat'},{at:22,sound:'slam'}],goal:'Fuse locations remembered. Check the map.'},
  serum:{duration:20,stage:'serum',label:'Joel’s empty chair',when:'Memory · One dose later',
   actors:[ethan([[0,-.8,1.2,2.3],[20,-.8,1.2,2.3]]),joel([[0,.5,0,-.9,0,'sit'],[20,.5,0,-.9,0,'sit']]),hall([[0,1.6,-.5,-1.2,0,'reach'],[20,1.6,-.5,-1.2]])],
   shots:[shot(0,[1.5,1.8,2.8],[1.2,1.5,2.3],[.5,1,0]),shot(8,[-1.8,1.4,1.8],[-1.5,1.4,1.7],[.5,1.1,0]),shot(15,[0,1.2,2.4],[0,1.2,2.1],[1.2,1,-.4])],
@@ -60,18 +61,23 @@ export const SCENES={
 };
 export const MEMORY_IDS=['closet','serum','road','seal','sacrifice','promise'];
 SCENES.choice={...SCENES.promise,duration:16,label:'The microphone',when:'Room 204 · Now',lines:[line(1,6,'The Gentleman','Take my door. Seal this place. The bell will stop.'),line(7,11,'Joel','Ethan. Please do not let us disappear.'),line(12,16,'Ethan','I can call them home. Or end it here.')]};
+SCENES.closet.actors.find(a=>a.id==='earl').path=[[0,0,2.8,Math.PI],[1.5,0,2.2,Math.PI],[5,0,2.2,Math.PI],[6.5,0,2.2,0,0,'brace'],[26,0,2.2,0,0,'brace']];
+SCENES.closet.actors.find(a=>a.id==='hall').path=[[0,1.6,-.3,-1.4],[5.8,1.2,-.45,-1.4],[10,1.1,-.55,-1.4,0,'reach'],[26,1.1,-.55,-1.4,0,'reach']];
+SCENES.serum.actors.find(a=>a.id==='hall').path=[[0,1.05,.05,-1.2,0,'reach'],[5,1.05,.05,-1.2],[20,1.05,.05,-1.2]];
+directStoryScenes(SCENES);
 export const MEMORY_LABELS=['Open survivor closet','Examine Joel’s chair','Touch the running shoes','Inspect the Geographer’s Seal','Listen to Hall’s whistle','Open the unwritten notebook'];
 export function sceneSample(scene,time){
  const t=Math.max(0,Math.min(time,scene.duration));
  const index=Math.max(0,scene.shots.findLastIndex(s=>s.at<=t)),s=scene.shots[index],end=scene.shots[index+1]?.at??scene.duration;
  const u=Math.max(0,Math.min(1,(t-s.at)/(end-s.at))),ease=u*u*(3-2*u);
  const mix=(a,b,k)=>a.map((v,i)=>v+(b[i]-v)*k);
- return {shot:index,position:mix(s.from,s.to,ease),look:mix(s.look,s.end||s.look,ease),fov:s.fov,
+ return {shot:index,position:mix(s.from,s.to,ease),look:mix(s.look,s.end||s.look,ease),fov:s.fov+(s.endFov===undefined?0:(s.endFov-s.fov)*ease),coverage:s.coverage||null,progress:ease,
   line:scene.lines.find(l=>t>=l.at&&t<l.to)||null,
   fade:Math.max(0,1-t/.8,1-(scene.duration-t)/.9),
-  actors:scene.actors.map(a=>{const i=Math.max(0,a.path.findLastIndex(p=>p[0]<=t)),p=a.path[i],q=a.path[i+1]||p,k=p===q?0:Math.min(1,(t-p[0])/(q[0]-p[0]));let delta=(q[3]-p[3]+Math.PI*3)%(Math.PI*2)-Math.PI;return{id:a.id,x:p[1]+(q[1]-p[1])*k,z:p[2]+(q[2]-p[2])*k,yaw:p[3]+delta*k,y:(p[4]||0)+((q[4]||0)-(p[4]||0))*k,pose:p[5]||'',moving:p[1]!==q[1]||p[2]!==q[2]};})};
+  actors:scene.actors.map(a=>{const i=Math.max(0,a.path.findLastIndex(p=>p[0]<=t)),p=a.path[i],q=a.path[i+1]||p,k=p===q?0:Math.min(1,(t-p[0])/(q[0]-p[0]));let delta=(q[3]-p[3]+Math.PI*3)%(Math.PI*2)-Math.PI;return{id:a.id,x:p[1]+(q[1]-p[1])*k,z:p[2]+(q[2]-p[2])*k,yaw:p[3]+delta*k,y:(p[4]||0)+((q[4]||0)-(p[4]||0))*k,pose:p[5]||'',previousPose:(a.path[i-1]||p)[5]||'',poseMix:i===0?1:Math.max(0,Math.min(1,(t-p[0])/.5)),moveBlend:Math.min(1,Math.max(0,(t-p[0])/.25),Math.max(0,(q[0]-t)/.35)),moving:p[1]!==q[1]||p[2]!==q[2]};})};
 }
 // Event consumption remains deterministic even when a slow frame crosses several cues.
+export function poseWeight(actor,pose){const x=actor.poseMix??1,w=x*x*(3-2*x);return (actor.pose===pose?w:0)+(actor.previousPose===pose?1-w:0);}
 export class StoryClock{
  constructor(scene){this.scene=scene;this.time=0;this.cursor=0;this.done=false;}
  tick(dt){if(this.done)return{events:[],sample:sceneSample(this.scene,this.time),done:true};this.time=Math.min(this.scene.duration,this.time+Math.max(0,dt));const events=[];while(this.cursor<(this.scene.events?.length||0)&&this.scene.events[this.cursor].at<=this.time)events.push(this.scene.events[this.cursor++]);this.done=this.time>=this.scene.duration;return{events,sample:sceneSample(this.scene,this.time),done:this.done};}
