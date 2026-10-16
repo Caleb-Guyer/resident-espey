@@ -1,5 +1,5 @@
-import * as T from './vendor/three.module.js?v=5.4.2';
-import {profileGeometry} from './profile-geometry.js?v=5.4.2';
+import * as T from './vendor/three.module.js?v=5.5.0';
+import {profileGeometry} from './profile-geometry.js?v=5.5.0';
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const handCache=new Map();
 const tetra=[[0,5,1,6],[0,1,2,6],[0,2,3,6],[0,3,7,6],[0,7,4,6],[0,4,5,6]],corners=[[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0,0,1],[1,0,1],[1,1,1],[0,1,1]];
@@ -63,13 +63,18 @@ export function handSurface(side){
  g.morphAttributes.position=[morph];g.computeBoundingSphere();handCache.set(side,g);return g.clone();
 }
 export function decodeHandSurfaces(buffer){
- const bytes=buffer instanceof ArrayBuffer?buffer:buffer.buffer.slice(buffer.byteOffset,buffer.byteOffset+buffer.byteLength),header=new Uint32Array(bytes,0,3);if(header[0]!==0x38344852||header[1]!==1||header[2]!==2)throw Error('Invalid hand surface asset');let offset=12;const decoded=[];
- for(let i=0;i<2;i++){const meta=new Uint32Array(bytes,offset,3),side=meta[0]===1?1:-1,n=meta[1],count=meta[2];offset+=12;if(n<1000||n>200000||count>1500000||offset+(n*11+count)*4>bytes.byteLength)throw Error('Incomplete hand surface asset');const g=new T.BufferGeometry();
+ const bytes=buffer instanceof ArrayBuffer?buffer:buffer.buffer.slice(buffer.byteOffset,buffer.byteOffset+buffer.byteLength),header=new Uint32Array(bytes,0,3);if(header[0]!==0x38344852||![1,2].includes(header[1])||header[2]!==2)throw Error('Invalid hand surface asset');let offset=12;const decoded=[];
+ for(let i=0;i<2;i++){const metaSize=header[1]===2?4:3,meta=new Uint32Array(bytes,offset,metaSize),side=meta[0]===1?1:-1,n=meta[1],count=meta[2],indexBytes=header[1]===2?meta[3]:4;offset+=metaSize*4;if(n<1000||n>200000||count>1500000||![2,4].includes(indexBytes)||offset+n*44+count*indexBytes>bytes.byteLength)throw Error('Incomplete hand surface asset');const g=new T.BufferGeometry();
   for(const[name,size]of[['position',3],['normal',3],['uv',2],['morph',3]]){const data=new Float32Array(bytes,offset,n*size).slice();offset+=n*size*4;const attribute=new T.BufferAttribute(data,size);if(name==='morph')g.morphAttributes.position=[attribute];else g.setAttribute(name,attribute);}
-  g.setIndex(new T.BufferAttribute(new Uint32Array(bytes,offset,count).slice(),1));offset+=count*4;g.computeBoundingSphere();g.userData.detail='prebaked continuous hand surface';decoded.push([side,g]);
+  g.setIndex(new T.BufferAttribute(new (indexBytes===2?Uint16Array:Uint32Array)(bytes,offset,count).slice(),1));offset=(offset+count*indexBytes+3)&~3;g.computeBoundingSphere();g.userData.detail='prebaked continuous hand surface';decoded.push([side,g]);
  }if(offset!==bytes.byteLength||decoded[0][0]===decoded[1][0])throw Error('Invalid hand surface layout');for(const[side,g]of decoded)handCache.set(side,g);return true;
 }
-export async function loadHandSurfaces(){try{const response=await fetch(new URL('./assets/hands-v3.bin',import.meta.url));if(!response.ok)return false;return decodeHandSurfaces(await response.arrayBuffer());}catch{return false;}}
+export async function loadHandSurfaces(){
+ // Decompression runs asynchronously in the browser. Older browsers retain a
+ // prepared fallback rather than generating detailed hands on the main thread.
+ if(typeof DecompressionStream!=='undefined')try{const response=await fetch(new URL('./assets/hands-v4.bin.gz',import.meta.url));if(response.ok){let buffer=await response.arrayBuffer();const bytes=new Uint8Array(buffer);if(bytes[0]===31&&bytes[1]===139)buffer=await new Response(new Blob([buffer]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();return decodeHandSurfaces(buffer);}}catch{}
+ try{const response=await fetch(new URL('./assets/hands-v3.bin',import.meta.url));if(!response.ok)return false;return decodeHandSurfaces(await response.arrayBuffer());}catch{return false;}
+}
 export function createHands(m,root,anchored=false){
  const hands=[],skins=[];
  for(const side of[1,-1]){

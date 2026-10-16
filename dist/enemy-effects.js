@@ -1,5 +1,5 @@
-import * as T from './vendor/three.module.js?v=5.4.2';
-import {solid} from './data.js?v=5.4.2';
+import * as T from './vendor/three.module.js?v=5.5.0';
+import {solid} from './data.js?v=5.5.0';
 const acquire=(list,free,capacity)=>free.pop()||(list.length>=capacity?list.shift():{});
 const release=(free,item,capacity)=>{if(item.pooled&&free.length<capacity)free.push(item);};
 export class EnemyEffects{
@@ -35,7 +35,8 @@ export class EnemyEffects{
   for(let i=0;i<this.bolts.length;i++){const b=this.bolts[i];d.position.set(b.x,b.y,b.z);d.rotation.set(0,Math.atan2(b.vx,b.vz),0);d.scale.set(.085,.085,b.kind==='feather'?.35:.16);d.updateMatrix();this.projectiles.setMatrixAt(i,d.matrix);this.projectiles.setColorAt(i,this.color.setHex(b.color));}
   this.stains.count=this.pools.length;for(let i=0;i<this.pools.length;i++){const s=this.pools[i];d.position.set(s.x,.026,s.z);d.rotation.set(-Math.PI/2,0,0);d.scale.setScalar(s.r*Math.min(1,s.life));d.updateMatrix();this.stains.setMatrixAt(i,d.matrix);}
   this.rings.count=this.waves.length;for(let i=0;i<this.waves.length;i++){const w=this.waves[i];d.position.set(w.x,.04,w.z);d.rotation.set(-Math.PI/2,0,0);d.scale.setScalar(w.r);d.updateMatrix();this.rings.setMatrixAt(i,d.matrix);}
-  for(const m of [this.projectiles,this.stains,this.rings]){m.instanceMatrix.needsUpdate=true;if(m.instanceColor)m.instanceColor.needsUpdate=true;}
+  // Empty pools change draw counts without resending unused instance buffers.
+  for(const m of [this.projectiles,this.stains,this.rings])if(m.count){m.instanceMatrix.needsUpdate=true;if(m.instanceColor)m.instanceColor.needsUpdate=true;}
  }
  dispose(){for(const m of [this.projectiles,this.stains,this.rings]){this.root.remove(m);m.dispose();m.geometry.dispose();m.material.dispose();}this.bolts.length=this.pools.length=this.waves.length=0;}
 }

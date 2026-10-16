@@ -1,5 +1,5 @@
-import * as T from './vendor/three.module.js?v=5.4.2';
-import {REGIONS} from './zombie-damage.js?v=5.4.2';
+import * as T from './vendor/three.module.js?v=5.5.0';
+import {REGIONS} from './zombie-damage.js?v=5.5.0';
 const V=new T.Vector3(),M=new T.Matrix4(),Q=new T.Quaternion();
 const ik={hip:new T.Vector3(),knee:new T.Vector3(),end:new T.Vector3(),target:new T.Vector3(),dir:new T.Vector3(),bend:new T.Vector3(),from:new T.Vector3(),to:new T.Vector3(),q:new T.Quaternion(),parent:new T.Quaternion(),world:new T.Quaternion()};
 function aimBone(joint,child,target){
@@ -30,11 +30,12 @@ export function regionMaterial(material,mask){
  const previous=material.onBeforeCompile;
  material.onBeforeCompile=s=>{
   previous?.(s);s.uniforms.zombieMask={value:mask};
-  s.vertexShader=s.vertexShader.replace('#include <common>','#include <common>\nattribute float zombieRegion;varying float woundRegion;').replace('#include <begin_vertex>','#include <begin_vertex>\nwoundRegion=zombieRegion;');
-  s.fragmentShader=s.fragmentShader.replace('#include <common>','#include <common>\nvarying float woundRegion;uniform float zombieMask[6];');
-  s.fragmentShader=s.fragmentShader.replace('#include <clipping_planes_fragment>','#include <clipping_planes_fragment>\nfloat regionVisible=zombieMask[0];if(woundRegion>.5)regionVisible=zombieMask[1];if(woundRegion>1.5)regionVisible=zombieMask[2];if(woundRegion>2.5)regionVisible=zombieMask[3];if(woundRegion>3.5)regionVisible=zombieMask[4];if(woundRegion>4.5)regionVisible=zombieMask[5];if(regionVisible<.5)discard;');
+  // Every triangle has one region (and split boundary vertices). Reject all
+  // three vertices beyond the far clip plane instead of discarding pixels.
+  // This also keeps intact opaque skin eligible for early depth rejection.
+  s.vertexShader=s.vertexShader.replace('#include <common>','#include <common>\nattribute float zombieRegion;uniform float zombieMask[6];').replace('#include <project_vertex>','#include <project_vertex>\n// ESPEY_REGION_CLIP\nfloat regionVisible=zombieMask[0];if(zombieRegion>.5)regionVisible=zombieMask[1];if(zombieRegion>1.5)regionVisible=zombieMask[2];if(zombieRegion>2.5)regionVisible=zombieMask[3];if(zombieRegion>3.5)regionVisible=zombieMask[4];if(zombieRegion>4.5)regionVisible=zombieMask[5];if(regionVisible<.5)gl_Position=vec4(0.,0.,2.,1.);');
  };
- material.customProgramCacheKey=()=> 'infected-regional-cut-v1';return material;
+ material.customProgramCacheKey=()=> 'infected-regional-clip-v2';return material;
 }
 const bone=(visual,name)=>{let found;visual.traverse(o=>{if(o.isBone&&o.name.endsWith(name))found=o;});return found;};
 function woundKit(library){

@@ -1,4 +1,4 @@
-import {ATTACKS} from './enemy-director.js?v=5.4.2';
+import {ATTACKS} from './enemy-director.js?v=5.5.0';
 const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
 export const smooth=v=>{v=clamp(v);return v*v*(3-2*v);};
 

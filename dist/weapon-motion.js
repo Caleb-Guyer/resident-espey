@@ -1,4 +1,4 @@
-import {weaponFor} from './weapons.js?v=5.4.2';
+import {weaponFor} from './weapons.js?v=5.5.0';
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const smooth=x=>{x=clamp(x,0,1);return x*x*x*(x*(x*6-15)+10);};
 const mix=(a,b,t)=>a+(b-a)*t;

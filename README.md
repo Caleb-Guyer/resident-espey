@@ -4,6 +4,8 @@
 
 Some places remember you. Some refuse to let you go.
 
+Version **5.5.0** rejects severed zombie triangles before rasterization, divides fixed walls into spatial batches, improves GPU vertex reuse in hands and bosses without removing geometry, compresses the prepared hand download, validates sculpt buffers in short loading tasks, and stops empty hazard-buffer uploads. [Optimization measurements and verification](PLAYTEST_5.5.md).
+
 Version **5.4.2** reduces wall texture sampling and rejects out-of-range point lights before expensive lighting calculations. Chapter loading skips disposable copies of the licensed human rigs while retaining preparation of the actual story scenes. [Performance verification](PLAYTEST_5.4.2.md).
 
 Version **5.4.1** replaces the production survivor bodies and projected portrait faces with six licensed, textured human rigs. Twenty-two facial shapes provide blinks, brows, gaze and articulated lips; speech follows recorded audio energy, with approximate text-based mouth shapes. Nine authored body clips blend movement, conversation and low poses. Ethan retains blonde curls and blue eyes; Earl retains a Black character model. Hand contact follows the imported wrists, and paused performance no longer accumulates offsets. [Character performance verification](PLAYTEST_5.4.md).
@@ -136,9 +138,10 @@ For the strongest ending, meet all three allies in the chapter scenes, recover a
 
 ## Run locally
 
-Requires Node.js 20 or newer. No package installation is needed.
+Requires Node.js 20 or newer.
 
 ```sh
+npm ci
 npm run dev
 ```
 
@@ -150,6 +153,8 @@ npm run check
 ```
 
 GitHub Actions tests the campaign and publishes the `dist/` directory to GitHub Pages on every push to `main`.
+
+`npm run bake:hands` and `npm run bake:creatures` regenerate the prepared meshes from their editable sculpt sources. The pinned, MIT-licensed [meshoptimizer](https://github.com/zeux/meshoptimizer/blob/master/js/README.md) runs only during this offline build; the game does not download or execute it. Geometry, UVs, normals, material groups, morphs and bind weights are preserved by permutation tests.
 
 ## Project structure
 

@@ -1,4 +1,4 @@
-import {finishGPUWarmup} from './render-budget.js?v=5.4.2';
+import {finishGPUWarmup} from './render-budget.js?v=5.5.0';
 // Spread texture and bone uploads across loading frames. A scene's first draw
 // should not submit every decoded image and skeleton in one driver burst.
 export async function uploadSceneTextures(renderer,scenes,{yieldFrame=()=>new Promise(resolve=>setTimeout(resolve,0)),finish=finishGPUWarmup,clock=()=>performance.now(),budget=4,batchSize=16}={}){

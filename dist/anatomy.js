@@ -1,5 +1,5 @@
-import * as T from './vendor/three.module.js?v=5.4.2';
-import {preparedGeometry} from './prepared-geometry.js?v=5.4.2';
+import * as T from './vendor/three.module.js?v=5.5.0';
+import {preparedGeometry} from './prepared-geometry.js?v=5.5.0';
 
 // A continuous isosurface replaces the visible ball/cylinder joints. Generate
 // each archetype once at loading time; instances own their disposable geometry.
