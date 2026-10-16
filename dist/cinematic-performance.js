@@ -1,8 +1,8 @@
-import {poseWeight} from './story.js?v=5.5.0';
-import * as T from './vendor/three.module.js?v=5.5.0';
-import {speakingActor,speechMotion} from './cinematic-direction.js?v=5.5.0';
-import {performHumanFace,faceEmotion} from './facial-performance.js?v=5.5.0';
-import {curlHumanHand} from './human-actors.js?v=5.5.0';
+import {poseWeight} from './story.js?v=5.5.1';
+import * as T from './vendor/three.module.js?v=5.5.1';
+import {speakingActor,speechMotion} from './cinematic-direction.js?v=5.5.1';
+import {performHumanFace,faceEmotion} from './facial-performance.js?v=5.5.1';
+import {curlHumanHand} from './human-actors.js?v=5.5.1';
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x)),ease=x=>{x=clamp(x,0,1);return x*x*(3-2*x);};
 const ik={a:new T.Vector3(),b:new T.Vector3(),end:new T.Vector3(),target:new T.Vector3(),dir:new T.Vector3(),bend:new T.Vector3(),elbow:new T.Vector3(),from:new T.Vector3(),to:new T.Vector3(),q:new T.Quaternion(),world:new T.Quaternion(),parent:new T.Quaternion()};
 function aim(joint,from,to,weight){

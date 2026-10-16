@@ -1,35 +1,35 @@
-import './direct-lighting.js?v=5.5.0';
-import {duringGPUWork,finishGPUWarmup} from './render-budget.js?v=5.5.0';
-import {mergeRigidParts} from './rigid-batch.js?v=5.5.0';
-import {warmRaster} from './warm-raster.js?v=5.5.0';
-import {uploadSceneTextures} from './texture-warmup.js?v=5.5.0';
-import {splitStaticInstances} from './static-batches.js?v=5.5.0';
-import {isZombie} from './zombie-damage.js?v=5.5.0';
-import {ZombieGore} from './zombie-gore.js?v=5.5.0';
-import {WEAPONS,weaponFor} from './weapons.js?v=5.5.0';
-import {createLongGun} from './longguns.js?v=5.5.0';
-import {scannedMaterial,microTexture} from './surface-materials.js?v=5.5.0';
-import {surfaceMaterial} from './material-surfaces.js?v=5.5.0';
-import {addEnvironmentDetail} from './environment-detail.js?v=5.5.0';
-import {loadLicensedArt,photographedMaterial,createLicensedEnemy,animateLicensedEnemy,dressLicensedRooms,fittedProp} from './licensed-art.js?v=5.5.0';
-import {painted} from './loading.js?v=5.5.0';
-import {BossArena} from './boss-arena.js?v=5.5.0';
-import {createAnatomy,animateCollapse} from './anatomy.js?v=5.5.0';
-import {reloadProgress} from './reload.js?v=5.5.0';
-import {ATTACKS,enemyRadius} from './enemy-director.js?v=5.5.0';
-import * as T from './vendor/three.module.js?v=5.5.0';
-import {TILE,seeded,solid,findPath} from './data.js?v=5.5.0';
-import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock,propsOcclude,environmentDistance} from './fps.js?v=5.5.0';
-import {CombatEffects} from './combat-effects.js?v=5.5.0';
-import {WallPlacement} from './wall-placement.js?v=5.5.0';
-import {createViewModel,createHands,updateSleeveAnchors,loadHandSurfaces} from './viewmodel.js?v=5.5.0';
-import {createWeaponMotion,kickWeapon,stepWeaponMotion} from './weapon-motion.js?v=5.5.0';
-import {CHARACTER_DESIGNS,characterHair,dressBirdy,dressArchetype,cloneCharacter} from './creature-design.js?v=5.5.0';
-import {EnemyEffects} from './enemy-effects.js?v=5.5.0';
-import {BOSS_PROFILES,createBossModel} from './boss-models.js?v=5.5.0';
-import {animateBoss} from './boss-animation.js?v=5.5.0';
-import {loadPreparedGeometry} from './prepared-geometry.js?v=5.5.0';
-import {loadHumanArt,createHumanActor,animateHumanActor} from './human-actors.js?v=5.5.0';
+import './direct-lighting.js?v=5.5.1';
+import {duringGPUWork,finishGPUWarmup} from './render-budget.js?v=5.5.1';
+import {mergeRigidParts} from './rigid-batch.js?v=5.5.1';
+import {warmRaster} from './warm-raster.js?v=5.5.1';
+import {uploadSceneTextures} from './texture-warmup.js?v=5.5.1';
+import {splitStaticInstances} from './static-batches.js?v=5.5.1';
+import {isZombie} from './zombie-damage.js?v=5.5.1';
+import {ZombieGore} from './zombie-gore.js?v=5.5.1';
+import {WEAPONS,weaponFor} from './weapons.js?v=5.5.1';
+import {createLongGun} from './longguns.js?v=5.5.1';
+import {scannedMaterial,microTexture} from './surface-materials.js?v=5.5.1';
+import {surfaceMaterial} from './material-surfaces.js?v=5.5.1';
+import {addEnvironmentDetail} from './environment-detail.js?v=5.5.1';
+import {loadLicensedArt,photographedMaterial,createLicensedEnemy,animateLicensedEnemy,dressLicensedRooms,fittedProp} from './licensed-art.js?v=5.5.1';
+import {painted} from './loading.js?v=5.5.1';
+import {BossArena} from './boss-arena.js?v=5.5.1';
+import {createAnatomy,animateCollapse} from './anatomy.js?v=5.5.1';
+import {reloadProgress} from './reload.js?v=5.5.1';
+import {ATTACKS,enemyRadius} from './enemy-director.js?v=5.5.1';
+import * as T from './vendor/three.module.js?v=5.5.1';
+import {TILE,seeded,solid,findPath} from './data.js?v=5.5.1';
+import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock,propsOcclude,environmentDistance} from './fps.js?v=5.5.1';
+import {CombatEffects} from './combat-effects.js?v=5.5.1';
+import {WallPlacement} from './wall-placement.js?v=5.5.1';
+import {createViewModel,createHands,updateSleeveAnchors,loadHandSurfaces} from './viewmodel.js?v=5.5.1';
+import {createWeaponMotion,kickWeapon,stepWeaponMotion} from './weapon-motion.js?v=5.5.1';
+import {CHARACTER_DESIGNS,characterHair,dressBirdy,dressArchetype,cloneCharacter} from './creature-design.js?v=5.5.1';
+import {EnemyEffects} from './enemy-effects.js?v=5.5.1';
+import {BOSS_PROFILES,createBossModel} from './boss-models.js?v=5.5.1';
+import {animateBoss} from './boss-animation.js?v=5.5.1';
+import {loadPreparedGeometry} from './prepared-geometry.js?v=5.5.1';
+import {loadHumanArt,createHumanActor,animateHumanActor} from './human-actors.js?v=5.5.1';
 
 const BOX=bevelBox(1,1,1,.014),WALLBOX=new T.BoxGeometry(1,1,1),SPHERE=new T.SphereGeometry(1,20,14),CYL=new T.CylinderGeometry(1,1,1,16);
 const SHARED=new Set([BOX,WALLBOX,SPHERE,CYL]);
@@ -90,6 +90,11 @@ export class World{
  optimizeStatic(){
   this.root.updateMatrixWorld(true);const buckets=new Map();this.root.traverse(o=>{if(!o.isMesh||o.isInstancedMesh||!SHARED.has(o.geometry)||Array.isArray(o.material)||o.material.transparent)return;const key=o.geometry.uuid+'/'+o.material.uuid;if(!buckets.has(key))buckets.set(key,[]);buckets.get(key).push(o);});
   for(const objects of buckets.values()){if(objects.length<3)continue;const first=objects[0],batch=new T.InstancedMesh(first.geometry,first.material,objects.length);objects.forEach((o,i)=>batch.setMatrixAt(i,o.matrixWorld));batch.castShadow=true;batch.receiveShadow=true;this.root.add(batch);for(const o of objects)o.parent.remove(o);}
+  // Large trim/furniture batches used to span the entire map, submitting all
+  // their instances whenever any corner was visible. Keep small batches whole
+  // and give dense fixed scenery independent bounds every six tiles.
+  const fixed=[];this.root.traverse(o=>{if(o.isInstancedMesh&&o.count>=64&&SHARED.has(o.geometry)&&!Array.isArray(o.material)&&!o.material.transparent)fixed.push(o);});
+  for(const [id,source]of fixed.entries()){source.userData.staticBatchId=id;const chunks=splitStaticInstances(source,TILE*6);if(chunks[0]===source)continue;source.parent.add(...chunks);source.parent.remove(source);source.dispose();}
   this.root.updateMatrixWorld(true);const moving=new Set([this.portal,this.gent,this.dust,...this.mist||[]].filter(Boolean));
   this.root.traverse(o=>{if(o===this.root)return;for(let p=o;p&&p!==this.root;p=p.parent)if(moving.has(p))return;o.matrixAutoUpdate=false;o.matrixWorldAutoUpdate=false;});
  }

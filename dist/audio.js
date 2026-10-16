@@ -1,4 +1,4 @@
-import {prepareScreamSamples} from './audio-preparation.js?v=5.5.0';
+import {prepareScreamSamples} from './audio-preparation.js?v=5.5.1';
 export class Sound{
  constructor(){this.volume=.6;this.context=null;this.nodes=[];this.active=false;this.screams={};this.ready=prepareScreamSamples().then(data=>{this.screamSamples=data;this.installScreams();});}
  init(){if(!this.context){try{this.context=new(window.AudioContext||window.webkitAudioContext)();this.master=this.context.createGain();this.master.gain.value=this.volume*.3;this.master.connect(this.context.destination);const buffer=this.context.createBuffer(1,this.context.sampleRate*2,this.context.sampleRate),d=buffer.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;this.noise=buffer;this.installScreams();

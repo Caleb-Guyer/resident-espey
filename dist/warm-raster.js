@@ -1,4 +1,4 @@
-import * as T from './vendor/three.module.js?v=5.5.0';
+import * as T from './vendor/three.module.js?v=5.5.1';
 // Compile the real output shader with a tiny viewport. Reuse the shadow pass
 // already rendered for the same stationary scene; restore all caller state.
 export function warmRaster(renderer){
