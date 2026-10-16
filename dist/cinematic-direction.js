@@ -12,3 +12,15 @@ export function speechMotion(line,time){
  const elapsed=time-line.at,envelope=Math.min(1,elapsed/.12,(line.to-time)/.16);
  return Math.max(0,envelope)*(.18+Math.abs(Math.sin(elapsed*15.1)*Math.sin(elapsed*7.3))*.82);
 }
+
+// Authored edits remain cuts. Automatic dialogue coverage eases between faces
+// within a shot, including the quiet gaps between lines.
+export class DialogueCamera{
+ constructor(){this.position=[0,0,0];this.look=[0,0,0];this.reset();}
+ reset(){this.time=null;this.shot=null;}
+ resolve(frame,shot,time){
+  const cut=this.time===null||shot!==this.shot||time<this.time,dt=cut?0:time-this.time,k=cut?1:1-Math.exp(-dt*11);
+  for(let i=0;i<3;i++){this.position[i]+=(frame.position[i]-this.position[i])*k;this.look[i]+=(frame.look[i]-this.look[i])*k;}
+  this.fov=cut?frame.fov:this.fov+(frame.fov-this.fov)*k;this.subject=frame.subject;this.shot=shot;this.time=time;return this;
+ }
+}

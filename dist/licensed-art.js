@@ -1,7 +1,7 @@
-import * as T from './vendor/three.module.js?v=5.1.3';
-import {GLTFLoader} from './vendor/GLTFLoader.js?v=5.1.3';
-import {clone} from './vendor/SkeletonUtils.js?v=5.1.3';
-import {prepareZombieGeometry,createZombieAnatomy,poseZombieInjuries} from './zombie-art.js?v=5.1.3';
+import * as T from './vendor/three.module.js?v=5.2.0';
+import {GLTFLoader} from './vendor/GLTFLoader.js?v=5.2.0';
+import {clone} from './vendor/SkeletonUtils.js?v=5.2.0';
+import {prepareZombieGeometry,createZombieAnatomy,poseZombieInjuries} from './zombie-art.js?v=5.2.0';
 
 export const LICENSED_MATERIALS=['beige_wall_001','damaged_plaster','floor_tiles_06','old_linoleum_flooring_01','painted_plaster_wall'];
 export const LICENSED_PROPS=['utility_box_01','metal_office_desk','fire_alarm','security_camera_01'];
@@ -58,11 +58,11 @@ export function createLicensedEnemy(library,kind='walker',color){
 
 export function animateLicensedEnemy(root,t,moving,mood={}){
  const d=root.userData.licensedActor,dt=d.time===null?0:Math.max(0,Math.min(.1,t-d.time));d.time=t;
- const attack=!!(mood.windup>0||mood.strike>0),injured=!!(mood.zombie?.severed?.[4]||mood.zombie?.severed?.[5]),fast=['runner','feral','stalker'].includes(root.userData.kind),state=mood.dead?'death':mood.stagger>0?'hit':attack?(mood.attack==='alarm'?'scream':'attack'+(['','2','3'][(mood.attackCount||0)%3])):moving?(fast&&!injured?'run':root.userData.kind==='zsiga'?'walk2':'walk'):(root.userData.kind==='screamer'?'idle2':'idle');
+ const heldStride=mood.stagger>0&&mood.stagger<=.22&&['walk','walk2','run'].includes(d.state),attack=!!(mood.windup>0||mood.strike>0),injured=!!(mood.zombie?.severed?.[4]||mood.zombie?.severed?.[5]),fast=['runner','feral','stalker'].includes(root.userData.kind),state=mood.dead?'death':mood.stagger>.22?'hit':attack?(mood.attack==='alarm'?'scream':'attack'+(['','2','3'][(mood.attackCount||0)%3])):heldStride?d.state:moving?(fast&&!injured?'run':root.userData.kind==='zsiga'?'walk2':'walk'):(root.userData.kind==='screamer'?'idle2':'idle');
  const next=d.actions[state]||d.actions.idle;if(state!==d.state){const previous=d.current;next.reset().setEffectiveWeight(1).play();next.enabled=true;next.clampWhenFinished=['death','hit'].includes(state);next.setLoop(next.clampWhenFinished?T.LoopOnce:T.LoopRepeat,Infinity);if(previous&&previous!==next){previous.fadeOut(.16);next.fadeIn(.16);}d.current=next;d.state=state;}
  if(state==='death'){next.setEffectiveTimeScale(0);next.time=Math.min(next.getClip().duration-.001,(mood.deathTime||0)/2.8*next.getClip().duration);d.mixer.update(dt);}
  else if(attack&&state.startsWith('attack')){next.setEffectiveTimeScale(0);const duration=next.getClip().duration,progress=mood.windup>0?.12+.40*(1-(mood.windup/(mood.tellDuration||.65))):.52+.32*(1-Math.min(1,(mood.strike||0)/.4));next.time=duration*progress;d.mixer.update(dt);}
- else{next.setEffectiveTimeScale(state==='run'?1.2:state==='walk'?.95:1);d.mixer.update(dt);}
+ else{next.setEffectiveTimeScale((state==='run'?1.2:state==='walk'?.95:1)*(heldStride?.35:1));d.mixer.update(dt);}
  poseZombieInjuries(root,t,moving,mood);return root;
 }
 

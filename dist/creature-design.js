@@ -1,4 +1,4 @@
-import * as T from './vendor/three.module.js?v=5.1.3';
+import * as T from './vendor/three.module.js?v=5.2.0';
 export const CHARACTER_DESIGNS=Object.freeze({
  ethan:{skin:0xc2a68c,hair:0x9b7943,style:'curly',eyes:'blue'},
  earl:{skin:0x76533d,face:0x91745b,hair:0x211c19,style:'close',ethnicity:'Black'},
@@ -83,7 +83,7 @@ export function dressArchetype(g,kind,skin,raw){
 export function cloneCharacter(source){
  const nodes=new Map(),mats=new Map();
  source.traverse(node=>{const data=node.userData;node.userData={};let copy;try{copy=node.clone(false);}finally{node.userData=data;}nodes.set(node,copy);
-  if(node.material){const clone=m=>{if(!mats.has(m)){const mat=m.clone();mat.onBeforeCompile=m.onBeforeCompile;mat.customProgramCacheKey=m.customProgramCacheKey;mats.set(m,mat);}return mats.get(m);};copy.material=Array.isArray(node.material)?node.material.map(clone):clone(node.material);}
+  if(node.material){const clone=m=>{if(!mats.has(m)){const mat=m.clone();mat.onBeforeCompile=m.onBeforeCompile;mat.customProgramCacheKey=m.customProgramCacheKey;mats.set(m,mat);}return mats.get(m);};copy.material=Array.isArray(node.material)?node.material.map(clone):clone(node.material);for(const key of ['customDepthMaterial','customDistanceMaterial'])if(node[key])copy[key]=clone(node[key]);}
  });
  const remap=value=>{if(value?.isObject3D)return nodes.get(value)||value;if(Array.isArray(value))return value.map(remap);if(value&&Object.getPrototypeOf(value)===Object.prototype)return Object.fromEntries(Object.entries(value).map(([k,v])=>[k,remap(v)]));return value;};
  for(const [node,copy]of nodes){copy.userData=remap(node.userData);for(const c of node.children)copy.add(nodes.get(c));

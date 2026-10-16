@@ -1,14 +1,14 @@
+import {prepareScreamSamples} from './audio-preparation.js?v=5.2.0';
 export class Sound{
- constructor(){this.volume=.6;this.context=null;this.nodes=[];this.active=false;}
- init(){if(!this.context){try{this.context=new(window.AudioContext||window.webkitAudioContext)();this.master=this.context.createGain();this.master.gain.value=this.volume*.3;this.master.connect(this.context.destination);const buffer=this.context.createBuffer(1,this.context.sampleRate*2,this.context.sampleRate),d=buffer.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;this.noise=buffer;this.prepareScreams();
+ constructor(){this.volume=.6;this.context=null;this.nodes=[];this.active=false;this.screams={};this.ready=prepareScreamSamples().then(data=>{this.screamSamples=data;this.installScreams();});}
+ init(){if(!this.context){try{this.context=new(window.AudioContext||window.webkitAudioContext)();this.master=this.context.createGain();this.master.gain.value=this.volume*.3;this.master.connect(this.context.destination);const buffer=this.context.createBuffer(1,this.context.sampleRate*2,this.context.sampleRate),d=buffer.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;this.noise=buffer;this.installScreams();
  const hum=this.context.createOscillator(),gain=this.context.createGain(),low=this.context.createBiquadFilter();hum.type='sawtooth';hum.frequency.value=54;low.type='lowpass';low.frequency.value=110;gain.gain.value=.13;hum.connect(low);low.connect(gain);gain.connect(this.master);hum.start();this.nodes.push(hum);this.ambient=gain;
  }catch{this.context=null;}}this.context?.resume().catch(()=>{});this.active=true;}
- prepareScreams(){
-  this.screams={};const sr=this.context.sampleRate,noise=this.noise.getChannelData(0);
-  for(const [kind,pitch]of [['birdy',340],['jakob',170],['zeb',85]]){const b=this.context.createBuffer(1,Math.ceil(sr*1.35),sr),data=b.getChannelData(0);let phase=0;
-   for(let i=0;i<data.length;i++){const t=i/sr,u=t/1.35,frequency=pitch*(1+.3*Math.sin(u*Math.PI))*(1+.024*Math.sin(t*67));phase+=frequency/sr;const breath=(noise[i%noise.length]||0)*.13,voice=Math.sin(phase*Math.PI*2)+.38*Math.sin(phase*Math.PI*6)+.16*Math.sin(phase*Math.PI*14),env=Math.min(1,t/.09)*Math.min(1,(1.35-t)/.4);data[i]=Math.tanh(voice*.9+breath)*env*.55;}this.screams[kind]=b;
-  }
+ installScreams(){
+  if(!this.context?.createBuffer||!this.screamSamples)return;
+  const {samples,sampleRate}=this.screamSamples;for(const [kind,data]of Object.entries(samples))if(!this.screams[kind]){const buffer=this.context.createBuffer(1,data.length,sampleRate);buffer.getChannelData(0).set(data);this.screams[kind]=buffer;}
  }
+ impact(head=false){this.burst(head?.09:.075,head?.32:.22,head?1200:650);this.tone(head?95:72,.09,'triangle',.12,38);}
  scream(kind='birdy'){if(!this.context||!this.active||!this.screams?.[kind])return;const source=this.context.createBufferSource(),gain=this.context.createGain();source.buffer=this.screams[kind];gain.gain.value=.8;source.connect(gain);gain.connect(this.master);source.start();source.onended=()=>{source.disconnect();gain.disconnect();};}
  setVolume(v){this.volume=v;if(this.master)this.master.gain.setTargetAtTime(v*.3*(this.ducked?.42:1),this.context.currentTime,.08);}
  duck(speaking){if(this.ducked===speaking)return;this.ducked=speaking;this.setVolume(this.volume);}

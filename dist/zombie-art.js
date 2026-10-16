@@ -1,5 +1,5 @@
-import * as T from './vendor/three.module.js?v=5.1.3';
-import {REGIONS} from './zombie-damage.js?v=5.1.3';
+import * as T from './vendor/three.module.js?v=5.2.0';
+import {REGIONS} from './zombie-damage.js?v=5.2.0';
 const V=new T.Vector3(),M=new T.Matrix4(),Q=new T.Quaternion();
 const ik={hip:new T.Vector3(),knee:new T.Vector3(),end:new T.Vector3(),target:new T.Vector3(),dir:new T.Vector3(),bend:new T.Vector3(),from:new T.Vector3(),to:new T.Vector3(),q:new T.Quaternion(),parent:new T.Quaternion(),world:new T.Quaternion()};
 function aimBone(joint,child,target){
@@ -114,6 +114,7 @@ export function poseZombieInjuries(root,t,moving,enemy){
  const d=root.userData.licensedActor,a=d.anatomy,b=a.bones,s=enemy.zombie?.severed||[],kind=root.userData.kind,crawling=kind==='crawler'||s[4]&&s[5];
  // Apply injury offsets after evaluating the artist-authored motion clip.
  if(!enemy.dead){
+  const hit=enemy.impact;if(hit){b.Spine.rotation.x+=hit[0];b.Spine.rotation.z+=hit[1];if(!s[1])b.Head.rotation.x+=hit[2];if(!s[2]){b.LeftArm.rotation.x-=hit[3];b.LeftForeArm.rotation.x-=hit[3]*.6;}if(!s[3]){b.RightArm.rotation.x-=hit[4];b.RightForeArm.rotation.x-=hit[4]*.6;}if(!crawling){const side=enemy.impactLeg?'Right':'Left';b[side+'UpLeg'].rotation.x+=hit[5];b[side+'Leg'].rotation.x+=hit[5]*1.3;}}
   if(crawling){b.Hips.position.y-=.62;b.Spine.quaternion.multiply(Q.setFromAxisAngle(V.set(1,0,0),1.12));for(const side of ['Left','Right']){b[side+'Arm'].rotation.z+=(side==='Left'?-1:1)*.8;b[side+'ForeArm'].rotation.x-=.7;}}
   else if(s[4]||s[5]){b.Hips.position.y-=.13;b.Hips.rotation.z+=Math.sin(t*3)*.085;b.Spine.rotation.z+=(s[4]?1:-1)*.1;}
   else if(['spitter','stalker','feral','zsiga'].includes(kind))b.Spine.rotation.x+=kind==='spitter'?.32:.18;

@@ -52,13 +52,13 @@ test('Weapon and effect warmup restores render targets and visibility even if re
   const w=weaponWorld();w.combatEffects=new CombatEffects(w.scene);const target={original:true};let selected=target,renders=0;
   const magazine=new T.Group(),hand=new T.Mesh(new T.SphereGeometry(.1),new T.MeshStandardMaterial());magazine.visible=false;magazine.add(hand);w.view.add(magazine);
   w.root=new T.Group();w.scene.add(w.root);const farRoom=new T.Mesh(new T.BoxGeometry(),new T.MeshStandardMaterial());farRoom.position.set(60,0,50);w.root.add(farRoom);
-  w.renderer={autoClear:false,getRenderTarget:()=>selected,setRenderTarget:t=>selected=t,render(){renders++;assert.notEqual(selected,target);assert.equal(w.combatEffects.particles.count,1);assert.equal(farRoom.frustumCulled,false);if(renders===2){assert.ok(w.view.visible&&w.knife.visible&&w.muzzle.visible);assert.equal(magazine.visible,true);assert.equal(hand.frustumCulled,false);if(fail)throw Error('GPU test failure');}}};
+  w.renderer={autoClear:false,getRenderTarget:()=>selected,setRenderTarget:t=>selected=t,render(){renders++;assert.notEqual(selected,target);assert.equal(w.combatEffects.particles.count,1);assert.equal(farRoom.frustumCulled,false);if(renders===3){assert.ok(w.view.visible&&w.knife.visible&&w.muzzle.visible);assert.equal(magazine.visible,true);assert.equal(hand.frustumCulled,false);if(fail)throw Error('GPU test failure');}}};
   if(fail)assert.throws(()=>w.prepareCombat(),/GPU test failure/);else w.prepareCombat();
-  assert.equal(renders,2);assert.equal(selected,target);assert.equal(w.renderer.autoClear,false);assert.equal(w.view.visible,true);assert.equal(w.knife.visible,false);assert.equal(w.muzzle.visible,false);assert.equal(magazine.visible,false);assert.equal(hand.frustumCulled,true);assert.equal(farRoom.frustumCulled,true);assert.equal(w.combatEffects.particles.count,0);assert.equal(w.combatEffects.tracers.geometry.drawRange.count,0);w.combatEffects.dispose();
+  assert.equal(renders,3);assert.equal(selected,target);assert.equal(w.renderer.autoClear,false);assert.equal(w.view.visible,true);assert.equal(w.knife.visible,false);assert.equal(w.muzzle.visible,false);assert.equal(magazine.visible,false);assert.equal(hand.frustumCulled,true);assert.equal(farRoom.frustumCulled,true);assert.equal(w.combatEffects.particles.count,0);assert.equal(w.combatEffects.tracers.geometry.drawRange.count,0);w.combatEffects.dispose();
  }
 });
 test('Chapter warmup compiles output and tone-mapping shaders on the actual framebuffer',()=>{
  const w=weaponWorld();w.combatEffects=new CombatEffects(w.scene);let target=null;const calls=[];
  w.renderer={autoClear:true,getRenderTarget:()=>target,setRenderTarget:t=>target=t,render(scene){calls.push({scene,target});}};
- w.prepareCombat();assert.equal(calls.length,2);assert.equal(calls[0].target,null);assert.equal(calls[1].target,null);assert.equal(calls[0].scene,w.scene);assert.equal(calls[1].scene,w.viewScene);assert.equal(target,null);w.combatEffects.dispose();
+ w.prepareCombat();assert.equal(calls.length,3);assert.equal(calls[0].target,null);assert.equal(calls[1].target,null);assert.equal(calls[0].scene,w.scene);assert.equal(calls[1].scene,w.scene);assert.equal(calls[2].target,null);assert.equal(calls[2].scene,w.viewScene);assert.equal(target,null);w.combatEffects.dispose();
 });

@@ -1,4 +1,5 @@
-import * as T from './vendor/three.module.js?v=5.1.3';
+import * as T from './vendor/three.module.js?v=5.2.0';
+import {preparedGeometry} from './prepared-geometry.js?v=5.2.0';
 
 // A continuous isosurface replaces the visible ball/cylinder joints. Generate
 // each archetype once at loading time; instances own their disposable geometry.
@@ -13,6 +14,7 @@ function profile(kind){
 }
 function geometryFor(kind){
  const p=profile(kind),key=JSON.stringify(p);if(cache.has(key))return cache.get(key).clone();
+ const prepared=p.human&&preparedGeometry('human');if(prepared)return prepared.clone();
  const shapes=[],ell=(x,y,z,rx,ry,rz)=>shapes.push([x,y,z,rx,ry,rz]);
  const f=p.torso;
  ell(0,1.22,0,.235*f,.22,.143*f);ell(0,1.04,0,.172*f,.24,.13*f);ell(0,.79,0,.183*f,.135,.145*f);ell(0,1.48,.018,.065,.115,.061);

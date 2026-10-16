@@ -4,6 +4,8 @@
 
 Some places remember you. Some refuse to let you go.
 
+Version **5.2.0** improves boss anticipation, attack follow-through, grounded movement, wing motion, introductions and distinct collapses. Shots produce directional torso, head and limb reactions layered over the existing animation; ordinary body hits keep locomotion clips running. Flesh impacts, melee confirmation and mixed-pellet headshot feedback are clearer. Dialogue coverage eases between speakers while preserving authored camera cuts. Prepared creature buffers and paced audio synthesis reduce cold-start CPU work, and a second small warm draw prepares final shadow variants before play. [Combat polish and performance verification](PLAYTEST_5.2.md).
+
 Version **5.1.3** reduces excessive first-person mesh detail, preserves indexed vertices when batching rigid parts, and constructs weapons in loading stages. Matching zombie skin sections share one live skeleton, with independent snapshots for detached regions. Texture uploads yield in bounded batches, and warmup prepares the real game output once in a small viewport. [Startup and combat verification](PLAYTEST_5.1.3.md).
 
 Version **5.1.2** fixes retained GPU instance buffers on retries, removes first-draw skeletal bounds scans, culls off-screen infected and detached parts, and caches procedural texture sources. Rendering uses a nonblocking queue limit to avoid submitting unbounded work when the GPU falls behind. Loading waits for warm uploads, and graphics interruptions preserve progress, prepare restored scenes and return control while paused. [Performance verification](PLAYTEST_5.1.2.md).

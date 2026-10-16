@@ -1,8 +1,8 @@
-import * as T from './vendor/three.module.js?v=5.1.3';
-import {StoryClock} from './story.js?v=5.1.3';
-import {voicedScene} from './voice-timeline.js?v=5.1.3';
-import {fitEncounterCamera} from './combat-space.js?v=5.1.3';
-import {speechMotion} from './cinematic-direction.js?v=5.1.3';
+import * as T from './vendor/three.module.js?v=5.2.0';
+import {StoryClock} from './story.js?v=5.2.0';
+import {voicedScene} from './voice-timeline.js?v=5.2.0';
+import {fitEncounterCamera} from './combat-space.js?v=5.2.0';
+import {speechMotion} from './cinematic-direction.js?v=5.2.0';
 export const BOSS_NAMES=Object.freeze({chris:'Chris',jakob:'Jakob & Bobby',zeb:'Zeb',birdy:'Lil Birdy'});
 export function displayName(name){return ({'Coach Hall':'Hall','Joel Honeycutt':'Joel','Landon Chapa':'Landon','Earl Britt':'Earl','Nathan Nunley':'Nathan','Zebene Martine':'Zeb'})[name]||name;}
 const shot=(at,from,to,look,fov=54)=>({at,from,to,look,end:look,fov});
@@ -45,7 +45,7 @@ export class BossIntroduction{
   const local=sample.position,desired=(this.desiredCamera||=new T.Vector3()).set(this.origin.x+local[0],local[1],this.origin.z+local[2]),pos=fitEncounterCamera(game.grid,world.obstacles||[],desired,game.player,this.fittedCamera||=new T.Vector3());
   // Refit obstructed shots toward the entry side while retaining their height.
   this.updateTearHands(t);world.camera.position.copy(pos);world.camera.lookAt(this.origin.x+sample.look[0],sample.look[1],this.origin.z+sample.look[2]);world.camera.fov=sample.fov;world.camera.updateProjectionMatrix();
-  world.flashlight.position.copy(pos).add(new T.Vector3(-.9,.55,0));world.flashlight.target.position.set(this.origin.x,1.8,this.origin.z);world.flashlight.intensity=enemy.kind==='birdy'?33:38;
+  world.flashlight.position.set(pos.x-.9,pos.y+.55,pos.z);world.flashlight.target.position.set(this.origin.x,1.8,this.origin.z);world.flashlight.intensity=enemy.kind==='birdy'?33:38;
   const line=sample.line;if(line&&(enemy.kind==='birdy'||enemy.kind==='jakob')){const mouth=speechMotion(line,this.clock.time),d=enemy.model.userData,artist=!!d.faces[0].userData.artist;d.jaws[0].rotation.x=.045+mouth*.25;d.faces[0].morphTargetInfluences[0]=mouth*.7;if(d.faces[0].userData.artistDetail)d.faces[0].userData.artistDetail.morphTargetInfluences[0]=mouth*.7;d.mouthCovers[0].visible=!artist&&mouth<.34;d.jaws[0].visible=!artist&&mouth>=.34;d.oralParts?.[0]?.forEach(o=>o.visible=!artist&&mouth>=.34);}
   $('#scene-speaker').textContent=line?displayName(line.speaker):'';$('#scene-subtitle').textContent=line?.text||'';$('#scene-captions').hidden=(!cinema.captionFallback&&game.settings.subtitles===false)||!line;
   $('#scene-loading').hidden=!state||state.ready||cinema.captionFallback;$('#scene-loading-message').textContent=state?.error?'Dialogue could not load.':'Preparing audio…';$('#scene-audio-actions').hidden=!state?.error;
@@ -58,7 +58,7 @@ export class BossIntroduction{
   const {world,enemy}=this,hands=world.finisherHands;if(!hands)return;
   const tearing=this.beat==='birdy-left'||this.beat==='birdy-break',side=this.beat==='birdy-left'?0:1,sign=side?1:-1,reach=Math.max(0,Math.min(1,(t-.4)/1.15)),pull=Math.max(0,Math.min(1,(t-2.65)/.65)),release=Math.max(0,Math.min(1,(t-3.4)/.55));
   if(!tearing){hands.forEach(h=>h.visible=false);return;}
-  enemy.model.updateMatrixWorld(true);const joint=new T.Vector3(sign*.48,.14,.025).applyMatrix4(enemy.model.userData.wings[side].matrixWorld);
+  enemy.model.updateMatrixWorld(true);const joint=(this.tearJoint||=new T.Vector3()).set(sign*.48,.14,.025).applyMatrix4(enemy.model.userData.wings[side].matrixWorld);
   hands.forEach((h,i)=>{h.visible=t>.4&&t<4;h.position.set(joint.x+sign*(i*.09+.015+pull*.18),joint.y-.32*(1-reach)-i*.12-release*.32,joint.z+.18+pull*.14);h.rotation.set(-.22,sign*.60,(i?-.38:.38)*sign);if(h.userData.skin)h.userData.skin.morphTargetInfluences[0]=reach*(1-release);});
  }
  release(){

@@ -1,24 +1,25 @@
-import {crowdSteering,segmentDistanceSq,damageDirection} from './combat-space.js?v=5.1.3';
-import {RenderBudget} from './render-budget.js?v=5.1.3';
-import {GraphicsRecovery} from './graphics-recovery.js?v=5.1.3';
-import {REGIONS,isZombie,initializeZombie,damageZombie,saveZombie,restoreZombie} from './zombie-damage.js?v=5.1.3';
-import {syncZombieInjuries,detachZombieRegion,zombieHitParts,configureZombieLook} from './zombie-art.js?v=5.1.3';
-import {WEAPONS,WEAPON_ORDER,weaponFor,ensureInventory,restoreInventory,inventorySave,switchWeapon,giveWeapon,giveAmmo,pelletDirection,bulletDamage} from './weapons.js?v=5.1.3';
-import {BOSS_FIGHTS,isBoss,encounterDamage,saveBossProgress,restoreBossProgress,phaseRule} from './boss-fights.js?v=5.1.3';
-import {BOSS_NAMES,BOSS_INTROS,displayName} from './boss-introductions.js?v=5.1.3';
-import {prepareTasks,painted} from './loading.js?v=5.1.3';
-import {ATTACKS,stepEnemy,damageScale,interruptAttack,enemyRadius,navigationGoal} from './enemy-director.js?v=5.1.3';
-import {settleWeapon,shotDirection,applyRecoil} from './gunplay.js?v=5.1.3';
-import {CAMPAIGN_REVISION,roomAt,stageFor} from './levels.js?v=5.1.3';
-import {beginReload,advanceReload,cancelReload,reloadProgress} from './reload.js?v=5.1.3';
-import {World} from './world.js?v=5.1.3';
-import {EYE_HEIGHT,viewDirection,relativeMove,traceShot} from './fps.js?v=5.1.3';
-import {Sound} from './audio.js?v=5.1.3';
-import {CHAPTERS,ENEMY_STATS,TILE,SAVE_KEY,DIFFICULTIES,makeGrid,solid,sight,findPath,distance,validSave,normalizeSave,endingFor} from './data.js?v=5.1.3';
-import {Cinematics} from './cinematics.js?v=5.1.3';
-import {MEMORY_LABELS,SCENES} from './story.js?v=5.1.3';
-import {Voice} from './voice.js?v=5.1.3';
-import {RADIO,characterId,voiceKey} from './dialogue.js?v=5.1.3';
+import {crowdSteering,segmentDistanceSq,damageDirection} from './combat-space.js?v=5.2.0';
+import {RenderBudget} from './render-budget.js?v=5.2.0';
+import {GraphicsRecovery} from './graphics-recovery.js?v=5.2.0';
+import {REGIONS,isZombie,initializeZombie,damageZombie,saveZombie,restoreZombie} from './zombie-damage.js?v=5.2.0';
+import {syncZombieInjuries,detachZombieRegion,zombieHitParts,configureZombieLook} from './zombie-art.js?v=5.2.0';
+import {WEAPONS,WEAPON_ORDER,weaponFor,ensureInventory,restoreInventory,inventorySave,switchWeapon,giveWeapon,giveAmmo,pelletDirection,bulletDamage} from './weapons.js?v=5.2.0';
+import {BOSS_FIGHTS,isBoss,encounterDamage,saveBossProgress,restoreBossProgress,phaseRule} from './boss-fights.js?v=5.2.0';
+import {BOSS_NAMES,BOSS_INTROS,displayName} from './boss-introductions.js?v=5.2.0';
+import {prepareTasks,painted} from './loading.js?v=5.2.0';
+import {ATTACKS,stepEnemy,damageScale,interruptAttack,enemyRadius,navigationGoal} from './enemy-director.js?v=5.2.0';
+import {settleWeapon,shotDirection,applyRecoil} from './gunplay.js?v=5.2.0';
+import {recordImpact,settleImpact} from './combat-motion.js?v=5.2.0';
+import {CAMPAIGN_REVISION,roomAt,stageFor} from './levels.js?v=5.2.0';
+import {beginReload,advanceReload,cancelReload,reloadProgress} from './reload.js?v=5.2.0';
+import {World} from './world.js?v=5.2.0';
+import {EYE_HEIGHT,viewDirection,relativeMove,traceShot} from './fps.js?v=5.2.0';
+import {Sound} from './audio.js?v=5.2.0';
+import {CHAPTERS,ENEMY_STATS,TILE,SAVE_KEY,DIFFICULTIES,makeGrid,solid,sight,findPath,distance,validSave,normalizeSave,endingFor} from './data.js?v=5.2.0';
+import {Cinematics} from './cinematics.js?v=5.2.0';
+import {MEMORY_LABELS,SCENES} from './story.js?v=5.2.0';
+import {Voice} from './voice.js?v=5.2.0';
+import {RADIO,characterId,voiceKey} from './dialogue.js?v=5.2.0';
 const $=s=>document.querySelector(s);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export class Game{
@@ -110,7 +111,7 @@ export class Game{
  async prepareRun(n,run,progress=()=>{}){
   if(this.loading)return false;this.loading=true;this.preparing=true;this.renderBudget?.clear();this.setPaused(true);const started=performance.now();
   try{
-   await this.world.ready;this.cinema.cancel();this.cinema.clearPrepared?.();progress(.1);const c=CHAPTERS[n],recipes=[...new Map([...c.enemies.map(([kind])=>[kind,ENEMY_STATS[kind].color,kind]),[c.boss.kind,ENEMY_STATS[c.boss.kind].color,c.boss.kind],['npc',n===0?0x6c644c:n===1?0x6b7971:0x3e6554,['joel','landon','hall'][n]],...(['opening','closet','serum','descent','road','seal','return','sacrifice','promise','home','echoes','alone'].filter(id=>({opening:0,closet:0,serum:0,descent:1,road:1,seal:1,return:2,sacrifice:2,promise:2,home:2,echoes:2,alone:2})[id]===n).flatMap(id=>SCENES[id].actors.map(a=>[a.kind,a.color,a.id])))].map(a=>[a.join('/'),a])).values()];
+   await Promise.all([this.world.ready,this.sound?.ready]);this.cinema.cancel();this.cinema.clearPrepared?.();progress(.1);const c=CHAPTERS[n],recipes=[...new Map([...c.enemies.map(([kind])=>[kind,ENEMY_STATS[kind].color,kind]),[c.boss.kind,ENEMY_STATS[c.boss.kind].color,c.boss.kind],['npc',n===0?0x6c644c:n===1?0x6b7971:0x3e6554,['joel','landon','hall'][n]],...(['opening','closet','serum','descent','road','seal','return','sacrifice','promise','home','echoes','alone'].filter(id=>({opening:0,closet:0,serum:0,descent:1,road:1,seal:1,return:2,sacrifice:2,promise:2,home:2,echoes:2,alone:2})[id]===n).flatMap(id=>SCENES[id].actors.map(a=>[a.kind,a.color,a.id])))].map(a=>[a.join('/'),a])).values()];
    await prepareTasks(recipes.map(a=>()=>{const g=this.world.character(...a);this.world.disposeObject(g);}),p=>progress(.1+p*.45));
    this.audioPreparationFailed=false;if(this.voice)try{this.voice.init();await Promise.allSettled([c.boss.kind,...(n===1?['birdy']:[])].flatMap(kind=>BOSS_INTROS[kind].lines.map(l=>this.voice.load(voiceKey(l.speaker,l.text)))));}catch{this.audioPreparationFailed=true;}
    await this.cinema.prewarm?.((['opening','closet','serum','descent','road','seal','return','sacrifice','promise','choice','home','echoes','alone']).filter(id=>({opening:0,closet:0,serum:0,descent:1,road:1,seal:1,return:2,sacrifice:2,promise:2,choice:2,home:2,echoes:2,alone:2})[id]===n));await painted();run();progress(.7);this.world.setView(this.player,this.player.yaw,this.player.pitch,this.time);await this.world.prepareCombatAsync();this.world.update(0,this.time,this.player,this.aim,0);
@@ -157,14 +158,14 @@ export class Game{
   if(p.ammo<=0){p.cooldown=.3;this.sound.play('empty');if(p.reserve)this.reload();else this.toast('No rounds. Use the knife, then dodge.');return;}
   p.ammo--;p.cooldown=w.interval;this.stats.shots++;this.sound.fire?.(w.id);this.shake=.025*w.recoil;this.world.fireWeapon?.(p.aiming,w.id);
   const yaw=Number.isFinite(p.yaw)?p.yaw:Math.atan2(p.x-this.aim.x,p.z-this.aim.z),center=shotDirection(p,yaw,p.pitch||0),origin={x:p.x,y:Number.isFinite(p.eyeHeight)?p.eyeHeight:p.crouching?1.14:EYE_HEIGHT,z:p.z};this.prepareEnemyHits();
-  const tracerStart=this.world.muzzleOrigin?.(p)||origin;let anyHit=false;const impacts=this.shotImpacts||=([]),pool=this.shotImpactPool||=Array.from({length:8},()=>({}));impacts.length=0;
+  const tracerStart=this.world.muzzleOrigin?.(p)||origin;let anyHit=false;this.headshot=false;const impacts=this.shotImpacts||=([]),pool=this.shotImpactPool||=Array.from({length:8},()=>({}));impacts.length=0;
   for(let i=0;i<w.pellets;i++){
    const direction=pelletDirection(center,i,w.pellets,w.spread*(p.aiming?.72:1),this.stats.shots*.41),hit=traceShot(this.grid,origin,this.enemies,direction,this.world.obstacles||[],w.range);
    this.world.tracer(tracerStart,hit.end);
-   if(hit.enemy){let impact=impacts.find(v=>v.enemy===hit.enemy);if(!impact){impact=pool[impacts.length];impact.regions??=new Float32Array(6);impact.regions.fill(0);Object.assign(impact,{enemy:hit.enemy,damage:0,bodyDamage:0,headshot:false,headIndex:null});impacts.push(impact);}const damage=bulletDamage(w,hit)*this.diff.power;impact.regions[Math.max(0,REGIONS.indexOf(hit.hitPart))]+=damage;if(hit.headshot)impact.damage+=damage;else impact.bodyDamage+=damage;impact.headshot||=hit.headshot;if(hit.headshot)impact.headIndex=hit.headIndex;anyHit=true;if(hit.enemy.zombie)this.world.zombieGore?.burst(hit.end,direction);else this.world.effect(hit.end.x,hit.end.z,0x81392b,w.pellets>1?3:8,hit.end.y);this.hitUntil=this.time+.18;this.headshot=hit.headshot;}
+   if(hit.enemy){let impact=impacts.find(v=>v.enemy===hit.enemy);if(!impact){impact=pool[impacts.length];impact.regions??=new Float32Array(6);impact.regions.fill(0);Object.assign(impact,{enemy:hit.enemy,damage:0,bodyDamage:0,headshot:false,headIndex:null});impacts.push(impact);}const damage=bulletDamage(w,hit)*this.diff.power;impact.regions[Math.max(0,REGIONS.indexOf(hit.hitPart))]+=damage;if(hit.headshot)impact.damage+=damage;else impact.bodyDamage+=damage;impact.headshot||=hit.headshot;if(hit.headshot)impact.headIndex=hit.headIndex;anyHit=true;if(this.world.zombieGore)this.world.zombieGore.burst(hit.end,direction);else this.world.effect(hit.end.x,hit.end.z,0x81392b,w.pellets>1?3:8,hit.end.y);this.hitUntil=this.time+.18;this.headshot||=hit.headshot;}
    else this.world.effect(hit.end.x,hit.end.z,0xc2b59c,w.pellets>1?2:4,hit.end.y);
   }
-  for(const hit of impacts)this.hurtEnemy(hit.enemy,hit.damage,center.x,center.z,hit.headshot,hit.headIndex,hit.bodyDamage,hit.regions);if(anyHit)this.stats.hits++;if(w.id!=='shotgun')this.world.ejectCasing?.(origin,yaw,p);applyRecoil(p);
+  for(const hit of impacts)this.hurtEnemy(hit.enemy,hit.damage,center.x,center.z,hit.headshot,hit.headIndex,hit.bodyDamage,hit.regions);if(anyHit){this.stats.hits++;this.sound.impact?.(this.headshot);}if(w.id!=='shotgun')this.world.ejectCasing?.(origin,yaw,p);applyRecoil(p);
   this.enemies.forEach(e=>{if(!e.dead&&!e.dormant&&distance(e,p)<(w.id==='shotgun'?24:17))e.alert=true;});
  }
  prepareEnemyHits(){for(const e of this.enemies){if(e.dead||e.dormant||!e.model||distance(e,this.player)>weaponFor(this.player).range)continue;if(e.model.userData?.bossRig||e.model.userData?.licensedActor||e.kind==='crawler'){e.hitHeads=this.world.headPositions(e.model);if(e.model.userData?.bossRig)e.hitParts=this.world.bossHitParts(e.model,false);else if(e.model.userData?.licensedActor)e.hitParts=zombieHitParts(e.model,false);}e.hitDataDirty=false;}}
@@ -175,6 +176,7 @@ export class Game{
  }
  hurtEnemy(e,damage,nx=0,nz=0,headshot=false,head=null,bodyDamage=0,regions=null){
   if(e.dead)return;damage=damage*damageScale(e,headshot)+bodyDamage*damageScale(e,false);
+  recordImpact(e,damage,nx,nz,headshot,head,regions);
   if(interruptAttack(e,headshot,head)){if(e.warning)e.warning.visible=false;this.toast(e.kind==='jakob'?'The speaking head falls silent.':'Attack interrupted.');}
   const applied=encounterDamage(e,damage);if(applied<damage&&!e.guardNotified){e.guardNotified=true;this.toast(e.kind==='jakob'&&e.phase===2?'Lure them beneath the press.':'Bait an attack.');}if(applied===0){e.alert=true;return;}damage=applied;
   const injury=damageZombie(e,regions,damage);e.hp-=damage;if(injury.fatal)e.hp=0;
@@ -182,7 +184,7 @@ export class Game{
   if(injury.severed.includes('head')){e.blindTarget={x:e.x+Math.sin(e.model.rotation.y)*5,z:e.z+Math.cos(e.model.rotation.y)*5};e.path=[];}
   if(e.zombie)syncZombieInjuries(e.model,e);
   e.alert=true;e.stagger=Math.max(e.stagger||0,isBoss(e.kind)?.1:headshot?.45:e.kind==='brute'||e.kind==='bulwark'?.08:.16);e.hitSide=nx*Math.cos(e.model.rotation.y||0)-nz*Math.sin(e.model.rotation.y||0)||1;
-  const push=isBoss(e.kind)?.12:e.kind==='brute'||e.kind==='bulwark'?.06:.18;this.move(e,nx*push,nz*push,enemyRadius(e));e.reactionMaterials??=this.world.reactionMaterials?.(e.model)||[];for(const m of e.reactionMaterials)m.emissive.setHex(0x422412);
+  const push=isBoss(e.kind)?.12:e.kind==='brute'||e.kind==='bulwark'?.06:.18;this.move(e,nx*push,nz*push,enemyRadius(e));e.reactionMaterials??=this.world.reactionMaterials?.(e.model)||[];for(const m of e.reactionMaterials)m.emissive.setHex(0x180304);
   if(e.hp<=0){e.dead=true;this.stats.kills++;e.deathTime=0;this.world.bossArena?.defeated(this,e);if(isBoss(e.kind))this.world.enemyEffects?.clearHazards();if(e.zombie)this.world.zombieGore?.stain(e.x,e.z,.85);else this.world.effect(e.x,e.z,0xb79760,10);if(e.warning)e.warning.visible=false;
    giveAmmo(this.player,'sidearm',e.boss||isBoss(e.kind)?30:4);if(isBoss(e.kind)){for(const id of ['shotgun','carbine'])if(this.player.inventory[id])giveAmmo(this.player,id,id==='shotgun'?6:18);}
    if(e.boss){this.bossDead=true;this.sound.play('bell');this.toast('The way is open. +30 rounds');this.radio(...(this.chapter===2?RADIO.remembered:RADIO.fallen),5);this.save();}else if(isBoss(e.kind)){this.sound.play('bell');this.toast('Lil Birdy is down. +30 rounds');this.save();}
@@ -190,7 +192,7 @@ export class Game{
  }
 
  reload(){if(this.player.melee>0||this.player.dash>0)return;if(beginReload(this.player))this.sound.play('reload');}
- melee(){const p=this.player;if(p.melee>0||p.dash>0)return;cancelReload(p);p.melee=.6;p.cooldown=Math.max(p.cooldown,.18);this.sound.play('knife');this.world.swingKnife?.();p.inv=Math.max(p.inv,.2);this.shake=.08;this.world.effect(p.x,p.z,0xa8c5b0,6);const dx=this.aim.x-p.x,dz=this.aim.z-p.z,len=Math.hypot(dx,dz)||1;for(const e of this.enemies){if(e.dead||e.dormant||distance(e,p)>2.35||!this.canSee(p,e))continue;const ex=e.x-p.x,ez=e.z-p.z;if((ex*dx+ez*dz)/(Math.hypot(ex,ez)*len||1)>-.2)this.hurtEnemy(e,40*this.diff.power,ex/(Math.hypot(ex,ez)||1),ez/(Math.hypot(ex,ez)||1));}}
+ melee(){const p=this.player;if(p.melee>0||p.dash>0)return;cancelReload(p);p.melee=.6;p.cooldown=Math.max(p.cooldown,.18);this.sound.play('knife');this.world.swingKnife?.();p.inv=Math.max(p.inv,.2);this.shake=.08;let hit=false;const dx=this.aim.x-p.x,dz=this.aim.z-p.z,len=Math.hypot(dx,dz)||1;for(const e of this.enemies){if(e.dead||e.dormant||distance(e,p)>2.35||!this.canSee(p,e))continue;const ex=e.x-p.x,ez=e.z-p.z;if((ex*dx+ez*dz)/(Math.hypot(ex,ez)*len||1)>-.2){const nx=ex/(Math.hypot(ex,ez)||1),nz=ez/(Math.hypot(ex,ez)||1);this.hurtEnemy(e,40*this.diff.power,nx,nz);this.world.effect(e.x,e.z,0x530c08,8,1.25);this.hitUntil=this.time+.18;this.headshot=false;hit=true;}}if(hit)this.sound.impact?.();}
  dash(){
   const p=this.player;if(p.stamina<32||p.dash>0)return;cancelReload(p);p.stamina-=32;p.dash=.24;p.inv=.32;
   const strafe=Number(this.keys.has('KeyD'))-Number(this.keys.has('KeyA'))+this.touch.x,backward=Number(this.keys.has('KeyS'))-Number(this.keys.has('KeyW'))+this.touch.z;
@@ -202,6 +204,7 @@ export class Game{
  updateEnemies(dt){
   const p=this.player;if(p.hp<=0)return;this.world.bossArena?.update(this,dt);this.world.enemyEffects?.update(dt,this);this.world.zombieGore?.update(dt,this.grid,this.world.obstacles);let pathBudget=2;
   for(const e of this.enemies){
+   settleImpact(e,dt);
    if(e.dead){if(e.model&&Number.isFinite(e.deathTime)){e.model.visible=distance(e,p)<24;if(e.deathTime<3){e.deathTime=Math.min(3,e.deathTime+dt);this.world.animateCharacter(e.model,this.time,false,e);this.world.zombieGore?.bleed?.(e.model,e,dt);}}continue;}
    if(e.dormant)continue;const dist=distance(e,p);e.model.visible=dist<30||e.boss;
    const headless=e.zombie?.severed[1],visible=dist<(headless?1.9:15)&&sight(this.grid,e,p)&&this.world.clearSight?.(e,p,e.kind==='crawler'?.6:e.kind==='zeb'||e.kind==='jakob'?2.2:1.6,p.crouching?1.14:1.64)!==false;if(dist<9&&visible)e.alert=true;
@@ -325,5 +328,5 @@ export class Game{
    if(!this.paused||this.lastPausedRender!==this.time||this.world.needsPausedRender){this.world.update(this.paused?0:dt,this.time,p,this.aim,this.settings.motion?0:this.shake);this.lastPausedRender=this.paused?this.time:null;this.world.needsPausedRender=false;}if(this.time>=(this.nextHud||0)){this.nextHud=this.time+.08;this.setHUD();}
   }if(budgeted)this.renderBudget.end();requestAnimationFrame(this.frame);
  }
- snapshot(){return{fps:Math.round(1000/(this.frameMs||16)),drawCalls:this.world?.worldCalls,perspective:'first-person',version:'5.1.3',voice:this.voice?.status,props:this.world?.obstacles?.length,pointerLocked:this.pointerLocked,running:this.running,paused:this.paused,loading:!!this.loading,preparation:this.preparation,chapter:this.chapter,player:this.player?{x:this.player.x,z:this.player.z,yaw:this.player.yaw,pitch:this.player.pitch,hp:this.player.hp,weapon:this.player.weapon,owned:Object.keys(this.player.inventory||{}),ammo:this.player.ammo,reserve:this.player.reserve,meds:this.player.meds}:null,objectives:this.objectives,pages:this.pages.size,allies:this.allies.size,scenes:[...(this.seenScenes||[])],bossDead:this.bossDead,enemies:this.enemies?.filter(e=>!e.dead&&!e.dormant).length,nearest:this.nearest?.kind||this.nearest?.name,route:this.level?.tasks?.[this.objectives],room:this.level?roomAt(this.level,this.player.x,this.player.z)?.name:null,gates:this.world?.gates?.filter(g=>g.obstacle.active).length,reloading:this.player?.reloading,beats:[...(this.beats||[])],stats:{...this.stats}};}
+ snapshot(){return{fps:Math.round(1000/(this.frameMs||16)),drawCalls:this.world?.worldCalls,perspective:'first-person',version:'5.2.0',voice:this.voice?.status,props:this.world?.obstacles?.length,pointerLocked:this.pointerLocked,running:this.running,paused:this.paused,loading:!!this.loading,preparation:this.preparation,chapter:this.chapter,player:this.player?{x:this.player.x,z:this.player.z,yaw:this.player.yaw,pitch:this.player.pitch,hp:this.player.hp,weapon:this.player.weapon,owned:Object.keys(this.player.inventory||{}),ammo:this.player.ammo,reserve:this.player.reserve,meds:this.player.meds}:null,objectives:this.objectives,pages:this.pages.size,allies:this.allies.size,scenes:[...(this.seenScenes||[])],bossDead:this.bossDead,enemies:this.enemies?.filter(e=>!e.dead&&!e.dormant).length,nearest:this.nearest?.kind||this.nearest?.name,route:this.level?.tasks?.[this.objectives],room:this.level?roomAt(this.level,this.player.x,this.player.z)?.name:null,gates:this.world?.gates?.filter(g=>g.obstacle.active).length,reloading:this.player?.reloading,beats:[...(this.beats||[])],stats:{...this.stats}};}
 }

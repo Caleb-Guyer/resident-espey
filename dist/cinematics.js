@@ -1,10 +1,10 @@
-import {painted} from './loading.js?v=5.1.3';
-import {sceneContext,MEMORY_LEAD_IN} from './scene-context.js?v=5.1.3';
-import {dialogueFrame,speakingActor,speechMotion} from './cinematic-direction.js?v=5.1.3';
-import * as T from './vendor/three.module.js?v=5.1.3';
-import {SCENES,StoryClock} from './story.js?v=5.1.3';
-import {voicedScene} from './voice-timeline.js?v=5.1.3';
-import {BossIntroduction,displayName} from './boss-introductions.js?v=5.1.3';
+import {painted} from './loading.js?v=5.2.0';
+import {sceneContext,MEMORY_LEAD_IN} from './scene-context.js?v=5.2.0';
+import {dialogueFrame,speakingActor,speechMotion,DialogueCamera} from './cinematic-direction.js?v=5.2.0';
+import * as T from './vendor/three.module.js?v=5.2.0';
+import {SCENES,StoryClock} from './story.js?v=5.2.0';
+import {voicedScene} from './voice-timeline.js?v=5.2.0';
+import {BossIntroduction,displayName} from './boss-introductions.js?v=5.2.0';
 const $=s=>document.querySelector(s);
 
 // A separate, lit stage prevents cinematic actors from touching combat or save state.
@@ -13,6 +13,7 @@ export class Cinematics{
  play(id,complete=()=>{}){
   if(this.active)this.cancel();let story=SCENES[id];if(!story){complete();return;}story=voicedScene(story);
   this.id=id;this.story=story;this.complete=complete;this.clock=new StoryClock(story);this.active=true;this.paused=false;this.finished=false;this.context=sceneContext(id);this.leadIn=this.context.kind==='present'?1.5:MEMORY_LEAD_IN;this.returnTime=null;
+  (this.cameraDirection||=new DialogueCamera()).reset();
   this.game.setPaused(true);this.game.sound.init();this.game.sound.pause(false);this.build(story.stage);this.captionFallback=false;this.game.voice?.prepareScene(story);this.game.voice?.pause(true);$('#scene-loading').hidden=!this.game.voice;
   this.savedFov=this.world.camera.fov;$('#overlay').hidden=true;$('#hud').hidden=true;$('#chapter-card').hidden=true;$('#touch-controls').hidden=true;$('#cinematic').hidden=false;
   $('#scene-location').textContent=story.label;$('#scene-time').textContent=story.when;$('#pause-scene').textContent='Pause';
@@ -137,7 +138,7 @@ export class Cinematics{
    if(a.pose==='reach'||a.pose==='brace'){d.arms.forEach((arm,i)=>{arm.rotation.x=a.pose==='brace'?-.85:i===0?-.65:-.1;if(arm.userData.forearm)arm.userData.forearm.rotation.x=a.pose==='brace'?-.6:i===0?-.7:-.15;});d.head.rotation.x=-.1;}
   }
   if(this.door&&this.doorTarget!==undefined)this.door.rotation.y+=(this.doorTarget-this.door.rotation.y)*Math.min(1,dt*7);
-  const frame=dialogueFrame(this.story,sample,t),camera=this.world.camera;camera.position.fromArray(frame.position);if(camera.aspect<1.25){const target=new T.Vector3(...frame.look);camera.position.sub(target).multiplyScalar(1.22).add(target);}camera.lookAt(...frame.look);camera.fov=Math.min(100,T.MathUtils.radToDeg(2*Math.atan(Math.tan(T.MathUtils.degToRad(frame.fov)/2)*Math.max(1,1/camera.aspect))));camera.updateProjectionMatrix();
+  const frame=(this.cameraDirection||=new DialogueCamera()).resolve(dialogueFrame(this.story,sample,t),sample.shot,t),camera=this.world.camera;camera.position.fromArray(frame.position);if(camera.aspect<1.25){const target=(this.cameraTarget||=new T.Vector3()).fromArray(frame.look);camera.position.sub(target).multiplyScalar(1.22).add(target);}camera.lookAt(...frame.look);const fov=Math.min(100,T.MathUtils.radToDeg(2*Math.atan(Math.tan(T.MathUtils.degToRad(frame.fov)/2)*Math.max(1,1/camera.aspect))));if(Math.abs(camera.fov-fov)>.0001){camera.fov=fov;camera.updateProjectionMatrix();}
   this.faceLight.position.copy(camera.position);this.faceLight.position.y+=.45;this.faceLight.target.position.fromArray(frame.look);this.faceLight.intensity=frame.subject?16:4;
   const footbeat=Math.floor(t*2.5);if(!this.paused&&footbeat!==this.footbeat&&sample.actors.some(a=>a.moving)){this.game.sound.play('step');this.footbeat=footbeat;}
   if(this.endingMic)this.endingMic.visible=originalTime<12;

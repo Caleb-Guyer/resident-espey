@@ -1,9 +1,10 @@
-import {scannedMaterial,microTexture} from './surface-materials.js?v=5.1.3';
-import {surfaceMaterial} from './material-surfaces.js?v=5.1.3';
-import {artistHead} from './licensed-art.js?v=5.1.3';
-import * as T from './vendor/three.module.js?v=5.1.3';
-import {sculptSurface,mergeRigid} from './sculpt-surface.js?v=5.1.3';
-import {CHARACTER_DESIGNS} from './creature-design.js?v=5.1.3';
+import {scannedMaterial,microTexture} from './surface-materials.js?v=5.2.0';
+import {surfaceMaterial} from './material-surfaces.js?v=5.2.0';
+import {artistHead} from './licensed-art.js?v=5.2.0';
+import * as T from './vendor/three.module.js?v=5.2.0';
+import {sculptSurface,mergeRigid} from './sculpt-surface.js?v=5.2.0';
+import {CHARACTER_DESIGNS} from './creature-design.js?v=5.2.0';
+import {preparedGeometry} from './prepared-geometry.js?v=5.2.0';
 const cache=new Map(),clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const mesh=(parent,geo,mat,at=[0,0,0],scale=[1,1,1])=>{const m=new T.Mesh(geo,mat);m.position.set(...at);m.scale.set(...scale);m.castShadow=m.receiveShadow=true;parent.add(m);return m;};
 const tube=(parent,mat,points,r=.006)=>mesh(parent,new T.TubeGeometry(new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p))),Math.max(12,points.length*5),r,6,false),mat);
@@ -38,6 +39,7 @@ function makeRig(kind){
  return {g,bones,segments,body,heads,arms,legs,spines};
 }
 function bodyGeometry(kind,rig){
+ const prepared=preparedGeometry(kind);if(prepared)return prepared;
  if(cache.has(kind))return cache.get(kind);const p=BOSS_PROFILES[kind],shapes=[],fused=kind==='jakob';
  const smooth=(a,b,v)=>{const u=clamp((v-a)/(b-a),0,1);return u*u*(3-2*u);},id=b=>rig.bones.indexOf(b),volumes=[{shapes:[],weights:()=>[[id(rig.body),1]]}];let group=0;
  const ell=(...s)=>{shapes.push(s);volumes[group].shapes.push(s);},region=weights=>{volumes.push({shapes:[],weights});group=volumes.length-1;};
@@ -76,6 +78,7 @@ function bodyGeometry(kind,rig){
  };
  const geo=sculptSurface(shapes,rig.segments,{min:[-1.08,-.06,-.65],max:[1.08,p.head+.02,.58],step:p.step,cloth,bindWeights,smoothWeights:60,scar:kind==='zeb'?.0010:.0006});cache.set(kind,geo);return geo;
 }
+export const buildBossGeometry=kind=>bodyGeometry(kind,makeRig(kind));
 function bossHair(parent,design,scale){
  const g=new T.Group();parent.add(g);const mat=new T.MeshStandardMaterial({color:design.hair,roughness:.97}),thin=design.style==='thin',curly=design.style==='curly',close=design.style==='close',count=thin?32:curly?150:close?36:110;
  for(let i=0;i<count;i++){
@@ -135,6 +138,9 @@ function featherGeometry(length,width,curve){
 }
 function wings(g,skin,world){
  const d=g.userData,feather=world.assets.scans?scannedMaterial(world.assets.scans,'feather',{color:0xf1ebdd,roughness:.72,side:T.DoubleSide,sheen:.42,sheenColor:0xa4937b}):new T.MeshPhysicalMaterial({color:0x585048,roughness:.68,side:T.DoubleSide,sheen:.28});d.wings=[];d.wingWrists=[];d.wingspan=6.8;d.wingStumps=[];d.detachedWings=[];
+ // A dedicated depth material keeps feather state independent of the shared
+ // skin/cloth shadow material when wings detach and change render order.
+ const featherDepth=new T.MeshDepthMaterial({depthPacking:T.RGBADepthPacking,map:feather.map,side:T.DoubleSide});featherDepth.customProgramCacheKey=()=> 'birdy-feather-depth-v1';
  for(const side of [-1,1]){
   const pivot=new T.Group();pivot.position.set(side*.22,.35,-.08);d.body.add(pivot);d.wings.push(pivot);const wrist=new T.Group();wrist.position.set(side*1.23,.20,-.06);pivot.add(wrist);d.wingWrists.push(wrist);
   tube(pivot,skin,[[0,0,0],[side*.32,.23,-.02],[side*.76,.31,-.06],[side*1.25,.20,-.06]],.036);tube(wrist,skin,[[0,0,0],[side*.57,-.02,-.025],[side*1.22,-.18,0],[side*1.95,-.45,.04]],.019);
@@ -148,6 +154,7 @@ function wings(g,skin,world){
   const detached=pivot.clone(true);detached.position.set(side*1.45,.045,side*.3);detached.rotation.set(-Math.PI/2,side*.15,side*.11);detached.visible=false;detached.scale.setScalar(0);g.add(detached);d.detachedWings.push(detached);
 
  }
+ g.traverse(o=>{if(o.material===feather)o.customDepthMaterial=featherDepth;});
 }
 export function createBossModel(world,kind){
  const rig=makeRig(kind),{g,body,heads,arms,legs,spines}=rig,mats=materials(world,kind);

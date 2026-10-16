@@ -1,5 +1,5 @@
-import {isBoss,desiredPhase,encounterPattern,phaseRule} from './boss-fights.js?v=5.1.3';
-import {zombieAttack,zombieMobility} from './zombie-damage.js?v=5.1.3';
+import {isBoss,desiredPhase,encounterPattern,phaseRule} from './boss-fights.js?v=5.2.0';
+import {zombieAttack,zombieMobility} from './zombie-damage.js?v=5.2.0';
 // Targets commit during a readable tell. Every combo has a fresh warning and a
 // dodge window; a wall collision cancels the combo and exposes the creature.
 export const ATTACKS=Object.freeze({
@@ -49,7 +49,7 @@ export function beginAttack(e,player){
  if(e.comboPattern&&e.comboStep<e.comboPattern.length)name=e.comboPattern[e.comboStep++];
  else {e.comboPattern=encounterPattern(e,distance(e,player));e.comboStep=1;name=e.comboPattern?.[0]||chooseAttack(e,distance(e,player));e.patternCount=(e.patternCount||0)+1;}
  const a=ATTACKS[name],dx=player.x-e.x,dz=player.z-e.z,len=Math.hypot(dx,dz)||1;
- e.attack=name;e.tellDuration=a.tell*(isBoss(e.kind)&&e.phase>=3?.9:1);e.windup=e.tellDuration;e.attackTime=0;e.targetX=player.x;e.targetZ=player.z;e.chargeX=dx/len;e.chargeZ=dz/len;
+ e.attack=name;e.tellDuration=a.tell*(isBoss(e.kind)&&e.phase>=3?.9:1);e.windup=e.tellDuration;e.attackTime=0;e.actionTime=-1;e.targetX=player.x;e.targetZ=player.z;e.chargeX=dx/len;e.chargeZ=dz/len;
  e.activeHead=e.bobbyCrushed?0:name==='bobby'||name==='pursue'?1:0;e.cool=a.cool*(isBoss(e.kind)?Math.max(.75,1-(e.phase||0)*.055):1);e.attackCount=(e.attackCount||0)+1;e.strike=0;e.interruptHits=0;
  return {type:'tell',name,attack:a};
 }
@@ -69,12 +69,13 @@ export function damageScale(e,headshot=false){
 }
 export function stepEnemy(e,dt,context){
  const events=[],p=context.player,dist=distance(e,p),phase=phaseFor(e);
+ if(e.actionTime>=0)e.actionTime+=dt;
  for(const key of ['cool','strike','stagger','exposed','ventCool','purged'])e[key]=Math.max(0,(e[key]||0)-dt);
  if(phase>e.phase){e.phase=Math.min(phase,e.phase+1);e.stageResolved=0;e.guardNotified=false;e.windup=e.charge=0;e.attack=null;e.comboPattern=null;e.recover=2.1;e.cool=2.4;events.push({type:'phase',phase:e.phase,rule:phaseRule(e)});return {mode:'hold',events};}
  if(e.recover>0){e.recover=Math.max(0,e.recover-dt);return {mode:'hold',events};}
  if(e.windup>0){
   e.attackTime+=dt;e.windup=Math.max(0,e.windup-dt);
-  if(e.windup===0){const a=ATTACKS[e.attack];if(isBoss(e.kind))e.stageResolved=(e.stageResolved||0)+1;events.push({type:'release',name:e.attack,attack:a});e.strike=.4;
+  if(e.windup===0){const a=ATTACKS[e.attack];if(isBoss(e.kind))e.stageResolved=(e.stageResolved||0)+1;events.push({type:'release',name:e.attack,attack:a});e.strike=.4;e.actionTime=0;
    if(e.comboPattern&&e.comboStep<e.comboPattern.length)e.cool=(a.dash?a.duration:0)+a.recover+.36;
    if(a.dash){e.charge=a.duration;e.hitCharge=false;return {mode:'charge',speed:a.dash,events};}e.recover=a.recover;
   }return {mode:'hold',events};
