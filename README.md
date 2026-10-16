@@ -4,6 +4,8 @@
 
 Some places remember you. Some refuse to let you go.
 
+Version **5.5.2** adds an FPS counter in the upper-right corner during gameplay and cutscenes, enabled by default. Settings → Show FPS counter saves your preference. It averages rendered game frames over half-second windows, accounts for skipped renders, and hides during menus, loading and pauses. Browser verification covers gameplay, the Settings toggle and paused flashbacks; all 278 tests pass.
+
 Version **5.5.1** gives dense fixed scenery and wall trim smaller culling bounds, reducing submitted geometry in crowded rooms. Sculpt validation uses faster indexed reads and yields within large attributes. [Performance measurements and verification](PLAYTEST_5.5.1.md).
 
 Version **5.5.0** rejects severed zombie triangles before rasterization, divides fixed walls into spatial batches, improves GPU vertex reuse in hands and bosses without removing geometry, compresses the prepared hand download, validates sculpt buffers in short loading tasks, and stops empty hazard-buffer uploads. [Optimization measurements and verification](PLAYTEST_5.5.md).

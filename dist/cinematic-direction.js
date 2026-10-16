@@ -1,4 +1,4 @@
-import {poseWeight} from './story.js?v=5.5.1';
+import {poseWeight} from './story.js?v=5.5.2';
 const ids={'Ethan':'ethan','Joel':'joel','Coach Hall':'hall','Earl':'earl','Earl Britt':'earl','Landon':'landon','The Gentleman':'gent','Calen':'calen','Benny':'benny','Luke':'luke','Paul Cauley':'paul','Mr. Johnson':'johnson'};
 export function speakingActor(scene,line){const id=ids[line?.speaker];return scene.actors?.find(a=>a.id===id)?.id||null;}
 const eye=(a,targets)=>targets?.[a.id]||[a.x,(a.id==='gent'?2.51:1.60)+a.y-(.42*(poseWeight(a,'sit')+poseWeight(a,'kneel'))),a.z];

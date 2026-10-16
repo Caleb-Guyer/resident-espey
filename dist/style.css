@@ -37,3 +37,6 @@
 #boss-phases{display:flex;justify-content:center;gap:5px;margin:5px 0}#boss-phases i{width:14px;height:2px;background:#64756c}#boss-phases i:first-child,#boss-phases[data-phase="1"] i:nth-child(-n+2),#boss-phases[data-phase="2"] i:nth-child(-n+3),#boss-phases[data-phase="3"] i:nth-child(-n+4),#boss-phases[data-phase="4"] i{background:#c5aa7d}
 
 #graphics-recovery{position:fixed;inset:0;z-index:110;display:grid;place-items:center;background:#080d0cf2;color:#c4c8ba}#graphics-recovery[hidden]{display:none}#graphics-recovery .loading-panel{text-align:center}#graphics-recovery h2{font-size:28px;font-weight:400}#graphics-recovery p{line-height:1.7}#reload-graphics{margin-top:20px;padding:12px 25px;border:1px solid var(--line)}#reload-graphics[hidden]{display:none}
+
+#fps-counter{position:fixed;top:65px;right:26px;z-index:30;pointer-events:none;font:11px/1.2 Consolas,monospace;font-variant-numeric:tabular-nums;color:#d2d6c8;background:#050908b8;padding:5px 7px;border-radius:2px;min-width:64px;text-align:right}
+@media(max-width:700px){#fps-counter{top:52px;right:18px}}

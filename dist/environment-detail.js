@@ -1,4 +1,4 @@
-import * as T from './vendor/three.module.js?v=5.5.1';import {mergeRigid} from './sculpt-surface.js?v=5.5.1';
+import * as T from './vendor/three.module.js?v=5.5.2';import {mergeRigid} from './sculpt-surface.js?v=5.5.2';
 const box=(g,m,w,h,d,x,y,z)=>{const mesh=new T.Mesh(new T.BoxGeometry(w,h,d),m);mesh.position.set(x,y,z);mesh.castShadow=mesh.receiveShadow=true;g.add(mesh);return mesh;};
 const pipe=(g,m,points,r)=>{const mesh=new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p))),40,r,12,false),m);mesh.castShadow=mesh.receiveShadow=true;g.add(mesh);return mesh;};
 export function addEnvironmentDetail(w){

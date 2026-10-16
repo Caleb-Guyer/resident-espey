@@ -1,4 +1,4 @@
-import {setHumanShape,rotateHumanBone} from './human-actors.js?v=5.5.1';
+import {setHumanShape,rotateHumanBone} from './human-actors.js?v=5.5.2';
 const clamp=(v,a=0,b=1)=>Math.max(a,Math.min(b,v));
 const visemes={p:'AA_VI_01_PP',b:'AA_VI_01_PP',m:'AA_VI_01_PP',f:'AA_VI_02_FF',v:'AA_VI_02_FF',t:'AA_VI_03_TH',d:'AA_VI_03_TH',s:'AA_VI_07_SS',z:'AA_VI_07_SS',j:'AA_VI_06_CH',c:'AA_VI_06_CH',e:'AA_VI_11_E',i:'AA_VI_11_E',o:'AA_VI_13_O',u:'AA_VI_14_U',w:'AA_VI_14_U',r:'AA_VI_14_U',a:'AA_VI_10_aa'};
 

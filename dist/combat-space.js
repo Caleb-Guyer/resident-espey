@@ -1,5 +1,5 @@
-import {enemyRadius} from './enemy-director.js?v=5.5.1';
-import {solid} from './data.js?v=5.5.1';
+import {enemyRadius} from './enemy-director.js?v=5.5.2';
+import {solid} from './data.js?v=5.5.2';
 
 // Soft steering keeps a group moving without turning creatures into a queue
 // of rigid obstacles. Committed tells and charges use their original paths.

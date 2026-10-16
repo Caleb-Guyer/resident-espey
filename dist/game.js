@@ -1,29 +1,30 @@
-import {crowdSteering,segmentDistanceSq,damageDirection} from './combat-space.js?v=5.5.1';
-import {RenderBudget} from './render-budget.js?v=5.5.1';
-import {GraphicsRecovery} from './graphics-recovery.js?v=5.5.1';
-import {REGIONS,isZombie,initializeZombie,damageZombie,saveZombie,restoreZombie} from './zombie-damage.js?v=5.5.1';
-import {syncZombieInjuries,detachZombieRegion,zombieHitParts,configureZombieLook} from './zombie-art.js?v=5.5.1';
-import {WEAPONS,WEAPON_ORDER,weaponFor,ensureInventory,restoreInventory,inventorySave,switchWeapon,giveWeapon,giveAmmo,pelletDirection,bulletDamage} from './weapons.js?v=5.5.1';
-import {BOSS_FIGHTS,isBoss,encounterDamage,saveBossProgress,restoreBossProgress,phaseRule} from './boss-fights.js?v=5.5.1';
-import {BOSS_NAMES,BOSS_INTROS,displayName} from './boss-introductions.js?v=5.5.1';
-import {prepareTasks,painted} from './loading.js?v=5.5.1';
-import {ATTACKS,stepEnemy,damageScale,interruptAttack,enemyRadius,navigationGoal} from './enemy-director.js?v=5.5.1';
-import {settleWeapon,shotDirection,applyRecoil} from './gunplay.js?v=5.5.1';
-import {recordImpact,settleImpact} from './combat-motion.js?v=5.5.1';
-import {CAMPAIGN_REVISION,roomAt,stageFor} from './levels.js?v=5.5.1';
-import {beginReload,advanceReload,cancelReload,reloadProgress} from './reload.js?v=5.5.1';
-import {World} from './world.js?v=5.5.1';
-import {EYE_HEIGHT,viewDirection,relativeMove,traceShot} from './fps.js?v=5.5.1';
-import {Sound} from './audio.js?v=5.5.1';
-import {CHAPTERS,ENEMY_STATS,TILE,SAVE_KEY,DIFFICULTIES,makeGrid,solid,sight,findPath,distance,validSave,normalizeSave,endingFor} from './data.js?v=5.5.1';
-import {Cinematics} from './cinematics.js?v=5.5.1';
-import {MEMORY_LABELS,SCENES} from './story.js?v=5.5.1';
-import {Voice} from './voice.js?v=5.5.1';
-import {RADIO,characterId,voiceKey} from './dialogue.js?v=5.5.1';
+import {crowdSteering,segmentDistanceSq,damageDirection} from './combat-space.js?v=5.5.2';
+import {RenderBudget} from './render-budget.js?v=5.5.2';
+import {FrameCounter} from './frame-counter.js?v=5.5.2';
+import {GraphicsRecovery} from './graphics-recovery.js?v=5.5.2';
+import {REGIONS,isZombie,initializeZombie,damageZombie,saveZombie,restoreZombie} from './zombie-damage.js?v=5.5.2';
+import {syncZombieInjuries,detachZombieRegion,zombieHitParts,configureZombieLook} from './zombie-art.js?v=5.5.2';
+import {WEAPONS,WEAPON_ORDER,weaponFor,ensureInventory,restoreInventory,inventorySave,switchWeapon,giveWeapon,giveAmmo,pelletDirection,bulletDamage} from './weapons.js?v=5.5.2';
+import {BOSS_FIGHTS,isBoss,encounterDamage,saveBossProgress,restoreBossProgress,phaseRule} from './boss-fights.js?v=5.5.2';
+import {BOSS_NAMES,BOSS_INTROS,displayName} from './boss-introductions.js?v=5.5.2';
+import {prepareTasks,painted} from './loading.js?v=5.5.2';
+import {ATTACKS,stepEnemy,damageScale,interruptAttack,enemyRadius,navigationGoal} from './enemy-director.js?v=5.5.2';
+import {settleWeapon,shotDirection,applyRecoil} from './gunplay.js?v=5.5.2';
+import {recordImpact,settleImpact} from './combat-motion.js?v=5.5.2';
+import {CAMPAIGN_REVISION,roomAt,stageFor} from './levels.js?v=5.5.2';
+import {beginReload,advanceReload,cancelReload,reloadProgress} from './reload.js?v=5.5.2';
+import {World} from './world.js?v=5.5.2';
+import {EYE_HEIGHT,viewDirection,relativeMove,traceShot} from './fps.js?v=5.5.2';
+import {Sound} from './audio.js?v=5.5.2';
+import {CHAPTERS,ENEMY_STATS,TILE,SAVE_KEY,DIFFICULTIES,makeGrid,solid,sight,findPath,distance,validSave,normalizeSave,endingFor} from './data.js?v=5.5.2';
+import {Cinematics} from './cinematics.js?v=5.5.2';
+import {MEMORY_LABELS,SCENES} from './story.js?v=5.5.2';
+import {Voice} from './voice.js?v=5.5.2';
+import {RADIO,characterId,voiceKey} from './dialogue.js?v=5.5.2';
 const $=s=>document.querySelector(s);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export class Game{
- constructor(ui,settings){this.ui=ui;this.settings=settings;this.debugSnapshots=document.documentElement?.hasAttribute('data-qa')||false;this.world=new World($('#world'),settings);this.sound=new Sound();this.sound.setVolume(settings.volume);this.voice=new Voice(this.sound,settings);this.running=false;this.paused=true;this.time=0;this.last=0;this.keys=new Set();this.mouse={x:0,y:0,down:false,aiming:false,drag:false};this.pointerLocked=false;this.touch={x:0,z:0,fire:false};this.aim={x:10,z:10};this.pages=new Set();this.allies=new Set();this.stats={kills:0,shots:0,hits:0,deaths:0,seconds:0};this.difficulty='survivor';this.chapter=0;this.dialogue=[];this.nextRadio=0;this.seenScenes=new Set();this.cinema=new Cinematics(this);this.setupInput();this.setupGraphicsRecovery($('#world'));addEventListener('beforeunload',()=>this.flushSave());addEventListener('pagehide',()=>this.flushSave());this.frame=this.frame.bind(this);requestAnimationFrame(this.frame);}
+ constructor(ui,settings){this.ui=ui;this.settings=settings;this.fpsCounter=new FrameCounter($('#fps-counter'));this.debugSnapshots=document.documentElement?.hasAttribute('data-qa')||false;this.world=new World($('#world'),settings);this.sound=new Sound();this.sound.setVolume(settings.volume);this.voice=new Voice(this.sound,settings);this.running=false;this.paused=true;this.time=0;this.last=0;this.keys=new Set();this.mouse={x:0,y:0,down:false,aiming:false,drag:false};this.pointerLocked=false;this.touch={x:0,z:0,fire:false};this.aim={x:10,z:10};this.pages=new Set();this.allies=new Set();this.stats={kills:0,shots:0,hits:0,deaths:0,seconds:0};this.difficulty='survivor';this.chapter=0;this.dialogue=[];this.nextRadio=0;this.seenScenes=new Set();this.cinema=new Cinematics(this);this.setupInput();this.setupGraphicsRecovery($('#world'));addEventListener('beforeunload',()=>this.flushSave());addEventListener('pagehide',()=>this.flushSave());this.frame=this.frame.bind(this);requestAnimationFrame(this.frame);}
  setupInput(){
   const canvas=$('#world');canvas.tabIndex=0;
   addEventListener('resize',()=>this.world.resize());
@@ -294,6 +295,7 @@ export class Game{
  proximity(){const p=this.player,candidates=this.items.filter(i=>!i.used&&(!Number.isInteger(i.stage)||i.stage===this.objectives));for(const c of this.world.bossArena?.interactables(this)||[])if(c.active)candidates.push(c);candidates.push(this.npc,{kind:'exit',x:(this.config.exit[0]+.5)*TILE,z:(this.config.exit[1]+.5)*TILE});let nearest=null,best=2.65;for(const c of candidates){const d=distance(p,c);const forward=viewDirection(p.yaw||0,0),angle=((c.x-p.x)*forward.x+(c.z-p.z)*forward.z)/(d||1);if(d<best&&(angle>.2||d<1.1)&&this.canSee(p,c)){nearest=c;best=d;}}this.nearest=nearest;const el=$('#interaction');el.hidden=!nearest;if(nearest){const names={weapon:'Take weapon',ammo:'Take ammunition',med:'Take first aid',page:MEMORY_LABELS[nearest?.page]||'Examine memory',fuse:'Recover power fuse',seal:'Recover seal fragment',anchor:'Restore anchor generator',save:'Save and recover',exit:this.config.exitLabel};el.querySelector('span').textContent=nearest===this.npc?'Talk to '+displayName(nearest.name):nearest.label||names[nearest.kind];}}
  setHUD(){const p=this.player;if(!p)return;$('#chapter-label').textContent=this.config.number;$('#location-label').textContent=roomAt(this.level,p.x,p.z)?.name||'Service passage';$('#objective').textContent=this.chapter===1&&this.objectives>=2&&(this.bossDead||!this.bossSpawned)&&this.enemies.some(e=>e.kind==='birdy'&&!e.dead)?'Defeat Lil Birdy.':this.bossDead?(this.chapter===2?'Reach the PA. Decide who gets to come home.':this.config.exitLabel+'.'):this.level.tasks[this.objectives];$('#health-fill').style.width=p.hp+'%';$('#health-fill').style.background=p.hp<30?'#b95b46':p.hp<60?'#c6a75d':'#87b2a2';$('#health-state').textContent=p.hp<30?'DANGER':p.hp<60?'CAUTION':'FINE';$('#health-state').style.color=p.hp<30?'#e07a62':p.hp<60?'#d5ba76':'#87b2a2';$('#stamina-fill').style.width=p.stamina+'%';if(this.debugSnapshots)$('#world').dataset.state=JSON.stringify(this.snapshot());if($('#weapon-name'))$('#weapon-name').textContent=weaponFor(p).name.toUpperCase();if($('#weapon-slot'))$('#weapon-slot').textContent=String(weaponFor(p).slot);$('#ammo').textContent=p.ammo;$('#reserve').textContent=' / '+p.reserve;$('#meds').textContent=p.meds;$('#reload-progress').hidden=p.reloading<=0;const progress=reloadProgress(p);$('#reload-progress').style.setProperty('--reload',progress*100+'%');$('#reload-progress').querySelector('span').textContent=p.weapon==='shotgun'?'Loading shells':progress<.63?'Changing magazine':progress<.88?'Seating magazine':'Chambering round';let threat=this.boss&&!this.boss.dead?this.boss:null;const birdy=this.enemies.find(e=>!e.dead&&!e.dormant&&e.kind==='birdy'&&distance(e,p)<14&&e.alert);if(birdy&&(!threat||distance(birdy,p)<distance(threat,p)))threat=birdy;$('#boss-hud').hidden=!threat;if(threat){$('#boss-name').textContent=threat.bobbyCrushed?'Jakob':BOSS_NAMES[threat.kind]||this.config.boss.name;const pips=$('#boss-phases');if(pips){pips.dataset.phase=String(threat.phase||0);pips.setAttribute?.('aria-label','Boss stage '+((threat.phase||0)+1)+' of 5');}const goal=this.world.bossArena?.objective(threat)||(threat.kind==='birdy'?'Defeat Lil Birdy.':null);if(goal)$('#objective').textContent=goal;$('#boss-fill').style.width=Math.max(0,threat.hp/threat.max*100)+'%';}}
  frame(now){
+  this.fpsCounter?.update(now,this.settings.showFps!==false&&this.running&&!this.loading&&!this.applyingGraphics&&!this.graphicsUnavailable&&!document.hidden&&(this.cinema?.active?!this.cinema.isPaused:!this.paused),this.world.renderer.info.render.frame);
   if(this.graphicsUnavailable){this.last=now;this.voice?.update();requestAnimationFrame(this.frame);return;}
   const needsRender=this.cinema?.active?(!this.cinema.isPaused||!this.cinematicHeld||this.world.needsPausedRender):this.running&&(!this.paused||this.lastPausedRender!==this.time||this.world.needsPausedRender);
   const budgeted=!!(needsRender&&!this.loading&&!this.applyingGraphics&&this.renderBudget);
@@ -330,5 +332,5 @@ export class Game{
    if(!this.paused||this.lastPausedRender!==this.time||this.world.needsPausedRender){this.world.update(this.paused?0:dt,this.time,p,this.aim,this.settings.motion?0:this.shake);this.lastPausedRender=this.paused?this.time:null;this.world.needsPausedRender=false;}if(this.time>=(this.nextHud||0)){this.nextHud=this.time+.08;this.setHUD();}
   }if(budgeted)this.renderBudget.end();requestAnimationFrame(this.frame);
  }
- snapshot(){return{fps:Math.round(1000/(this.frameMs||16)),drawCalls:this.world?.worldCalls,perspective:'first-person',version:'5.5.1',voice:this.voice?.status,props:this.world?.obstacles?.length,pointerLocked:this.pointerLocked,running:this.running,paused:this.paused,loading:!!this.loading,preparation:this.preparation,chapter:this.chapter,player:this.player?{x:this.player.x,z:this.player.z,yaw:this.player.yaw,pitch:this.player.pitch,hp:this.player.hp,weapon:this.player.weapon,owned:Object.keys(this.player.inventory||{}),ammo:this.player.ammo,reserve:this.player.reserve,meds:this.player.meds}:null,objectives:this.objectives,pages:this.pages.size,allies:this.allies.size,scenes:[...(this.seenScenes||[])],bossDead:this.bossDead,enemies:this.enemies?.filter(e=>!e.dead&&!e.dormant).length,nearest:this.nearest?.kind||this.nearest?.name,route:this.level?.tasks?.[this.objectives],room:this.level?roomAt(this.level,this.player.x,this.player.z)?.name:null,gates:this.world?.gates?.filter(g=>g.obstacle.active).length,reloading:this.player?.reloading,beats:[...(this.beats||[])],stats:{...this.stats}};}
+ snapshot(){return{fps:this.fpsCounter?.value??null,drawCalls:this.world?.worldCalls,perspective:'first-person',version:'5.5.2',voice:this.voice?.status,props:this.world?.obstacles?.length,pointerLocked:this.pointerLocked,running:this.running,paused:this.paused,loading:!!this.loading,preparation:this.preparation,chapter:this.chapter,player:this.player?{x:this.player.x,z:this.player.z,yaw:this.player.yaw,pitch:this.player.pitch,hp:this.player.hp,weapon:this.player.weapon,owned:Object.keys(this.player.inventory||{}),ammo:this.player.ammo,reserve:this.player.reserve,meds:this.player.meds}:null,objectives:this.objectives,pages:this.pages.size,allies:this.allies.size,scenes:[...(this.seenScenes||[])],bossDead:this.bossDead,enemies:this.enemies?.filter(e=>!e.dead&&!e.dormant).length,nearest:this.nearest?.kind||this.nearest?.name,route:this.level?.tasks?.[this.objectives],room:this.level?roomAt(this.level,this.player.x,this.player.z)?.name:null,gates:this.world?.gates?.filter(g=>g.obstacle.active).length,reloading:this.player?.reloading,beats:[...(this.beats||[])],stats:{...this.stats}};}
 }

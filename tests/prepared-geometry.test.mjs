@@ -2,7 +2,7 @@ import test from 'node:test';import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';import {gunzipSync} from 'node:zlib';
 import {buildBossGeometry} from '../dist/boss-models.js';
 import {createAnatomy} from '../dist/anatomy.js';
-import {decodePreparedGeometry,decodePreparedGeometryAsync,preparedGeometry} from '../dist/prepared-geometry.js?v=5.5.1';
+import {decodePreparedGeometry,decodePreparedGeometryAsync,preparedGeometry} from '../dist/prepared-geometry.js?v=5.5.2';
 import {assertMeshEquivalent} from './mesh-equivalence.mjs';
 import {cacheMisses} from '../scripts/mesh-buffers.mjs';
 const arrayBuffer=b=>b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength);

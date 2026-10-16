@@ -1,4 +1,4 @@
-import * as T from './vendor/three.module.js?v=5.5.1';
+import * as T from './vendor/three.module.js?v=5.5.2';
 export const CHARACTER_DESIGNS=Object.freeze({
  ethan:{skin:0xc2a68c,hair:0x9b7943,style:'curly',eyes:'blue'},
  earl:{skin:0x76533d,face:0x91745b,hair:0x211c19,style:'close',ethnicity:'Black'},
