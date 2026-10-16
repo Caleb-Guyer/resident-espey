@@ -1,5 +1,5 @@
-import {weaponFor} from './weapons.js?v=5.5.3';
-import {viewDirection,EYE_HEIGHT} from './fps.js?v=5.5.3';
+import {weaponFor} from './weapons.js?v=5.5.4';
+import {viewDirection,EYE_HEIGHT} from './fps.js?v=5.5.4';
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export function settleWeapon(p,dt){
  if(!Number.isFinite(dt)||dt<0)return;

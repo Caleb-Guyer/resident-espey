@@ -1,5 +1,5 @@
-import {isBoss,desiredPhase,encounterPattern,phaseRule} from './boss-fights.js?v=5.5.3';
-import {zombieAttack,zombieMobility} from './zombie-damage.js?v=5.5.3';
+import {isBoss,desiredPhase,encounterPattern,phaseRule} from './boss-fights.js?v=5.5.4';
+import {zombieAttack,zombieMobility} from './zombie-damage.js?v=5.5.4';
 // Targets commit during a readable tell. Every combo has a fresh warning and a
 // dodge window; a wall collision cancels the combo and exposes the creature.
 export const ATTACKS=Object.freeze({

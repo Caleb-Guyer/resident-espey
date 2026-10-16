@@ -1,5 +1,5 @@
-import {voiceKey} from './dialogue.js?v=5.5.3';
-import {VOICE_ASSETS} from './voice-assets.js?v=5.5.3';
+import {voiceKey} from './dialogue.js?v=5.5.4';
+import {VOICE_ASSETS} from './voice-assets.js?v=5.5.4';
 
 // Expand a dialogue beat when its performed line needs more time. Camera cuts,
 // actors and props move together, so an injection or door slam keeps its meaning.

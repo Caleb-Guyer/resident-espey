@@ -1,5 +1,5 @@
-import * as T from './vendor/three.module.js?v=5.5.3';
-import {REGIONS} from './zombie-damage.js?v=5.5.3';
+import * as T from './vendor/three.module.js?v=5.5.4';
+import {REGIONS} from './zombie-damage.js?v=5.5.4';
 const V=new T.Vector3(),M=new T.Matrix4(),Q=new T.Quaternion();
 const ik={hip:new T.Vector3(),knee:new T.Vector3(),end:new T.Vector3(),target:new T.Vector3(),dir:new T.Vector3(),bend:new T.Vector3(),from:new T.Vector3(),to:new T.Vector3(),q:new T.Quaternion(),parent:new T.Quaternion(),world:new T.Quaternion()};
 function aimBone(joint,child,target){

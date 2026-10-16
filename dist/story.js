@@ -1,4 +1,4 @@
-import {directStoryScenes} from './cinematic-edits.js?v=5.5.3';
+import {directStoryScenes} from './cinematic-edits.js?v=5.5.4';
 // Original screen adaptation of the Chapa stories. Timings are seconds.
 const actor=(id,kind,color,path)=>({id,kind,color,path});
 const shot=(at,from,to,look,end=look,fov=52)=>({at,from,to,look,end,fov});

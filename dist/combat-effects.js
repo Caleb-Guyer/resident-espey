@@ -1,4 +1,4 @@
-import * as T from './vendor/three.module.js?v=5.5.3';
+import * as T from './vendor/three.module.js?v=5.5.4';
 
 // Combat keeps two GPU batches alive for the chapter. Bursts only change their
 // buffers; they never create/dispose materials or recompile shaders mid-fight.

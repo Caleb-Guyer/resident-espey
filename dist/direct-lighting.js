@@ -1,4 +1,4 @@
-import {ShaderChunk} from './vendor/three.module.js?v=5.5.3';
+import {ShaderChunk} from './vendor/three.module.js?v=5.5.4';
 
 // Keep light counts stable (and their shaders warm) while avoiding the full
 // physical BRDF for lights whose attenuation or colour is exactly zero.

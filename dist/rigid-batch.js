@@ -1,4 +1,4 @@
-import * as T from './vendor/three.module.js?v=5.5.3';
+import * as T from './vendor/three.module.js?v=5.5.4';
 // Preserve indexed vertices and UV/normal seams instead of expanding every
 // triangle corner. Only siblings with the same opaque material may be merged.
 export function mergeRigidParts(group,shared=new Set()){

@@ -1,4 +1,4 @@
-import * as T from './vendor/three.module.js?v=5.5.3';
+import * as T from './vendor/three.module.js?v=5.5.4';
 // Rounded cross-sections lofted through a silhouette; receiver shoulders and
 // stocks taper continuously instead of ending in bevelled rectangular blocks.
 export function profileGeometry(sections,round=.25){
