@@ -1,34 +1,34 @@
-import './direct-lighting.js?v=5.4.1';
-import {duringGPUWork,finishGPUWarmup} from './render-budget.js?v=5.4.1';
-import {mergeRigidParts} from './rigid-batch.js?v=5.4.1';
-import {warmRaster} from './warm-raster.js?v=5.4.1';
-import {uploadSceneTextures} from './texture-warmup.js?v=5.4.1';
-import {isZombie} from './zombie-damage.js?v=5.4.1';
-import {ZombieGore} from './zombie-gore.js?v=5.4.1';
-import {WEAPONS,weaponFor} from './weapons.js?v=5.4.1';
-import {createLongGun} from './longguns.js?v=5.4.1';
-import {scannedMaterial,microTexture} from './surface-materials.js?v=5.4.1';
-import {surfaceMaterial} from './material-surfaces.js?v=5.4.1';
-import {addEnvironmentDetail} from './environment-detail.js?v=5.4.1';
-import {loadLicensedArt,photographedMaterial,createLicensedEnemy,animateLicensedEnemy,dressLicensedRooms,fittedProp} from './licensed-art.js?v=5.4.1';
-import {painted} from './loading.js?v=5.4.1';
-import {BossArena} from './boss-arena.js?v=5.4.1';
-import {createAnatomy,animateCollapse} from './anatomy.js?v=5.4.1';
-import {reloadProgress} from './reload.js?v=5.4.1';
-import {ATTACKS,enemyRadius} from './enemy-director.js?v=5.4.1';
-import * as T from './vendor/three.module.js?v=5.4.1';
-import {TILE,seeded,solid,findPath} from './data.js?v=5.4.1';
-import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock,propsOcclude,environmentDistance} from './fps.js?v=5.4.1';
-import {CombatEffects} from './combat-effects.js?v=5.4.1';
-import {WallPlacement} from './wall-placement.js?v=5.4.1';
-import {createViewModel,createHands,updateSleeveAnchors,loadHandSurfaces} from './viewmodel.js?v=5.4.1';
-import {createWeaponMotion,kickWeapon,stepWeaponMotion} from './weapon-motion.js?v=5.4.1';
-import {CHARACTER_DESIGNS,characterHair,dressBirdy,dressArchetype,cloneCharacter} from './creature-design.js?v=5.4.1';
-import {EnemyEffects} from './enemy-effects.js?v=5.4.1';
-import {BOSS_PROFILES,createBossModel} from './boss-models.js?v=5.4.1';
-import {animateBoss} from './boss-animation.js?v=5.4.1';
-import {loadPreparedGeometry} from './prepared-geometry.js?v=5.4.1';
-import {loadHumanArt,createHumanActor,animateHumanActor} from './human-actors.js?v=5.4.1';
+import './direct-lighting.js?v=5.4.2';
+import {duringGPUWork,finishGPUWarmup} from './render-budget.js?v=5.4.2';
+import {mergeRigidParts} from './rigid-batch.js?v=5.4.2';
+import {warmRaster} from './warm-raster.js?v=5.4.2';
+import {uploadSceneTextures} from './texture-warmup.js?v=5.4.2';
+import {isZombie} from './zombie-damage.js?v=5.4.2';
+import {ZombieGore} from './zombie-gore.js?v=5.4.2';
+import {WEAPONS,weaponFor} from './weapons.js?v=5.4.2';
+import {createLongGun} from './longguns.js?v=5.4.2';
+import {scannedMaterial,microTexture} from './surface-materials.js?v=5.4.2';
+import {surfaceMaterial} from './material-surfaces.js?v=5.4.2';
+import {addEnvironmentDetail} from './environment-detail.js?v=5.4.2';
+import {loadLicensedArt,photographedMaterial,createLicensedEnemy,animateLicensedEnemy,dressLicensedRooms,fittedProp} from './licensed-art.js?v=5.4.2';
+import {painted} from './loading.js?v=5.4.2';
+import {BossArena} from './boss-arena.js?v=5.4.2';
+import {createAnatomy,animateCollapse} from './anatomy.js?v=5.4.2';
+import {reloadProgress} from './reload.js?v=5.4.2';
+import {ATTACKS,enemyRadius} from './enemy-director.js?v=5.4.2';
+import * as T from './vendor/three.module.js?v=5.4.2';
+import {TILE,seeded,solid,findPath} from './data.js?v=5.4.2';
+import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock,propsOcclude,environmentDistance} from './fps.js?v=5.4.2';
+import {CombatEffects} from './combat-effects.js?v=5.4.2';
+import {WallPlacement} from './wall-placement.js?v=5.4.2';
+import {createViewModel,createHands,updateSleeveAnchors,loadHandSurfaces} from './viewmodel.js?v=5.4.2';
+import {createWeaponMotion,kickWeapon,stepWeaponMotion} from './weapon-motion.js?v=5.4.2';
+import {CHARACTER_DESIGNS,characterHair,dressBirdy,dressArchetype,cloneCharacter} from './creature-design.js?v=5.4.2';
+import {EnemyEffects} from './enemy-effects.js?v=5.4.2';
+import {BOSS_PROFILES,createBossModel} from './boss-models.js?v=5.4.2';
+import {animateBoss} from './boss-animation.js?v=5.4.2';
+import {loadPreparedGeometry} from './prepared-geometry.js?v=5.4.2';
+import {loadHumanArt,createHumanActor,animateHumanActor} from './human-actors.js?v=5.4.2';
 
 const BOX=bevelBox(1,1,1,.014),WALLBOX=new T.BoxGeometry(1,1,1),SPHERE=new T.SphereGeometry(1,20,14),CYL=new T.CylinderGeometry(1,1,1,16);
 const SHARED=new Set([BOX,WALLBOX,SPHERE,CYL]);
@@ -115,7 +115,7 @@ export class World{
   const floor=yellow&&this.licensed?photographedMaterial(this.licensed.materials.get('old_linoleum_flooring_01'),[36,28.8],0xb5a378):yellow?material(0xffffff,.98):this.surface('floor',0xc2c7c2,[36,28.8],.018,.65);if(yellow&&!this.licensed){floor.map=this.procedural('carpet');floor.map.repeat.set(36,28.8);floor.bumpMap=floor.map;floor.bumpScale=.014;}
   mesh(new T.PlaneGeometry(72,57.6),floor,[1,1,1],[36,0,28.8],this.root).rotation.x=-Math.PI/2;
   const ceiling=material(yellow?0xb4ae87:0x89938b,.93);ceiling.map=this.procedural('ceiling');ceiling.map.repeat.set(18,14.4);mesh(new T.PlaneGeometry(72,57.6),ceiling,[1,1,1],[36,CEILING,28.8],this.root).rotation.x=Math.PI/2;
-  const wall=this.licensed?photographedMaterial(this.licensed.materials.get(breach?'painted_plaster_wall':yellow?'beige_wall_001':'damaged_plaster'),[.45,.45],yellow?0xd4bb70:breach?0x8b9790:0xd7d7c9,true):yellow?material(0xffffff,.96):this.assets.surfaces?surfaceMaterial(this.assets.surfaces,'wall',{color:breach?0xaaa59b:0xe7e4d5,roughness:.94}):this.surface('wall',breach?0x858e7c:0xb5c1b5,[1,1],.034);if(yellow&&!this.licensed){wall.map=this.procedural('wallpaper');wall.bumpMap=wall.map;wall.bumpScale=.012;}
+  const wall=this.licensed?photographedMaterial(this.licensed.materials.get(breach?'painted_plaster_wall':yellow?'beige_wall_001':'damaged_plaster'),[.45,.45],yellow?0xd4bb70:breach?0x8b9790:0xd7d7c9,'axis'):yellow?material(0xffffff,.96):this.assets.surfaces?surfaceMaterial(this.assets.surfaces,'wall',{color:breach?0xaaa59b:0xe7e4d5,roughness:.94}):this.surface('wall',breach?0x858e7c:0xb5c1b5,[1,1],.034);if(yellow&&!this.licensed){wall.map=this.procedural('wallpaper');wall.bumpMap=wall.map;wall.bumpScale=.012;}
   const coords=[];grid.forEach((row,z)=>row.forEach((v,x)=>{if(v)coords.push([x,z]);}));const walls=new T.InstancedMesh(WALLBOX,wall,coords.length),dummy=new T.Object3D();
   coords.forEach(([x,z],i)=>{dummy.position.set((x+.5)*TILE,CEILING/2,(z+.5)*TILE);dummy.scale.set(TILE,CEILING,TILE);dummy.updateMatrix();walls.setMatrixAt(i,dummy.matrix);walls.setColorAt(i,new T.Color().setScalar(.83+(i%5)*.035));});walls.castShadow=true;walls.receiveShadow=true;this.root.add(walls);
   for(const [height,thick]of [[.09,.16],[1.02,.035],[3.17,.1]]){const trim=new T.InstancedMesh(BOX,material(yellow?0x594a2c:height===1.02?0x596860:0x313e3c,.72,.12),coords.length);coords.forEach(([x,z],i)=>{dummy.position.set((x+.5)*TILE,height,(z+.5)*TILE);dummy.scale.set(TILE+.025,thick,TILE+.025);dummy.updateMatrix();trim.setMatrixAt(i,dummy.matrix);});trim.receiveShadow=true;this.root.add(trim);}

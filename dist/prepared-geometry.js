@@ -1,4 +1,4 @@
-import * as T from './vendor/three.module.js?v=5.4.1';
+import * as T from './vendor/three.module.js?v=5.4.2';
 const meshes=new Map(),types={Float32Array,Uint16Array,Uint32Array};
 export const preparedGeometry=key=>meshes.get(key);
 export function decodePreparedGeometry(buffer){

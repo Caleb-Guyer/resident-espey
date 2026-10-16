@@ -1,25 +1,25 @@
-import {crowdSteering,segmentDistanceSq,damageDirection} from './combat-space.js?v=5.4.1';
-import {RenderBudget} from './render-budget.js?v=5.4.1';
-import {GraphicsRecovery} from './graphics-recovery.js?v=5.4.1';
-import {REGIONS,isZombie,initializeZombie,damageZombie,saveZombie,restoreZombie} from './zombie-damage.js?v=5.4.1';
-import {syncZombieInjuries,detachZombieRegion,zombieHitParts,configureZombieLook} from './zombie-art.js?v=5.4.1';
-import {WEAPONS,WEAPON_ORDER,weaponFor,ensureInventory,restoreInventory,inventorySave,switchWeapon,giveWeapon,giveAmmo,pelletDirection,bulletDamage} from './weapons.js?v=5.4.1';
-import {BOSS_FIGHTS,isBoss,encounterDamage,saveBossProgress,restoreBossProgress,phaseRule} from './boss-fights.js?v=5.4.1';
-import {BOSS_NAMES,BOSS_INTROS,displayName} from './boss-introductions.js?v=5.4.1';
-import {prepareTasks,painted} from './loading.js?v=5.4.1';
-import {ATTACKS,stepEnemy,damageScale,interruptAttack,enemyRadius,navigationGoal} from './enemy-director.js?v=5.4.1';
-import {settleWeapon,shotDirection,applyRecoil} from './gunplay.js?v=5.4.1';
-import {recordImpact,settleImpact} from './combat-motion.js?v=5.4.1';
-import {CAMPAIGN_REVISION,roomAt,stageFor} from './levels.js?v=5.4.1';
-import {beginReload,advanceReload,cancelReload,reloadProgress} from './reload.js?v=5.4.1';
-import {World} from './world.js?v=5.4.1';
-import {EYE_HEIGHT,viewDirection,relativeMove,traceShot} from './fps.js?v=5.4.1';
-import {Sound} from './audio.js?v=5.4.1';
-import {CHAPTERS,ENEMY_STATS,TILE,SAVE_KEY,DIFFICULTIES,makeGrid,solid,sight,findPath,distance,validSave,normalizeSave,endingFor} from './data.js?v=5.4.1';
-import {Cinematics} from './cinematics.js?v=5.4.1';
-import {MEMORY_LABELS,SCENES} from './story.js?v=5.4.1';
-import {Voice} from './voice.js?v=5.4.1';
-import {RADIO,characterId,voiceKey} from './dialogue.js?v=5.4.1';
+import {crowdSteering,segmentDistanceSq,damageDirection} from './combat-space.js?v=5.4.2';
+import {RenderBudget} from './render-budget.js?v=5.4.2';
+import {GraphicsRecovery} from './graphics-recovery.js?v=5.4.2';
+import {REGIONS,isZombie,initializeZombie,damageZombie,saveZombie,restoreZombie} from './zombie-damage.js?v=5.4.2';
+import {syncZombieInjuries,detachZombieRegion,zombieHitParts,configureZombieLook} from './zombie-art.js?v=5.4.2';
+import {WEAPONS,WEAPON_ORDER,weaponFor,ensureInventory,restoreInventory,inventorySave,switchWeapon,giveWeapon,giveAmmo,pelletDirection,bulletDamage} from './weapons.js?v=5.4.2';
+import {BOSS_FIGHTS,isBoss,encounterDamage,saveBossProgress,restoreBossProgress,phaseRule} from './boss-fights.js?v=5.4.2';
+import {BOSS_NAMES,BOSS_INTROS,displayName} from './boss-introductions.js?v=5.4.2';
+import {prepareTasks,painted} from './loading.js?v=5.4.2';
+import {ATTACKS,stepEnemy,damageScale,interruptAttack,enemyRadius,navigationGoal} from './enemy-director.js?v=5.4.2';
+import {settleWeapon,shotDirection,applyRecoil} from './gunplay.js?v=5.4.2';
+import {recordImpact,settleImpact} from './combat-motion.js?v=5.4.2';
+import {CAMPAIGN_REVISION,roomAt,stageFor} from './levels.js?v=5.4.2';
+import {beginReload,advanceReload,cancelReload,reloadProgress} from './reload.js?v=5.4.2';
+import {World} from './world.js?v=5.4.2';
+import {EYE_HEIGHT,viewDirection,relativeMove,traceShot} from './fps.js?v=5.4.2';
+import {Sound} from './audio.js?v=5.4.2';
+import {CHAPTERS,ENEMY_STATS,TILE,SAVE_KEY,DIFFICULTIES,makeGrid,solid,sight,findPath,distance,validSave,normalizeSave,endingFor} from './data.js?v=5.4.2';
+import {Cinematics} from './cinematics.js?v=5.4.2';
+import {MEMORY_LABELS,SCENES} from './story.js?v=5.4.2';
+import {Voice} from './voice.js?v=5.4.2';
+import {RADIO,characterId,voiceKey} from './dialogue.js?v=5.4.2';
 const $=s=>document.querySelector(s);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export class Game{
@@ -111,7 +111,9 @@ export class Game{
  async prepareRun(n,run,progress=()=>{}){
   if(this.loading)return false;this.loading=true;this.preparing=true;this.renderBudget?.clear();this.setPaused(true);const started=performance.now();
   try{
-   await Promise.all([this.world.ready,this.sound?.ready]);this.cinema.cancel();this.cinema.clearPrepared?.();progress(.1);const c=CHAPTERS[n],recipes=[...new Map([...c.enemies.map(([kind])=>[kind,ENEMY_STATS[kind].color,kind]),[c.boss.kind,ENEMY_STATS[c.boss.kind].color,c.boss.kind],['npc',n===0?0x6c644c:n===1?0x6b7971:0x3e6554,['joel','landon','hall'][n]],...(['opening','closet','serum','descent','road','seal','return','sacrifice','promise','home','echoes','alone'].filter(id=>({opening:0,closet:0,serum:0,descent:1,road:1,seal:1,return:2,sacrifice:2,promise:2,home:2,echoes:2,alone:2})[id]===n).flatMap(id=>SCENES[id].actors.map(a=>[a.kind,a.color,a.id])))].map(a=>[a.join('/'),a])).values()];
+   await Promise.all([this.world.ready,this.sound?.ready]);this.cinema.cancel();this.cinema.clearPrepared?.();progress(.1);const c=CHAPTERS[n],recipes=[...new Map([...c.enemies.map(([kind])=>[kind,ENEMY_STATS[kind].color,kind]),[c.boss.kind,ENEMY_STATS[c.boss.kind].color,c.boss.kind],['npc',n===0?0x6c644c:n===1?0x6b7971:0x3e6554,['joel','landon','hall'][n]],...(['opening','closet','serum','descent','road','seal','return','sacrifice','promise','home','echoes','alone'].filter(id=>({opening:0,closet:0,serum:0,descent:1,road:1,seal:1,return:2,sacrifice:2,promise:2,home:2,echoes:2,alone:2})[id]===n).flatMap(id=>SCENES[id].actors.map(a=>[a.kind,a.color,a.id])))].filter(([kind])=>!this.world.humans||kind!=='npc'&&kind!=='player').map(a=>[a.join('/'),a])).values()];
+   // Authored humans are loaded once and their real story actors warm below.
+   // Only template-based characters benefit from creating a disposable prime.
    await prepareTasks(recipes.map(a=>()=>{const g=this.world.character(...a);this.world.disposeObject(g);}),p=>progress(.1+p*.45));
    this.audioPreparationFailed=false;if(this.voice)try{this.voice.init();await Promise.allSettled([c.boss.kind,...(n===1?['birdy']:[])].flatMap(kind=>BOSS_INTROS[kind].lines.map(l=>this.voice.load(voiceKey(l.speaker,l.text)))));}catch{this.audioPreparationFailed=true;}
    await this.cinema.prewarm?.((['opening','closet','serum','descent','road','seal','return','sacrifice','promise','choice','home','echoes','alone']).filter(id=>({opening:0,closet:0,serum:0,descent:1,road:1,seal:1,return:2,sacrifice:2,promise:2,choice:2,home:2,echoes:2,alone:2})[id]===n));await painted();run();progress(.7);this.world.setView(this.player,this.player.yaw,this.player.pitch,this.time);await this.world.prepareCombatAsync();this.world.update(0,this.time,this.player,this.aim,0);
@@ -328,5 +330,5 @@ export class Game{
    if(!this.paused||this.lastPausedRender!==this.time||this.world.needsPausedRender){this.world.update(this.paused?0:dt,this.time,p,this.aim,this.settings.motion?0:this.shake);this.lastPausedRender=this.paused?this.time:null;this.world.needsPausedRender=false;}if(this.time>=(this.nextHud||0)){this.nextHud=this.time+.08;this.setHUD();}
   }if(budgeted)this.renderBudget.end();requestAnimationFrame(this.frame);
  }
- snapshot(){return{fps:Math.round(1000/(this.frameMs||16)),drawCalls:this.world?.worldCalls,perspective:'first-person',version:'5.4.1',voice:this.voice?.status,props:this.world?.obstacles?.length,pointerLocked:this.pointerLocked,running:this.running,paused:this.paused,loading:!!this.loading,preparation:this.preparation,chapter:this.chapter,player:this.player?{x:this.player.x,z:this.player.z,yaw:this.player.yaw,pitch:this.player.pitch,hp:this.player.hp,weapon:this.player.weapon,owned:Object.keys(this.player.inventory||{}),ammo:this.player.ammo,reserve:this.player.reserve,meds:this.player.meds}:null,objectives:this.objectives,pages:this.pages.size,allies:this.allies.size,scenes:[...(this.seenScenes||[])],bossDead:this.bossDead,enemies:this.enemies?.filter(e=>!e.dead&&!e.dormant).length,nearest:this.nearest?.kind||this.nearest?.name,route:this.level?.tasks?.[this.objectives],room:this.level?roomAt(this.level,this.player.x,this.player.z)?.name:null,gates:this.world?.gates?.filter(g=>g.obstacle.active).length,reloading:this.player?.reloading,beats:[...(this.beats||[])],stats:{...this.stats}};}
+ snapshot(){return{fps:Math.round(1000/(this.frameMs||16)),drawCalls:this.world?.worldCalls,perspective:'first-person',version:'5.4.2',voice:this.voice?.status,props:this.world?.obstacles?.length,pointerLocked:this.pointerLocked,running:this.running,paused:this.paused,loading:!!this.loading,preparation:this.preparation,chapter:this.chapter,player:this.player?{x:this.player.x,z:this.player.z,yaw:this.player.yaw,pitch:this.player.pitch,hp:this.player.hp,weapon:this.player.weapon,owned:Object.keys(this.player.inventory||{}),ammo:this.player.ammo,reserve:this.player.reserve,meds:this.player.meds}:null,objectives:this.objectives,pages:this.pages.size,allies:this.allies.size,scenes:[...(this.seenScenes||[])],bossDead:this.bossDead,enemies:this.enemies?.filter(e=>!e.dead&&!e.dormant).length,nearest:this.nearest?.kind||this.nearest?.name,route:this.level?.tasks?.[this.objectives],room:this.level?roomAt(this.level,this.player.x,this.player.z)?.name:null,gates:this.world?.gates?.filter(g=>g.obstacle.active).length,reloading:this.player?.reloading,beats:[...(this.beats||[])],stats:{...this.stats}};}
 }

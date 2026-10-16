@@ -1,7 +1,7 @@
-import * as T from './vendor/three.module.js?v=5.4.1';
-import {GLTFLoader} from './vendor/GLTFLoader.js?v=5.4.1';
-import {clone} from './vendor/SkeletonUtils.js?v=5.4.1';
-import {prepareZombieGeometry,createZombieAnatomy,poseZombieInjuries} from './zombie-art.js?v=5.4.1';
+import * as T from './vendor/three.module.js?v=5.4.2';
+import {GLTFLoader} from './vendor/GLTFLoader.js?v=5.4.2';
+import {clone} from './vendor/SkeletonUtils.js?v=5.4.2';
+import {prepareZombieGeometry,createZombieAnatomy,poseZombieInjuries} from './zombie-art.js?v=5.4.2';
 
 export const LICENSED_MATERIALS=['beige_wall_001','damaged_plaster','floor_tiles_06','old_linoleum_flooring_01','painted_plaster_wall'];
 export const LICENSED_PROPS=['utility_box_01','metal_office_desk','fire_alarm','security_camera_01'];
@@ -28,13 +28,22 @@ export function photographedMaterial(bundle,repeat=[1,1],color=0xffffff,world=fa
  const maps=Object.fromEntries(Object.entries(bundle).map(([key,t])=>{const map=t.clone();map.repeat.set(...repeat);map.needsUpdate=true;return [key,map];}));
  const material=new T.MeshStandardMaterial({color,map:maps.color,normalMap:maps.normal,normalScale:new T.Vector2(.55,.55),roughnessMap:maps.rough,roughness:.88});
  if(world){
+  // Flat wall boxes have exactly one nonzero projection weight. Their UVs
+  // interpolate linearly, so one sample per map replaces three identical taps.
+  const axis=world==='axis',varyings='varying vec3 photoPosition;varying vec3 photoNormal;'+(axis?'varying vec2 wallUv;':'');
   material.onBeforeCompile=s=>{
-   s.vertexShader=s.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 photoPosition;varying vec3 photoNormal;').replace('#include <begin_vertex>','#include <begin_vertex>\nphotoPosition=position;photoNormal=normal;\n#ifdef USE_INSTANCING\nphotoPosition=(instanceMatrix*vec4(photoPosition,1.)).xyz;\n#endif\nphotoPosition=(modelMatrix*vec4(photoPosition,1.)).xyz;');
-   s.fragmentShader=s.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 photoPosition;varying vec3 photoNormal;');
-   s.fragmentShader=s.fragmentShader.replace('#include <map_fragment>',`vec3 photoWeight=pow(abs(normalize(photoNormal)),vec3(6.));photoWeight/=photoWeight.x+photoWeight.y+photoWeight.z;vec2 photoX=photoPosition.zy*${repeat[0].toFixed(3)};vec2 photoY=photoPosition.xz*${repeat[0].toFixed(3)};vec2 photoZ=photoPosition.xy*${repeat[0].toFixed(3)};diffuseColor.rgb*=texture2D(map,photoX).rgb*photoWeight.x+texture2D(map,photoY).rgb*photoWeight.y+texture2D(map,photoZ).rgb*photoWeight.z;`);
-   s.fragmentShader=s.fragmentShader.replace('#include <roughnessmap_fragment>','float roughnessFactor=roughness*(texture2D(roughnessMap,photoX).g*photoWeight.x+texture2D(roughnessMap,photoY).g*photoWeight.y+texture2D(roughnessMap,photoZ).g*photoWeight.z);');
-   s.fragmentShader=s.fragmentShader.replace('#include <normal_fragment_maps>','vec3 px=texture2D(normalMap,photoX).xyz*2.-1.,py=texture2D(normalMap,photoY).xyz*2.-1.,pz=texture2D(normalMap,photoZ).xyz*2.-1.;px.xy*=normalScale;py.xy*=normalScale;pz.xy*=normalScale;vec3 photoN=normalize(vec3(px.z*sign(photoNormal.x),px.y,px.x)*photoWeight.x+vec3(py.x,py.z*sign(photoNormal.y),py.y)*photoWeight.y+vec3(pz.x,pz.y,pz.z*sign(photoNormal.z))*photoWeight.z);normal=normalize(mat3(viewMatrix)*photoN);');
-  };material.customProgramCacheKey=()=> 'photographed-wall-'+repeat[0];
+   s.vertexShader=s.vertexShader.replace('#include <common>','#include <common>\n'+varyings).replace('#include <begin_vertex>','#include <begin_vertex>\nphotoPosition=position;photoNormal=normal;\n#ifdef USE_INSTANCING\nphotoPosition=(instanceMatrix*vec4(photoPosition,1.)).xyz;\n#endif\nphotoPosition=(modelMatrix*vec4(photoPosition,1.)).xyz;'+(axis?`\nvec3 wallAxis=abs(photoNormal);wallUv=(photoPosition.zy*wallAxis.x+photoPosition.xz*wallAxis.y+photoPosition.xy*wallAxis.z)*${repeat[0].toFixed(3)};`:''));
+   s.fragmentShader=s.fragmentShader.replace('#include <common>','#include <common>\n'+varyings);
+   if(axis){
+    s.fragmentShader=s.fragmentShader.replace('#include <map_fragment>','diffuseColor.rgb*=texture2D(map,wallUv).rgb;');
+    s.fragmentShader=s.fragmentShader.replace('#include <roughnessmap_fragment>','float roughnessFactor=roughness*texture2D(roughnessMap,wallUv).g;');
+    s.fragmentShader=s.fragmentShader.replace('#include <normal_fragment_maps>','vec3 wallN=texture2D(normalMap,wallUv).xyz*2.-1.;wallN.xy*=normalScale;vec3 wallAxis=abs(photoNormal);vec3 photoN=normalize(vec3(wallN.z*sign(photoNormal.x),wallN.y,wallN.x)*wallAxis.x+vec3(wallN.x,wallN.z*sign(photoNormal.y),wallN.y)*wallAxis.y+vec3(wallN.x,wallN.y,wallN.z*sign(photoNormal.z))*wallAxis.z);normal=normalize(mat3(viewMatrix)*photoN);');
+   }else{
+    s.fragmentShader=s.fragmentShader.replace('#include <map_fragment>',`vec3 photoWeight=pow(abs(normalize(photoNormal)),vec3(6.));photoWeight/=photoWeight.x+photoWeight.y+photoWeight.z;vec2 photoX=photoPosition.zy*${repeat[0].toFixed(3)};vec2 photoY=photoPosition.xz*${repeat[0].toFixed(3)};vec2 photoZ=photoPosition.xy*${repeat[0].toFixed(3)};diffuseColor.rgb*=texture2D(map,photoX).rgb*photoWeight.x+texture2D(map,photoY).rgb*photoWeight.y+texture2D(map,photoZ).rgb*photoWeight.z;`);
+    s.fragmentShader=s.fragmentShader.replace('#include <roughnessmap_fragment>','float roughnessFactor=roughness*(texture2D(roughnessMap,photoX).g*photoWeight.x+texture2D(roughnessMap,photoY).g*photoWeight.y+texture2D(roughnessMap,photoZ).g*photoWeight.z);');
+    s.fragmentShader=s.fragmentShader.replace('#include <normal_fragment_maps>','vec3 px=texture2D(normalMap,photoX).xyz*2.-1.,py=texture2D(normalMap,photoY).xyz*2.-1.,pz=texture2D(normalMap,photoZ).xyz*2.-1.;px.xy*=normalScale;py.xy*=normalScale;pz.xy*=normalScale;vec3 photoN=normalize(vec3(px.z*sign(photoNormal.x),px.y,px.x)*photoWeight.x+vec3(py.x,py.z*sign(photoNormal.y),py.y)*photoWeight.y+vec3(pz.x,pz.y,pz.z*sign(photoNormal.z))*photoWeight.z);normal=normalize(mat3(viewMatrix)*photoN);');
+   }
+  };material.customProgramCacheKey=()=> 'photographed-wall-'+repeat[0]+'-'+world;
  }
  return material;
 }

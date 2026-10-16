@@ -1,10 +1,10 @@
-import * as T from './vendor/three.module.js?v=5.4.1';
-import {GLTFLoader} from './vendor/GLTFLoader.js?v=5.4.1';
-import {clone} from './vendor/SkeletonUtils.js?v=5.4.1';
-import {poseWeight} from './story.js?v=5.4.1';
+import * as T from './vendor/three.module.js?v=5.4.2';
+import {GLTFLoader} from './vendor/GLTFLoader.js?v=5.4.2';
+import {clone} from './vendor/SkeletonUtils.js?v=5.4.2';
+import {poseWeight} from './story.js?v=5.4.2';
 
 export const HUMAN_CAST=Object.freeze({ethan:'ethan',joel:'joel',hall:'hall',earl:'earl',landon:'landon',luke:'luke',paul:'landon',johnson:'hall',calen:'luke',benny:'joel'});
-const asset=file=>new URL('./assets/licensed/humans/'+file,import.meta.url).href+'?v=5.4.1';
+const asset=file=>new URL('./assets/licensed/humans/'+file,import.meta.url).href+'?v=5.4.2';
 const vector=new T.Vector3(),worldQ=new T.Quaternion(),parentQ=new T.Quaternion(),offsetQ=new T.Quaternion();
 const axes={x:new T.Vector3(1,0,0),y:new T.Vector3(0,1,0),z:new T.Vector3(0,0,1)};
 

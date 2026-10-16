@@ -4,6 +4,8 @@
 
 Some places remember you. Some refuse to let you go.
 
+Version **5.4.2** reduces wall texture sampling and rejects out-of-range point lights before expensive lighting calculations. Chapter loading skips disposable copies of the licensed human rigs while retaining preparation of the actual story scenes. [Performance verification](PLAYTEST_5.4.2.md).
+
 Version **5.4.1** replaces the production survivor bodies and projected portrait faces with six licensed, textured human rigs. Twenty-two facial shapes provide blinks, brows, gaze and articulated lips; speech follows recorded audio energy, with approximate text-based mouth shapes. Nine authored body clips blend movement, conversation and low poses. Ethan retains blonde curls and blue eyes; Earl retains a Black character model. Hand contact follows the imported wrists, and paused performance no longer accumulates offsets. [Character performance verification](PLAYTEST_5.4.md).
 
 Version **5.3.0** gives all thirteen story scenes 75 authored shots: establishing views, consistent reverse angles, shoulder coverage, held reactions and inserts for important actions. Cameras follow the posed actors and props, keep clear of stage geometry, and retain their framing through dialogue gaps. Eyelines, blended pose changes, wrist-driven syringe contact and Earl's door brace strengthen the performances. Stage lighting has more contrast and photographed wall detail. Boss introductions gain new reveal moves, a steady off-camera key light and view-aware camera fitting. [Cinematic direction verification](PLAYTEST_5.3.md).

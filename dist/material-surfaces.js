@@ -1,4 +1,4 @@
-import * as T from './vendor/three.module.js?v=5.4.1';
+import * as T from './vendor/three.module.js?v=5.4.2';
 const regions={hand:[0,.5],pale:[0,.5],metal:[.5,.5],infected:[0,0],wall:[.5,0]};
 export function surfaceMaterial(atlas,kind,options={}){
  const at=regions[kind]||regions.hand,metal=kind==='metal',scale=kind==='hand'?5:kind==='pale'?2.2:kind==='wall'?.65:kind==='infected'?1.9:1;
