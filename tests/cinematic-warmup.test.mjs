@@ -1,0 +1,7 @@
+import test from 'node:test';import assert from 'node:assert/strict';import * as T from '../dist/vendor/three.module.js';import {World} from '../dist/world.js';
+test('Cinematic warmup renders both full shadow variants before restoring caller state',async()=>{
+ const previous=globalThis.requestAnimationFrame,previousCancel=globalThis.cancelAnimationFrame;globalThis.requestAnimationFrame=fn=>setTimeout(fn,0);globalThis.cancelAnimationFrame=clearTimeout;
+ const scene=new T.Scene(),hidden=new T.Mesh(new T.BoxGeometry(),new T.MeshStandardMaterial());hidden.visible=false;scene.add(hidden);const calls=[],originalTarget={},r={autoClear:false,shadowMap:{autoUpdate:true},getRenderTarget:()=>originalTarget,setRenderTarget:t=>calls.push(['target',t]),getViewport:v=>v.set(0,0,1280,720),getScissor:v=>v.set(0,0,1280,720),getScissorTest:()=>false,setViewport(){},setScissor(){},setScissorTest(){},compileAsync:async()=>calls.push(['compile']),render:()=>calls.push(['render',r.shadowMap.autoUpdate,hidden.visible,hidden.frustumCulled])};
+ try{await World.prototype.prepareSceneGPU.call({renderer:r},scene,new T.PerspectiveCamera());assert.equal(calls.filter(c=>c[0]==='compile').length,2);const renders=calls.filter(c=>c[0]==='render');assert.deepEqual(renders,[['render',true,true,false],['render',true,true,false]]);assert.equal(hidden.visible,false);assert.equal(hidden.frustumCulled,true);assert.equal(r.autoClear,false);assert.equal(calls.at(-1)[1],originalTarget);}
+ finally{globalThis.requestAnimationFrame=previous;globalThis.cancelAnimationFrame=previousCancel;}
+});

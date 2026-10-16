@@ -1,33 +1,34 @@
-import './direct-lighting.js?v=5.3.0';
-import {duringGPUWork,finishGPUWarmup} from './render-budget.js?v=5.3.0';
-import {mergeRigidParts} from './rigid-batch.js?v=5.3.0';
-import {warmRaster} from './warm-raster.js?v=5.3.0';
-import {uploadSceneTextures} from './texture-warmup.js?v=5.3.0';
-import {isZombie} from './zombie-damage.js?v=5.3.0';
-import {ZombieGore} from './zombie-gore.js?v=5.3.0';
-import {WEAPONS,weaponFor} from './weapons.js?v=5.3.0';
-import {createLongGun} from './longguns.js?v=5.3.0';
-import {scannedMaterial,microTexture} from './surface-materials.js?v=5.3.0';
-import {surfaceMaterial} from './material-surfaces.js?v=5.3.0';
-import {addEnvironmentDetail} from './environment-detail.js?v=5.3.0';
-import {loadLicensedArt,photographedMaterial,createLicensedEnemy,animateLicensedEnemy,dressLicensedRooms,fittedProp} from './licensed-art.js?v=5.3.0';
-import {painted} from './loading.js?v=5.3.0';
-import {BossArena} from './boss-arena.js?v=5.3.0';
-import {createAnatomy,animateCollapse} from './anatomy.js?v=5.3.0';
-import {reloadProgress} from './reload.js?v=5.3.0';
-import {ATTACKS,enemyRadius} from './enemy-director.js?v=5.3.0';
-import * as T from './vendor/three.module.js?v=5.3.0';
-import {TILE,seeded,solid,findPath} from './data.js?v=5.3.0';
-import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock,propsOcclude,environmentDistance} from './fps.js?v=5.3.0';
-import {CombatEffects} from './combat-effects.js?v=5.3.0';
-import {WallPlacement} from './wall-placement.js?v=5.3.0';
-import {createViewModel,createHands,updateSleeveAnchors,loadHandSurfaces} from './viewmodel.js?v=5.3.0';
-import {createWeaponMotion,kickWeapon,stepWeaponMotion} from './weapon-motion.js?v=5.3.0';
-import {CHARACTER_DESIGNS,characterHair,dressBirdy,dressArchetype,cloneCharacter} from './creature-design.js?v=5.3.0';
-import {EnemyEffects} from './enemy-effects.js?v=5.3.0';
-import {BOSS_PROFILES,createBossModel} from './boss-models.js?v=5.3.0';
-import {animateBoss} from './boss-animation.js?v=5.3.0';
-import {loadPreparedGeometry} from './prepared-geometry.js?v=5.3.0';
+import './direct-lighting.js?v=5.4.0';
+import {duringGPUWork,finishGPUWarmup} from './render-budget.js?v=5.4.0';
+import {mergeRigidParts} from './rigid-batch.js?v=5.4.0';
+import {warmRaster} from './warm-raster.js?v=5.4.0';
+import {uploadSceneTextures} from './texture-warmup.js?v=5.4.0';
+import {isZombie} from './zombie-damage.js?v=5.4.0';
+import {ZombieGore} from './zombie-gore.js?v=5.4.0';
+import {WEAPONS,weaponFor} from './weapons.js?v=5.4.0';
+import {createLongGun} from './longguns.js?v=5.4.0';
+import {scannedMaterial,microTexture} from './surface-materials.js?v=5.4.0';
+import {surfaceMaterial} from './material-surfaces.js?v=5.4.0';
+import {addEnvironmentDetail} from './environment-detail.js?v=5.4.0';
+import {loadLicensedArt,photographedMaterial,createLicensedEnemy,animateLicensedEnemy,dressLicensedRooms,fittedProp} from './licensed-art.js?v=5.4.0';
+import {painted} from './loading.js?v=5.4.0';
+import {BossArena} from './boss-arena.js?v=5.4.0';
+import {createAnatomy,animateCollapse} from './anatomy.js?v=5.4.0';
+import {reloadProgress} from './reload.js?v=5.4.0';
+import {ATTACKS,enemyRadius} from './enemy-director.js?v=5.4.0';
+import * as T from './vendor/three.module.js?v=5.4.0';
+import {TILE,seeded,solid,findPath} from './data.js?v=5.4.0';
+import {EYE_HEIGHT,CEILING,BODY_SCALE,viewDirection,propsBlock,propsOcclude,environmentDistance} from './fps.js?v=5.4.0';
+import {CombatEffects} from './combat-effects.js?v=5.4.0';
+import {WallPlacement} from './wall-placement.js?v=5.4.0';
+import {createViewModel,createHands,updateSleeveAnchors,loadHandSurfaces} from './viewmodel.js?v=5.4.0';
+import {createWeaponMotion,kickWeapon,stepWeaponMotion} from './weapon-motion.js?v=5.4.0';
+import {CHARACTER_DESIGNS,characterHair,dressBirdy,dressArchetype,cloneCharacter} from './creature-design.js?v=5.4.0';
+import {EnemyEffects} from './enemy-effects.js?v=5.4.0';
+import {BOSS_PROFILES,createBossModel} from './boss-models.js?v=5.4.0';
+import {animateBoss} from './boss-animation.js?v=5.4.0';
+import {loadPreparedGeometry} from './prepared-geometry.js?v=5.4.0';
+import {loadHumanArt,createHumanActor,animateHumanActor} from './human-actors.js?v=5.4.0';
 
 const BOX=bevelBox(1,1,1,.014),WALLBOX=new T.BoxGeometry(1,1,1),SPHERE=new T.SphereGeometry(1,20,14),CYL=new T.CylinderGeometry(1,1,1,16);
 const SHARED=new Set([BOX,WALLBOX,SPHERE,CYL]);
@@ -64,7 +65,7 @@ export class World{
    const t=loader.load(new URL(`./assets/${file}.webp`,import.meta.url).href,resolve,undefined,reject);t.wrapS=t.wrapT=T.RepeatWrapping;t.colorSpace=T.SRGBColorSpace;t.anisotropy=8;this.assets[name]=t;
   })));const portrait=new Promise((resolve,reject)=>{const t=loader.load(new URL('./assets/boss-faces-v2.png',import.meta.url).href,resolve,undefined,reject);t.colorSpace=T.SRGBColorSpace;t.anisotropy=8;this.assets.boss=t;});const scans=new Promise((resolve,reject)=>{const t=loader.load(new URL('./assets/material-scans.png',import.meta.url).href,resolve,undefined,reject);t.colorSpace=T.SRGBColorSpace;t.anisotropy=8;this.assets.scans=t;});const surfaces=new Promise((resolve,reject)=>{const t=loader.load(new URL('./assets/material-surfaces-v3.png',import.meta.url).href,resolve,undefined,reject);t.colorSpace=T.SRGBColorSpace;t.anisotropy=8;this.assets.surfaces=t;});this.ready=Promise.all([this.ready,portrait,scans,surfaces,loadHandSurfaces(),loadPreparedGeometry()]);this.ready.catch(()=>{});
   // Let the title paint and textures arrive before the detailed hands are built.
-  this.ready=Promise.all([this.ready,loadLicensedArt(this.characterResources).then(library=>{this.licensed=library;})]).then(async()=>{await painted();await this.prepareWeapons();this.resize();});this.ready.catch(()=>{});this.resize();
+  this.ready=Promise.all([this.ready,loadLicensedArt(this.characterResources).then(library=>{this.licensed=library;}),loadHumanArt(this.characterResources).then(library=>{this.humans=library;})]).then(async()=>{await painted();await this.prepareWeapons();this.resize();});this.ready.catch(()=>{});this.resize();
  }
  resize(){this.needsPausedRender=true;this.renderer.setSize(innerWidth,innerHeight,false);this.camera.aspect=innerWidth/innerHeight;this.camera.updateProjectionMatrix();if(this.viewCamera){this.viewCamera.aspect=this.camera.aspect;this.viewCamera.updateProjectionMatrix();}}
  stageBoxGeometry(){return BOX.clone();}
@@ -362,6 +363,7 @@ export class World{
   }
  }
  character(kind,color,identity=kind==='player'?'ethan':kind){
+  if(this.humans&&(kind==='npc'||kind==='player'))return createHumanActor(this.humans,kind,identity,color);
   if(this.licensed&&isZombie(kind))return createLicensedEnemy(this.licensed,kind,color);
   const key=[kind,color??'',identity].join('/');if(!this.characterTemplates.has(key)){
    const template=this.buildCharacter(kind,color,identity);this.characterTemplates.set(key,template);
@@ -435,6 +437,7 @@ export class World{
   mergeParts(body);mergeParts(head);mergeParts(jaw);return g;
  }
  animateCharacter(g,t,moving,mood={}){
+  if(g.userData.humanActor)return animateHumanActor(g,t,moving,mood);
   if(g.userData.licensedActor)return animateLicensedEnemy(g,t,moving,mood);
   if(g.userData.bossRig){animateBoss(g,t,moving,mood);if(g.userData.kind==='birdy'&&!mood.beat&&this.root){g.updateMatrixWorld(true);for(const wing of g.userData.detachedWings)if(wing.visible&&!wing.userData.landed){this.root.attach(wing);wing.position.y=.055;wing.userData.landed=true;}}return g;}
   const kind=g.userData.kind,phase=g.userData.phase||0;if(mood.dead){animateCollapse(g,mood.deathTime||0);return;}
@@ -532,7 +535,9 @@ export class World{
  async prepareSceneGPU(scene,camera){
   const r=this.renderer,hidden=[],culling=[],target=r.getRenderTarget(),auto=r.autoClear,raster=warmRaster(r);
   scene.traverse(o=>{if(!o.visible){hidden.push(o);o.visible=true;}if(o.isMesh||o.isPoints){culling.push([o,o.frustumCulled]);o.frustumCulled=false;}});
-  try{await uploadSceneTextures(r,[scene]);r.setRenderTarget(null);if(r.compileAsync)await duringGPUWork(r.getContext?.(),()=>r.compileAsync(scene,camera));r.autoClear=true;raster.output();r.render(scene,camera);await finishGPUWarmup(r.getContext?.());}
+  // The initial depth pass may use the previous scene's light state. Warm a
+  // second complete shadow pass before a moving prop can expose that variant.
+  try{await uploadSceneTextures(r,[scene]);r.setRenderTarget(null);if(r.compileAsync)await duringGPUWork(r.getContext?.(),()=>r.compileAsync(scene,camera));r.autoClear=true;raster.output();r.render(scene,camera);await finishGPUWarmup(r.getContext?.());await painted();if(r.compileAsync)await duringGPUWork(r.getContext?.(),()=>r.compileAsync(scene,camera));r.render(scene,camera);await finishGPUWarmup(r.getContext?.());}
   finally{for(const o of hidden)o.visible=false;for(const [o,value]of culling)o.frustumCulled=value;r.setRenderTarget(target);r.autoClear=auto;raster.restore();}
  }
  headPositions(g,refresh=true){

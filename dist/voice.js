@@ -1,15 +1,16 @@
-import {VOICE_ASSETS} from './voice-assets.js?v=5.3.0';
-import {voiceKey} from './dialogue.js?v=5.3.0';
+import {VOICE_ASSETS} from './voice-assets.js?v=5.4.0';
+import {voiceKey} from './dialogue.js?v=5.4.0';
+import {voiceEnvelope} from './facial-performance.js?v=5.4.0';
 
 export class Voice{
- constructor(sound,settings,{fetcher=globalThis.fetch?.bind(globalThis),clock=()=>performance.now()/1000}={}){this.sound=sound;this.settings=settings;this.fetcher=fetcher;this.clock=clock;this.buffers=new Map();this.queue=[];this.epoch=0;this.paused=true;this.scene=null;this.current=null;}
+ constructor(sound,settings,{fetcher=globalThis.fetch?.bind(globalThis),clock=()=>performance.now()/1000}={}){this.sound=sound;this.settings=settings;this.fetcher=fetcher;this.clock=clock;this.buffers=new Map();this.envelopes=new Map();this.queue=[];this.epoch=0;this.paused=true;this.scene=null;this.current=null;}
  get context(){return this.sound.context;}
  get now(){return this.context?.currentTime??this.clock();}
  init(){this.sound.init();if(!this.context)throw Error('Audio unavailable');if(!this.gain){this.gain=this.context.createGain();const master=Number.isFinite(this.settings.volume)?Math.max(0,Math.min(1,this.settings.volume)):.6,dialogue=Number.isFinite(this.settings.dialogueVolume)?Math.max(0,Math.min(1,this.settings.dialogueVolume)):1;this.gain.gain.value=master*dialogue*.9;this.gain.connect(this.context.destination);}this.setVolume();}
  setVolume(master=this.settings.volume,dialogue=this.settings.dialogueVolume??1){this.master=Number.isFinite(master)?Math.max(0,Math.min(1,master)):.6;this.volume=Number.isFinite(dialogue)?Math.max(0,Math.min(1,dialogue)):1;if(this.gain)this.gain.gain.setTargetAtTime(this.master*this.volume*.9,this.context.currentTime,.03);}
  async load(key){
   const entry=VOICE_ASSETS[key];if(!entry)throw Error('Missing dialogue recording');
-  if(!this.buffers.has(key)){const job=(async()=>{const response=await this.fetcher(new URL(entry.file,import.meta.url),{signal:AbortSignal.timeout(15000)});if(!response.ok)throw Error('Dialogue download failed');return this.context.decodeAudioData(await response.arrayBuffer());})();this.buffers.set(key,job);job.catch(()=>this.buffers.delete(key));}
+  if(!this.buffers.has(key)){const job=(async()=>{const response=await this.fetcher(new URL(entry.file,import.meta.url),{signal:AbortSignal.timeout(15000)});if(!response.ok)throw Error('Dialogue download failed');const buffer=await this.context.decodeAudioData(await response.arrayBuffer());if(buffer.getChannelData)this.envelopes.set(key,voiceEnvelope(buffer));return buffer;})();this.buffers.set(key,job);job.catch(()=>{this.buffers.delete(key);this.envelopes.delete(key);});}
   return this.buffers.get(key);
  }
  async prepareScene(scene){

@@ -1,13 +1,13 @@
-import {stagePerformance,poseCinematicActor} from './cinematic-performance.js?v=5.3.0';
-import {fitStoryCamera} from './cinematic-camera.js?v=5.3.0';
-import {photographedMaterial} from './licensed-art.js?v=5.3.0';
-import {painted} from './loading.js?v=5.3.0';
-import {sceneContext,MEMORY_LEAD_IN} from './scene-context.js?v=5.3.0';
-import {dialogueFrame,DialogueCamera} from './cinematic-direction.js?v=5.3.0';
-import * as T from './vendor/three.module.js?v=5.3.0';
-import {SCENES,StoryClock} from './story.js?v=5.3.0';
-import {voicedScene} from './voice-timeline.js?v=5.3.0';
-import {BossIntroduction,displayName} from './boss-introductions.js?v=5.3.0';
+import {stagePerformance,poseCinematicActor} from './cinematic-performance.js?v=5.4.0';
+import {fitStoryCamera} from './cinematic-camera.js?v=5.4.0';
+import {photographedMaterial} from './licensed-art.js?v=5.4.0';
+import {painted} from './loading.js?v=5.4.0';
+import {sceneContext,MEMORY_LEAD_IN} from './scene-context.js?v=5.4.0';
+import {dialogueFrame,DialogueCamera,speakingActor} from './cinematic-direction.js?v=5.4.0';
+import * as T from './vendor/three.module.js?v=5.4.0';
+import {SCENES,StoryClock} from './story.js?v=5.4.0';
+import {voicedScene} from './voice-timeline.js?v=5.4.0';
+import {BossIntroduction,displayName} from './boss-introductions.js?v=5.4.0';
 const $=s=>document.querySelector(s);
 
 // A separate, lit stage prevents cinematic actors from touching combat or save state.
@@ -36,8 +36,11 @@ export class Cinematics{
   this.portal=this.endingMic=this.door=this.vial=this.crater=this.mazeStage=this.rings=null;this.doorTarget=undefined;this.footbeat=undefined;
   this.scene=new T.Scene();this.stage=new T.Group();this.scene.add(this.stage);this.actors=new Map();this.geometry=[this.world.stageBoxGeometry(),new T.CylinderGeometry(1,1,1,16),new T.SphereGeometry(1,16,12)];
   this.materials=[];const mat=(color,roughness=.8,metalness=0)=>{const m=new T.MeshStandardMaterial({color,roughness,metalness});this.materials.push(m);return m;};
-  const box=(m,scale,at,parent=this.stage)=>{const o=new T.Mesh(this.geometry[0],m);o.scale.set(...scale);o.position.set(...at);o.castShadow=o.receiveShadow=true;if(scale[0]>.12&&scale[1]>.14&&scale[2]>.10)o.userData.cinematicCollider=true;parent.add(o);return o;};
-  const cyl=(m,scale,at,parent=this.stage)=>{const o=new T.Mesh(this.geometry[1],m);o.scale.set(...scale);o.position.set(...at);o.castShadow=o.receiveShadow=true;parent.add(o);return o;};
+  // Keep the opaque prop shadow variant stable as the syringe changes parent.
+  // A shared renderer depth material can otherwise inherit a mapped wall's state.
+  const rigidDepth=new T.MeshDepthMaterial({depthPacking:T.RGBADepthPacking});this.materials.push(rigidDepth);
+  const box=(m,scale,at,parent=this.stage)=>{const o=new T.Mesh(this.geometry[0],m);o.scale.set(...scale);o.position.set(...at);o.castShadow=o.receiveShadow=true;if(!m.map)o.customDepthMaterial=rigidDepth;if(scale[0]>.12&&scale[1]>.14&&scale[2]>.10)o.userData.cinematicCollider=true;parent.add(o);return o;};
+  const cyl=(m,scale,at,parent=this.stage)=>{const o=new T.Mesh(this.geometry[1],m);o.scale.set(...scale);o.position.set(...at);o.castShadow=o.receiveShadow=true;if(!m.map)o.customDepthMaterial=rigidDepth;parent.add(o);return o;};
   const yellow=['maze','seal'].includes(type),outside=['road','dawn'].includes(type),breach=type==='breach';
   this.scene.background=new T.Color(type==='dawn'?0x6e796f:outside?0x0d1820:yellow?0x252012:0x0a1518);this.scene.fog=new T.FogExp2(this.scene.background,outside?.04:.023);
   this.scene.add(new T.HemisphereLight(type==='dawn'?0xffe0ac:yellow?0xf5dba4:0xb0c8d0,0x22261c,outside?.8:.38));
@@ -121,7 +124,7 @@ export class Cinematics{
   try{if(this.game.voice?.context)await Promise.allSettled(ids.flatMap(id=>voicedScene(SCENES[id]).lines.map(l=>this.game.voice.load(l.key))));for(const id of ids){await painted();this.id=id;this.story=voicedScene(SCENES[id]);this.build(this.story.stage);await w.prepareSceneGPU(this.scene,camera);}}
   finally{camera.position.copy(position);camera.quaternion.copy(rotation);camera.fov=fov;camera.updateProjectionMatrix();this.id=savedId;this.story=savedStory;this.scene=null;}
  }
- event(e){if(e.sound)this.game.sound.play(e.sound);if(e.door!==undefined&&this.door)this.doorTarget=e.door;if((e.serum||e.prepareSerum)&&this.vial){const fore=this.actors.get('hall')?.userData.arms?.[0]?.userData.forearm;if(fore){fore.add(this.vial);this.vial.position.set(0,-.39,.03);this.vial.rotation.z=.7;}else this.vial.visible=false;}if(e.collapse&&this.crater)this.crater.visible=true;
+ event(e){if(e.sound)this.game.sound.play(e.sound);if(e.door!==undefined&&this.door)this.doorTarget=e.door;if((e.serum||e.prepareSerum)&&this.vial){const d=this.actors.get('hall')?.userData,grip=d?.propGrip||d?.arms?.[0]?.userData.forearm;if(grip){grip.add(this.vial);this.vial.position.set(...(d.propGrip?[0,0,0]:[0,-.39,.03]));this.vial.rotation.set(0,0,d.propGrip?-Math.PI/2:.7);}else this.vial.visible=false;}if(e.collapse&&this.crater)this.crater.visible=true;
   if(e.maze&&this.mazeStage){this.mazeStage.visible=true;for(const g of this.actors.values())g.visible=false;const landon=this.actors.get('landon');if(landon){landon.visible=true;landon.position.set(.7,0,0);}this.key.color.set(0xffe0a1);}
   if(e.ring!==undefined&&this.rings?.[e.ring])this.rings[e.ring].material.emissive.set(0x725525);
  }
@@ -138,7 +141,8 @@ export class Cinematics{
   $('#scene-transition').hidden=!transition;$('#scene-transition').style.opacity=this.leadIn>0?Math.min(1,this.leadIn/.35):this.returnTime!==null?Math.min(1,this.returnTime/.3):0;
   const voice=this.game.voice,state=voice?.scene;const advance=transition||this.paused?0:state?Math.max(0,voice.sceneTime-this.clock.time):dt;const {events,sample,done}=this.clock.tick(advance);for(const e of events)this.event(e);const t=this.clock.time,originalTime=this.story.sourceTime(t);
   $('#scene-loading').hidden=transition||!state||state.ready;$('#scene-loading-message').textContent=state?.error?'Dialogue could not load.':'Preparing audio…';$('#scene-audio-actions').hidden=!state?.error;
-  for(const a of sample.actors){const g=this.actors.get(a.id);if(!g||this.mazeStage?.visible)continue;g.position.set(a.x,a.y,a.z);g.rotation.y=a.yaw;if(g.userData.human)for(const arm of g.userData.arms){arm.rotation.y=arm.rotation.z=0;arm.userData.forearm.rotation.y=arm.userData.forearm.rotation.z=0;}this.world.animateCharacter(g,t,a.moving);
+  const speaker=speakingActor(this.story,sample.line);
+  for(const a of sample.actors){const g=this.actors.get(a.id);if(!g)continue;const recalled=this.mazeStage?.visible;if(recalled&&a.id!=='landon')continue;g.position.set(...(recalled?[.7,0,0]:[a.x,a.y,a.z]));g.rotation.y=recalled?0:a.yaw;if(g.userData.human&&!g.userData.humanActor)for(const arm of g.userData.arms){arm.rotation.y=arm.rotation.z=0;arm.userData.forearm.rotation.y=arm.userData.forearm.rotation.z=0;}this.world.animateCharacter(g,t,a.moving&&!recalled,{performance:a,speaking:a.id===speaker,urgent:this.id==='opening'||this.id==='road'});
    poseCinematicActor(g,a);
   }
   if(this.door&&this.doorTarget!==undefined)this.door.rotation.y+=(this.doorTarget-this.door.rotation.y)*Math.min(1,(this.paused?0:advance)*7);

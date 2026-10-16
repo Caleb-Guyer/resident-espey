@@ -32,10 +32,29 @@ Version 5.1 extends this same artist model to all ordinary infected roles. The b
 
 The artist's head geometry and UVs are also adapted for the bosses, with different proportions for Chris, Zeb, Jakob, Bobby and Birdy. The former generated portrait and teeth meshes are suppressed when an artist head is present. Speech retains a local jaw-region morph. The existing distinct boss bodies, wing systems, combat phases and identities remain custom; these are not newly purchased AAA boss rigs.
 
+## Microsoft Rocketbox — MIT
+
+The six survivor bodies, UV skin/clothing maps, facial shapes and body performances come from [Microsoft Rocketbox](https://github.com/microsoft/Microsoft-Rocketbox), Copyright (c) 2020 Microsoft. The publisher's [MIT license](https://github.com/microsoft/Microsoft-Rocketbox/blob/master/LICENSE.md) is included at `dist/assets/licensed/humans/LICENSE.txt`.
+
+| Game role | Source avatar |
+| --- | --- |
+| Ethan | Male_Adult_16; curl geometry from Male_Adult_06 |
+| Joel | Male_Adult_09 |
+| Coach Hall | Male_Adult_14 |
+| Earl | Male_Adult_12 |
+| Landon | Male_Adult_11 |
+| Luke | Male_Adult_01 |
+
+Other supporting roles reuse these six rigs with clothing tints. These are adaptations of library actors, not scans of the named story characters. The former generated survivor portraits and procedural human bodies are bypassed in the production path. Ethan has an artist-modeled curls with a blonde material adjustment and blue irises; Earl retains the source Black character's skin texture.
+
+Source revision: `0943055db6ec570bcef9f2c8b41c9e5467c808f9`. The seven downloaded FBX files and 45 source texture files were verified against their Git blob SHA-1 values in that revision. Source FBX: `Assets/Avatars/Adults/<avatar>/Export/<avatar>_facial.fbx`. Texture source: the adjacent `Textures` directory. Sources were retrieved from the Microsoft repository, converted using the official Godot FBX2glTF converter, and reduced to four skin influences per vertex. Twenty-two original mouth, brow, eyelid and gaze shapes are retained. Unused body morphs are omitted. Head color maps retain 2K detail; body color, normal and converted specular-to-roughness maps use 1K JPEGs. Opacity maps retain alpha in PNG. The artist's curl cards from Male_Adult_06 are fitted in the head bind frame and rigidly weighted to Ethan's head joint. Their original UVs and alpha texture are retained with a blonde material adjustment. No procedural hair cap is added.
+
+Nine clips from `Assets/Animations/all_animations_max_motextr_static` and `all_animations_max_motextr_xy` supply breathing, listening, conversation, nervous conversation, seated, crouched, slow walking and injured walking movement. Motion is packaged as binary glTF with bounded quaternion key reduction. Horizontal root movement is removed, preserving vertical performance and story-controlled positions. Facial bone tracks are excluded so authored face shapes have a stable neutral basis. Each performer owns its cloned skeleton, mixer, expression weights and materials; geometry, maps and clips are shared. Expressions, approximate text-based mouth shapes, recorded-audio envelopes, eyelines, pose blending and prop contact are game-authored. This is not motion-captured facial acting or forced phoneme alignment.
+
 ## Software
 
 Three.js r180 and the matching official GLTFLoader, BufferGeometryUtils and SkeletonUtils are MIT-licensed. The existing `dist/vendor/THREE-LICENSE.txt` applies to these files. Import paths are localized so the game has no CDN runtime dependency. The offline FBX converter is not shipped with the web game.
 
 ## Remaining production work
 
-The game still contains code-authored weapons, hands, custom boss bodies and survivor rigs, and some older generated textures. Existing dialogue is synthesized, as disclosed in the game credits. Reaching the requested commercial AAA standard would require bespoke production models, full weapon and creature animation sets, motion/facial performance, human voice acting, a broader lighting and environment pass, and extensive performance and gameplay testing. This release establishes a usable licensed-asset pipeline and replaces specific visible assets; it does not claim that every asset has been replaced or that AAA parity is achieved.
+The game still contains code-authored weapons, hands and custom boss bodies, and some older generated textures. Existing dialogue is synthesized, as disclosed in the game credits. Reaching the requested commercial AAA standard would require bespoke production models, full weapon and creature animation sets, motion/facial performance, human voice acting, a broader lighting and environment pass, and extensive performance and gameplay testing. This release establishes a usable licensed-asset pipeline and replaces specific visible assets; it does not claim that every asset has been replaced or that AAA parity is achieved.
