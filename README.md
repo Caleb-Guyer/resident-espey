@@ -4,6 +4,8 @@
 
 Some places remember you. Some refuse to let you go.
 
+Version **5.2.1** reduces crowded-fight GPU work by skipping physical lighting for lights with exactly zero final contribution. Detailed boss bodies now have conservative culling bounds; fully off-screen bodies no longer submit their skin passes. Stationary blood uploads only when its pool changes, and transparent stain borders discard before expensive lighting. Shadows, textures, enemy counts and gore pool sizes remain intact. [Crowded combat verification](PLAYTEST_5.2.1.md).
+
 Version **5.2.0** improves boss anticipation, attack follow-through, grounded movement, wing motion, introductions and distinct collapses. Shots produce directional torso, head and limb reactions layered over the existing animation; ordinary body hits keep locomotion clips running. Flesh impacts, melee confirmation and mixed-pellet headshot feedback are clearer. Dialogue coverage eases between speakers while preserving authored camera cuts. Prepared creature buffers and paced audio synthesis reduce cold-start CPU work, and a second small warm draw prepares final shadow variants before play. [Combat polish and performance verification](PLAYTEST_5.2.md).
 
 Version **5.1.3** reduces excessive first-person mesh detail, preserves indexed vertices when batching rigid parts, and constructs weapons in loading stages. Matching zombie skin sections share one live skeleton, with independent snapshots for detached regions. Texture uploads yield in bounded batches, and warmup prepares the real game output once in a small viewport. [Startup and combat verification](PLAYTEST_5.1.3.md).

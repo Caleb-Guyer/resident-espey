@@ -1,8 +1,8 @@
-import {applyGraphics} from './graphics.js?v=5.2.0';
-import {normalizeSettings} from './settings.js?v=5.2.0';
-import {Game} from './game.js?v=5.2.0';
-import {CHAPTERS,PAGES,TILE} from './data.js?v=5.2.0';
-import {MEMORY_IDS,SCENES} from './story.js?v=5.2.0';
+import {applyGraphics} from './graphics.js?v=5.2.1';
+import {normalizeSettings} from './settings.js?v=5.2.1';
+import {Game} from './game.js?v=5.2.1';
+import {CHAPTERS,PAGES,TILE} from './data.js?v=5.2.1';
+import {MEMORY_IDS,SCENES} from './story.js?v=5.2.1';
 const $=s=>document.querySelector(s);
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;let settings=normalizeSettings({},reducedMotion);
 try{settings=normalizeSettings(JSON.parse(localStorage.getItem('resident-espey-settings')),reducedMotion);}catch{}

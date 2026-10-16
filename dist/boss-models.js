@@ -1,10 +1,10 @@
-import {scannedMaterial,microTexture} from './surface-materials.js?v=5.2.0';
-import {surfaceMaterial} from './material-surfaces.js?v=5.2.0';
-import {artistHead} from './licensed-art.js?v=5.2.0';
-import * as T from './vendor/three.module.js?v=5.2.0';
-import {sculptSurface,mergeRigid} from './sculpt-surface.js?v=5.2.0';
-import {CHARACTER_DESIGNS} from './creature-design.js?v=5.2.0';
-import {preparedGeometry} from './prepared-geometry.js?v=5.2.0';
+import {scannedMaterial,microTexture} from './surface-materials.js?v=5.2.1';
+import {surfaceMaterial} from './material-surfaces.js?v=5.2.1';
+import {artistHead} from './licensed-art.js?v=5.2.1';
+import * as T from './vendor/three.module.js?v=5.2.1';
+import {sculptSurface,mergeRigid} from './sculpt-surface.js?v=5.2.1';
+import {CHARACTER_DESIGNS} from './creature-design.js?v=5.2.1';
+import {preparedGeometry} from './prepared-geometry.js?v=5.2.1';
 const cache=new Map(),clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const mesh=(parent,geo,mat,at=[0,0,0],scale=[1,1,1])=>{const m=new T.Mesh(geo,mat);m.position.set(...at);m.scale.set(...scale);m.castShadow=m.receiveShadow=true;parent.add(m);return m;};
 const tube=(parent,mat,points,r=.006)=>mesh(parent,new T.TubeGeometry(new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p))),Math.max(12,points.length*5),r,6,false),mat);
@@ -158,7 +158,13 @@ function wings(g,skin,world){
 }
 export function createBossModel(world,kind){
  const rig=makeRig(kind),{g,body,heads,arms,legs,spines}=rig,mats=materials(world,kind);
- const skin=new T.SkinnedMesh(bodyGeometry(kind,rig),mats);skin.castShadow=skin.receiveShadow=true;skin.frustumCulled=false;g.add(skin);g.updateMatrixWorld(true);skin.bind(new T.Skeleton(rig.bones));
+ const skin=new T.SkinnedMesh(bodyGeometry(kind,rig),mats);skin.castShadow=skin.receiveShadow=true;
+ // Conservative local bounds cover attack poses, intros, hit reactions and
+ // collapses. Wings and other rigid details retain their own separate bounds.
+ // Avoid submitting the expensive body when it is fully outside the view or
+ // shadow frustum, without scanning all skinned vertices on the first draw.
+ skin.boundingSphere=new T.Sphere(new T.Vector3(0,BOSS_PROFILES[kind].height/2,0),3);skin.frustumCulled=true;
+ g.add(skin);g.updateMatrixWorld(true);skin.bind(new T.Skeleton(rig.bones));
  g.userData={kind,human:false,bossRig:true,body,head:heads[0],heads,arms,legs,skin,spines,phase:0,restSpine:BOSS_PROFILES[kind].spine,design:CHARACTER_DESIGNS[kind]||{skin:BOSS_PROFILES[kind].skin},identity:kind,detail:'sculpted muscle and scar tissue',jaws:[],eyes:[],faces:[],mouthCovers:[],oralParts:[]};
  const ids=kind==='jakob'?['jakob','bobby']:[kind];heads.forEach((h,i)=>{const detail=head(world,h,ids[i],mats[0]);g.userData.oralParts.push(detail.oralParts);g.userData.faces.push(detail.face);g.userData.jaws.push(detail.jaw);g.userData.eyes.push(detail.eyes);g.userData.mouthCovers.push(detail.mouthCover);h.userData.identity=ids[i];h.userData.restHeadY=h.position.y;});g.userData.face=g.userData.faces[0];g.userData.jaw=g.userData.jaws[0];
  if(kind==='jakob'){g.userData.identities=ids;g.userData.twins=spines;spines.forEach((s,i)=>s.userData={...s.userData,design:CHARACTER_DESIGNS[ids[i]],identity:ids[i],head:heads[i]});}
