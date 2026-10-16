@@ -1,10 +1,10 @@
-# Resident Espey 5.4 — human character performances
+# Resident Espey 5.4.1 — human character performances
 
 Verified October 16, 2026. All browser tests used an isolated localhost preview with master and dialogue output constrained to zero before initialization. Review controls are outside the published repository.
 
 ## Character art
 
-Production survivors use six MIT-licensed Microsoft Rocketbox actors: distinct heads, correctly wrapped skin/clothing maps, modeled mouths, eyes and ears, skinning and alpha hair. Ethan uses the artist's curly hairstyle with blonde hair and blue iris material adjustments. Earl uses the source Black actor. Some supporting roles reuse these six actors with clothing tints. The former generated portrait faces and procedural human bodies remain only in the legacy fallback path; no generated survivor portrait is used by the production human renderer.
+Production survivors use six MIT-licensed Microsoft Rocketbox actors: distinct heads, correctly wrapped skin/clothing maps, modeled mouths, eyes and ears, skinning and alpha hair. Ethan uses fitted artist scalp geometry and photographed curl maps with blonde hair and blue iris material adjustments. A soft material transition blends the hairline into the original head; alpha curl cards are excluded. Earl uses the source Black actor. Some supporting roles reuse these six actors with clothing tints. The former generated portrait faces and procedural human bodies remain only in the legacy fallback path; no generated survivor portrait is used by the production human renderer.
 
 The imported geometry, textures and clips are shared. Each performer owns its skeleton, materials, expressions, animation actions and pose state. Head color maps retain 2K resolution, with 1K body and surface maps. Original MIT attribution and the source revision are recorded in LICENSED_ART.md and the shipped asset license.
 
@@ -24,7 +24,7 @@ Story preparation renders two complete small-viewport shadow passes, including t
 
 **268 automated tests passed**, including actual packaged model parsing, six distinct UV heads, normalized skin weights, independent actor state, seated/crouched eye heights, drift-free locomotion, wrist contact, paused pose/finger stability, multiple lip shapes, silent audio envelopes and complete shadow warmup state restoration. Syntax checks passed for **63 modules**.
 
-Native browser checks sampled **165 dialogue moments across all thirteen scenes**, decoded all **55 story clips**, and repeated paused skeletal samples. Expressions were finite, each actor retained its own state, and paused bones/cameras held. After scene warmup, sampled playback created **zero additional programs, geometry buffers or textures**. Maximum sampled CPU submission/update time ranged from **1.2 to 3.3 ms by scene**.
+Native browser checks sampled **165 dialogue moments across all thirteen scenes**, decoded all **55 story clips**, and repeated paused skeletal samples. Expressions were finite, each actor retained its own state, and paused bones/cameras held. After scene warmup, sampled playback created **zero additional programs, geometry buffers or textures**. Maximum sampled CPU submission/update time ranged from **1.4 to 3.2 ms by scene**.
 
 A separate camera sweep sampled the beginning and midpoint of all **75 shots** (**150 samples**) using the final character assets. Subjects stayed framed and paused cameras held. No late programs or GPU resources appeared. These are paced workload samples on the test system, not a foreground FPS benchmark or a guarantee for other hardware.
 

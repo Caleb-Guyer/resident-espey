@@ -1,8 +1,8 @@
-import * as T from './vendor/three.module.js?v=5.4.0';
-import {StoryClock} from './story.js?v=5.4.0';
-import {voicedScene} from './voice-timeline.js?v=5.4.0';
-import {fitEncounterCamera} from './combat-space.js?v=5.4.0';
-import {speechMotion} from './cinematic-direction.js?v=5.4.0';
+import * as T from './vendor/three.module.js?v=5.4.1';
+import {StoryClock} from './story.js?v=5.4.1';
+import {voicedScene} from './voice-timeline.js?v=5.4.1';
+import {fitEncounterCamera} from './combat-space.js?v=5.4.1';
+import {speechMotion} from './cinematic-direction.js?v=5.4.1';
 export const BOSS_NAMES=Object.freeze({chris:'Chris',jakob:'Jakob & Bobby',zeb:'Zeb',birdy:'Lil Birdy'});
 export function displayName(name){return ({'Coach Hall':'Hall','Joel Honeycutt':'Joel','Landon Chapa':'Landon','Earl Britt':'Earl','Nathan Nunley':'Nathan','Zebene Martine':'Zeb'})[name]||name;}
 const shot=(at,from,to,look,fov=54,options={})=>({at,from,to,look,end:look,fov,...options});

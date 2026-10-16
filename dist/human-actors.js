@@ -1,10 +1,10 @@
-import * as T from './vendor/three.module.js?v=5.4.0';
-import {GLTFLoader} from './vendor/GLTFLoader.js?v=5.4.0';
-import {clone} from './vendor/SkeletonUtils.js?v=5.4.0';
-import {poseWeight} from './story.js?v=5.4.0';
+import * as T from './vendor/three.module.js?v=5.4.1';
+import {GLTFLoader} from './vendor/GLTFLoader.js?v=5.4.1';
+import {clone} from './vendor/SkeletonUtils.js?v=5.4.1';
+import {poseWeight} from './story.js?v=5.4.1';
 
 export const HUMAN_CAST=Object.freeze({ethan:'ethan',joel:'joel',hall:'hall',earl:'earl',landon:'landon',luke:'luke',paul:'landon',johnson:'hall',calen:'luke',benny:'joel'});
-const asset=file=>new URL('./assets/licensed/humans/'+file,import.meta.url).href;
+const asset=file=>new URL('./assets/licensed/humans/'+file,import.meta.url).href+'?v=5.4.1';
 const vector=new T.Vector3(),worldQ=new T.Quaternion(),parentQ=new T.Quaternion(),offsetQ=new T.Quaternion();
 const axes={x:new T.Vector3(1,0,0),y:new T.Vector3(0,1,0),z:new T.Vector3(0,0,1)};
 
@@ -41,13 +41,15 @@ export function createHumanActor(library,kind,identity,color){
   if(!o.isMesh)return;
   o.castShadow=o.receiveShadow=true;o.frustumCulled=true;
   if(o.isSkinnedMesh){if(!sharedSkeleton)sharedSkeleton=o.skeleton;else if(o.skeleton.bones.every((b,i)=>b===sharedSkeleton.bones[i]))o.skeleton=sharedSkeleton;o.boundingSphere=new T.Sphere(new T.Vector3(0,0,.9),2.2);}
-  const copy=m=>{if(!materials.has(m)){const own=m.clone();if(HUMAN_CAST[identity]!==identity&&m.name.endsWith('_body')&&color)own.color.set(color).lerp(new T.Color(0xffffff),.77);if(identity==='ethan'&&(m.name.endsWith('_head')||m.name.includes('opacity'))){
-   const hairOnly=m.name.includes('opacity');if(hairOnly){own.alphaToCoverage=true;own.bumpMap=own.map;own.bumpScale=.0008;}
-   own.onBeforeCompile=s=>{s.fragmentShader=s.fragmentShader.replace('#include <map_fragment>',`#include <map_fragment>
+  const copy=m=>{if(!materials.has(m)){const own=m.clone();if(HUMAN_CAST[identity]!==identity&&m.name.endsWith('_body')&&color)own.color.set(color).lerp(new T.Color(0xffffff),.77);if(identity==='ethan'&&(m.name.endsWith('_head')||m.name.includes('curly_hair'))){
+   const hairOnly=m.name.includes('curly_hair');if(hairOnly){own.transparent=true;own.depthWrite=false;o.castShadow=false;}
+   own.onBeforeCompile=s=>{if(hairOnly){s.vertexShader=s.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 hairBindPosition;').replace('#include <begin_vertex>','#include <begin_vertex>\nhairBindPosition=position;');s.fragmentShader=s.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 hairBindPosition;');}
+   s.fragmentShader=s.fragmentShader.replace('#include <map_fragment>',`#include <map_fragment>
 float actorLuma=dot(diffuseColor.rgb,vec3(.2126,.7152,.0722));
 float hairRegion=${hairOnly?'1.':'0.'};
 vec3 blonde=vec3(1.15,.91,.52)*pow(max(0.,actorLuma),.62)*1.45;
 diffuseColor.rgb=mix(diffuseColor.rgb,blonde,hairRegion);
+${hairOnly?'float forward=-hairBindPosition.y;float topFade=smoothstep(1.755,1.785,hairBindPosition.z);float sideFade=smoothstep(.073,.092,abs(hairBindPosition.x))*smoothstep(1.705,1.740,hairBindPosition.z)*(1.-smoothstep(.015,.045,forward));float backFade=(1.-smoothstep(-.060,-.032,forward))*smoothstep(1.676,1.725,hairBindPosition.z);diffuseColor.a*=max(topFade,max(sideFade,backFade));':''}
 ${hairOnly?'':'float iris=1.-smoothstep(.011,.017,distance(vMapUv,vec2(.264,.067)));diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.32,.61,.88)*actorLuma*1.55,iris*.83);'}`);};own.customProgramCacheKey=()=> 'ethan-identity-'+hairOnly;
   }materials.set(m,own);}return materials.get(m);};
   o.material=Array.isArray(o.material)?o.material.map(copy):copy(o.material);

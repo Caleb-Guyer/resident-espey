@@ -1,5 +1,5 @@
-import * as T from './vendor/three.module.js?v=5.4.0';
-import {solid} from './data.js?v=5.4.0';
+import * as T from './vendor/three.module.js?v=5.4.1';
+import {solid} from './data.js?v=5.4.1';
 function bloodMap(){
  const size=128,data=new Uint8Array(size*size*4);let seed=57;const rand=()=>{seed=Math.imul(seed,1664525)+1013904223;return(seed>>>0)/4294967296;},drops=Array.from({length:28},()=>({x:rand()*2-1,y:rand()*2-1,r:.013+rand()*.065}));
  for(let y=0;y<size;y++)for(let x=0;x<size;x++){const u=(x/size-.5)*2,v=(y/size-.5)*2,a=Math.atan2(v,u),edge=.56+Math.sin(a*7)*.09+Math.sin(a*13+1)*.04,r=Math.hypot(u,v);let alpha=Math.max(0,Math.min(1,(edge-r)*35));for(const d of drops)alpha=Math.max(alpha,Math.max(0,Math.min(1,(d.r-Math.hypot(u-d.x,v-d.y))*100)));const i=(y*size+x)*4;data[i]=80+rand()*22;data[i+1]=9+rand()*6;data[i+2]=8+rand()*6;data[i+3]=alpha*230;}

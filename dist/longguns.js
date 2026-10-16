@@ -1,6 +1,6 @@
-import * as T from './vendor/three.module.js?v=5.4.0';
-import {createHands} from './viewmodel.js?v=5.4.0';
-import {profileGeometry} from './profile-geometry.js?v=5.4.0';
+import * as T from './vendor/three.module.js?v=5.4.1';
+import {createHands} from './viewmodel.js?v=5.4.1';
+import {profileGeometry} from './profile-geometry.js?v=5.4.1';
 const add=(g,geo,m,p=[0,0,0],scale=[1,1,1])=>{const o=new T.Mesh(geo,m);o.position.set(...p);o.scale.set(...scale);g.add(o);return o;};
 const group=(g,p=[0,0,0])=>{const o=new T.Group();o.position.set(...p);g.add(o);return o;};
 function rounded(w,h,d,r=.005){const x=w/2,y=h/2,s=new T.Shape();s.moveTo(-x+r,-y);s.lineTo(x-r,-y);s.quadraticCurveTo(x,-y,x,-y+r);s.lineTo(x,y-r);s.quadraticCurveTo(x,y,x-r,y);s.lineTo(-x+r,y);s.quadraticCurveTo(-x,y,-x,y-r);s.lineTo(-x,-y+r);s.quadraticCurveTo(-x,-y,-x+r,-y);const g=new T.ExtrudeGeometry(s,{depth:d-r*2,bevelEnabled:true,bevelSegments:Math.min(w,h,d)<.002?1:5,bevelThickness:r,bevelSize:r,curveSegments:Math.min(w,h,d)<.002?2:12}).translate(0,0,-d/2+r);g.computeBoundingBox();const a=g.attributes.position,n=g.attributes.normal,u=g.attributes.uv,min=g.boundingBox.min,size=g.boundingBox.getSize(new T.Vector3());for(let i=0;i<a.count;i++){const nx=Math.abs(n.getX(i)),ny=Math.abs(n.getY(i)),nz=Math.abs(n.getZ(i));u.setXY(i,nx>ny&&nx>nz?(a.getZ(i)-min.z)/(size.z||1):(a.getX(i)-min.x)/(size.x||1),ny>nx&&ny>nz?(a.getZ(i)-min.z)/(size.z||1):(a.getY(i)-min.y)/(size.y||1));}return g;}

@@ -1,13 +1,13 @@
-import {stagePerformance,poseCinematicActor} from './cinematic-performance.js?v=5.4.0';
-import {fitStoryCamera} from './cinematic-camera.js?v=5.4.0';
-import {photographedMaterial} from './licensed-art.js?v=5.4.0';
-import {painted} from './loading.js?v=5.4.0';
-import {sceneContext,MEMORY_LEAD_IN} from './scene-context.js?v=5.4.0';
-import {dialogueFrame,DialogueCamera,speakingActor} from './cinematic-direction.js?v=5.4.0';
-import * as T from './vendor/three.module.js?v=5.4.0';
-import {SCENES,StoryClock} from './story.js?v=5.4.0';
-import {voicedScene} from './voice-timeline.js?v=5.4.0';
-import {BossIntroduction,displayName} from './boss-introductions.js?v=5.4.0';
+import {stagePerformance,poseCinematicActor} from './cinematic-performance.js?v=5.4.1';
+import {fitStoryCamera} from './cinematic-camera.js?v=5.4.1';
+import {photographedMaterial} from './licensed-art.js?v=5.4.1';
+import {painted} from './loading.js?v=5.4.1';
+import {sceneContext,MEMORY_LEAD_IN} from './scene-context.js?v=5.4.1';
+import {dialogueFrame,DialogueCamera,speakingActor} from './cinematic-direction.js?v=5.4.1';
+import * as T from './vendor/three.module.js?v=5.4.1';
+import {SCENES,StoryClock} from './story.js?v=5.4.1';
+import {voicedScene} from './voice-timeline.js?v=5.4.1';
+import {BossIntroduction,displayName} from './boss-introductions.js?v=5.4.1';
 const $=s=>document.querySelector(s);
 
 // A separate, lit stage prevents cinematic actors from touching combat or save state.
