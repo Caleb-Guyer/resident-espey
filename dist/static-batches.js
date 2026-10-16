@@ -1,4 +1,4 @@
-import * as T from './vendor/three.module.js?v=5.5.2';
+import * as T from './vendor/three.module.js?v=5.5.3';
 
 // Spatial bounds let the renderer cull and order fixed instances independently.
 // Share geometry/materials and preserve every matrix and per-instance color.

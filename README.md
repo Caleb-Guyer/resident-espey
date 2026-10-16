@@ -4,6 +4,8 @@
 
 Some places remember you. Some refuse to let you go.
 
+Version **5.5.3** reduces High-graphics overdraw with a fixed-architecture depth pass. Native 1440p testing reproduced approximately 45 FPS on the integrated test GPU and measured approximately 52–54 FPS with depth priming and identical captured images. Settings now shows the active graphics adapter and render resolution. [1440p measurements and verification](PLAYTEST_5.5.3.md).
+
 Version **5.5.2** adds an FPS counter in the upper-right corner during gameplay and cutscenes, enabled by default. Settings → Show FPS counter saves your preference. It averages rendered game frames over half-second windows, accounts for skipped renders, and hides during menus, loading and pauses. Browser verification covers gameplay, the Settings toggle and paused flashbacks; all 278 tests pass.
 
 Version **5.5.1** gives dense fixed scenery and wall trim smaller culling bounds, reducing submitted geometry in crowded rooms. Sculpt validation uses faster indexed reads and yields within large attributes. [Performance measurements and verification](PLAYTEST_5.5.1.md).

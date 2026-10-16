@@ -1,4 +1,4 @@
-import * as T from './vendor/three.module.js?v=5.5.2';
+import * as T from './vendor/three.module.js?v=5.5.3';
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const tetra=[[0,5,1,6],[0,1,2,6],[0,2,3,6],[0,3,7,6],[0,7,4,6],[0,4,5,6]],corners=[[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0,0,1],[1,0,1],[1,1,1],[0,1,1]];
 export function segmentDistance(p,a,b){let u=0,d=0;for(let i=0;i<3;i++){u+=(p[i]-a[i])*(b[i]-a[i]);d+=(b[i]-a[i])**2;}u=clamp(u/(d||1),0,1);return p.reduce((n,v,i)=>n+(v-a[i]-(b[i]-a[i])*u)**2,0);}

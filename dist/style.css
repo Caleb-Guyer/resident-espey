@@ -40,3 +40,5 @@
 
 #fps-counter{position:fixed;top:65px;right:26px;z-index:30;pointer-events:none;font:11px/1.2 Consolas,monospace;font-variant-numeric:tabular-nums;color:#d2d6c8;background:#050908b8;padding:5px 7px;border-radius:2px;min-width:64px;text-align:right}
 @media(max-width:700px){#fps-counter{top:52px;right:18px}}
+
+.graphics-readout{font-size:11px;color:#969c95;align-items:flex-start}.graphics-readout span:last-child{max-width:65%;text-align:right;overflow-wrap:anywhere}
